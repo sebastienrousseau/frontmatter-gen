@@ -1,0 +1,64 @@
+# -----------------------------------------------------------------------------
+# FrontMatter Gen - A Rust library for generating and parsing frontmatter in various formats.
+# -----------------------------------------------------------------------------
+
+[package]
+name = "frontmatter-gen"
+version = "0.0.1"
+edition = "2021"
+rust-version = "1.56.0"
+license = "MIT OR Apache-2.0"
+description = """
+A Rust library for generating and parsing frontmatter in various formats.
+"""
+homepage = "https://mdxgen.com/"
+documentation = "https://mdxgen.com/documentation/index.html"
+repository = "https://github.com/sebastienrousseau/mdx-gen"
+readme = "README.md"
+build = "build.rs"
+
+# -----------------------------------------------------------------------------
+# Crate Configuration
+# -----------------------------------------------------------------------------
+categories = [
+    "command-line-utilities",
+    "data-structures",
+    "text-processing",
+    "parsing",
+    "development-tools"
+]
+
+keywords = ["frontmatter", "yaml", "toml", "json", "frontmatter-gen"]
+
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+
+[dependencies]
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yml = "0.0.12"
+thiserror = "1.0"
+toml = "0.8"
+
+# -----------------------------------------------------------------------------
+# Build Dependencies
+# -----------------------------------------------------------------------------
+
+[build-dependencies]
+version_check = "0.9"
+
+# -----------------------------------------------------------------------------
+# Development Dependencies
+# -----------------------------------------------------------------------------
+
+[dev-dependencies]
+serde = { version = "1.0", features = ["derive"] }
+
+# [[bench]]
+# name = "markdown_benchmark"
+# harness = false
+
+# [profile.bench]
+# debug = true
