@@ -1,11 +1,14 @@
+//! This module defines the error types used throughout the frontmatter-gen crate.
+//!
+//! It provides a comprehensive set of error variants to cover various failure scenarios that may occur during frontmatter parsing, conversion, and extraction.
+
 use serde_json::Error as JsonError;
 use serde_yml::Error as YamlError;
 use thiserror::Error;
 
 /// Represents errors that can occur during frontmatter parsing, conversion, and extraction.
 ///
-/// This enum uses the `thiserror` crate to provide clear and structured error messages,
-/// making it easier to debug and handle issues that arise when processing frontmatter.
+/// This enum uses the `thiserror` crate to provide clear and structured error messages, making it easier to debug and handle issues that arise when processing frontmatter.
 #[derive(Error, Debug)]
 pub enum FrontmatterError {
     /// Error occurred while parsing YAML.
@@ -115,7 +118,7 @@ impl Clone for FrontmatterError {
 }
 
 impl FrontmatterError {
-    /// Helper function to create a generic parse error with a custom message.
+    /// Creates a generic parse error with a custom message.
     ///
     /// # Arguments
     ///

@@ -1,3 +1,7 @@
+//! This module provides functionality for extracting frontmatter from content.
+//!
+//! It includes functions to extract frontmatter in various formats (YAML, TOML, JSON) from a given string content, as well as utilities to detect the format of the frontmatter.
+
 use crate::error::FrontmatterError;
 use crate::types::Format;
 

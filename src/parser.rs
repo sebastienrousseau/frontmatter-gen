@@ -1,5 +1,6 @@
 //! This module provides functionality for parsing and serializing frontmatter in various formats.
-//! It supports YAML, TOML, and JSON formats, allowing conversion between these formats and the internal `Frontmatter` representation.
+//!
+//! It supports YAML, TOML, and JSON formats, allowing conversion between these formats and the internal `Frontmatter` representation. The module includes functions for parsing raw frontmatter strings into structured data and converting structured data back into formatted strings.
 
 use crate::types::Frontmatter;
 use crate::{error::FrontmatterError, Format, Value};
