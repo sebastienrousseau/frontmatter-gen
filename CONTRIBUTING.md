@@ -38,7 +38,7 @@ If you have an idea for a new feature or improvement, we'd love to hear it. Here
 
 - Fork the repo.
 - Clone the [MDX Gen][01] repo by running:
-  `git clone https://github.com/sebastienrousseau/mdx-gen.git`
+  `git clone https://github.com/sebastienrousseau/frontmatter-gen.git`
 - Edit files in the `src/` folder. The `src/` folder contains the source code for `MDX Gen`.
 - Submit a pull request, and we'll review and merge your changes if they fit with our vision for `MDX Gen`.
 
@@ -48,11 +48,11 @@ If you've identified a bug or have a specific code improvement in mind, we welco
 
 - Fork the repo.
 - Clone the `MDX Gen` repo by running:
-  `git clone https://github.com/sebastienrousseau/mdx-gen.git`
+  `git clone https://github.com/sebastienrousseau/frontmatter-gen.git`
 - Edit files in the `src/` folder. The `src/` folder contains the source code for `MDX Gen`.
 - Submit a pull request, and we'll review and merge your changes if they fit with our vision for `MDX Gen`.
 
 We hope that this guide has been helpful in explaining how you can contribute to `MDX Gen`. Thank you for your interest and involvement in our project!
 
-[01]: https://github.com/sebastienrousseau/mdx-gen
-[02]: https://github.com/sebastienrousseau/mdx-gen/issues/new
+[01]: https://github.com/sebastienrousseau/frontmatter-gen
+[02]: https://github.com/sebastienrousseau/frontmatter-gen/issues/new
