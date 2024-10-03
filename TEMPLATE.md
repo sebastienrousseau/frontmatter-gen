@@ -21,7 +21,7 @@ A robust Rust library for parsing and serializing frontmatter in various formats
 
 ## Overview
 
-`frontmatter-gen` is a flexible Rust library that provides functionality for extracting, parsing, and serializing frontmatter in various formats. It's commonly used in static site generators and content management systems to handle metadata at the beginning of content files.
+`frontmatter-gen` is a flexible Rust library that provides functionality for extracting, parsing, and serializing frontmatter in various formats. It's designed for use in static site generators, content management systems, and any application that needs to handle metadata at the beginning of content files.
 
 ### Key Features
 
@@ -30,6 +30,7 @@ A robust Rust library for parsing and serializing frontmatter in various formats
 - **Robust Error Handling**: Comprehensive error types for detailed problem reporting.
 - **Customizable Parsing**: Configure parsing options to suit your needs.
 - **Efficient Conversions**: Convert between different frontmatter formats seamlessly.
+- **Type-Safe Value Handling**: Utilize the `Value` enum for type-safe frontmatter data manipulation.
 
 [00]: https://frontmatter-gen.com
 [01]: https://lib.rs/crates/frontmatter-gen

@@ -21,7 +21,7 @@ A robust Rust library for parsing and serializing frontmatter in various formats
 
 ## Overview
 
-`frontmatter-gen` is a flexible Rust library that provides functionality for extracting, parsing, and serializing frontmatter in various formats. It's commonly used in static site generators and content management systems to handle metadata at the beginning of content files.
+`frontmatter-gen` is a flexible Rust library that provides functionality for extracting, parsing, and serializing frontmatter in various formats. It's designed for use in static site generators, content management systems, and any application that needs to handle metadata at the beginning of content files.
 
 ### Key Features
 
@@ -30,6 +30,7 @@ A robust Rust library for parsing and serializing frontmatter in various formats
 - **Robust Error Handling**: Comprehensive error types for detailed problem reporting.
 - **Customizable Parsing**: Configure parsing options to suit your needs.
 - **Efficient Conversions**: Convert between different frontmatter formats seamlessly.
+- **Type-Safe Value Handling**: Utilize the `Value` enum for type-safe frontmatter data manipulation.
 
 ## Installation
 
@@ -37,17 +38,17 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-frontmatter-gen = "0.1.0"
+frontmatter-gen = "0.0.1"
 ```
 
 ## Usage
 
 Here are some examples of how to use the library:
 
-### Basic Usage
+### Extracting Frontmatter
 
 ```rust
-use frontmatter_gen::{extract, Frontmatter, Format};
+use frontmatter_gen::extract;
 
 let content = r#"---
 title: My Post
@@ -63,15 +64,46 @@ assert_eq!(remaining_content, "Content here");
 ### Converting Formats
 
 ```rust
-use frontmatter_gen::{Frontmatter, Format, to_format};
+use frontmatter_gen::{Frontmatter, Format, Value, to_format};
 
 let mut frontmatter = Frontmatter::new();
-frontmatter.insert("title".to_string(), "My Post".into());
-frontmatter.insert("date".to_string(), "2023-05-20".into());
+frontmatter.insert("title".to_string(), Value::String("My Post".to_string()));
+frontmatter.insert("date".to_string(), Value::String("2023-05-20".to_string()));
 
 let yaml = to_format(&frontmatter, Format::Yaml).unwrap();
 assert!(yaml.contains("title: My Post"));
 assert!(yaml.contains("date: '2023-05-20'"));
+```
+
+### Parsing Different Formats
+
+```rust
+use frontmatter_gen::{parser, Format};
+
+let yaml = "title: My Post\ndate: 2023-05-20\n";
+let frontmatter = parser::parse(yaml, Format::Yaml).unwrap();
+
+let toml = "title = \"My Post\"\ndate = 2023-05-20\n";
+let frontmatter = parser::parse(toml, Format::Toml).unwrap();
+
+let json = r#"{"title": "My Post", "date": "2023-05-20"}"#;
+let frontmatter = parser::parse(json, Format::Json).unwrap();
+```
+
+## Error Handling
+
+The library provides comprehensive error handling through the `FrontmatterError` enum:
+
+```rust
+use frontmatter_gen::error::FrontmatterError;
+
+fn example_usage() -> Result<(), FrontmatterError> {
+    let invalid_toml = "invalid toml content";
+    match toml::from_str::<toml::Value>(invalid_toml) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(FrontmatterError::TomlParseError(e)),
+    }
+}
 ```
 
 ## Documentation
@@ -86,11 +118,17 @@ To run the examples, clone the repository and use the following command:
 cargo run --example example_name
 ```
 
-Replace `example_name` with the name of the example you want to run.
+Available examples:
 
-## Contribution
+- error
+- extractor
+- lib
+- parser
+- types
 
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
@@ -110,15 +148,15 @@ Special thanks to all contributors who have helped build the `frontmatter-gen` l
 [02]: https://github.com/sebastienrousseau/frontmatter-gen/issues
 [03]: https://crates.io/crates/frontmatter-gen
 [04]: https://docs.rs/frontmatter-gen
-[05]: https://github.com/sebastienrousseau/frontmatter-gen/blob/main/CONTRIBUTING.md "Contributing Guidelines"
+[05]: https://github.com/sebastienrousseau/frontmatter-gen/blob/main/CONTRIBUTING.md
 [06]: https://codecov.io/gh/sebastienrousseau/frontmatter-gen
 [07]: https://github.com/sebastienrousseau/frontmatter-gen/actions?query=branch%3Amain
 [08]: https://www.rust-lang.org/
 
-[build-badge]: https://img.shields.io/github/actions/workflow/status/sebastienrousseau/frontmatter--gen/release.yml?branch=main&style=for-the-badge&logo=github "Build Status"
-[codecov-badge]: https://img.shields.io/codecov/c/github/sebastienrousseau/frontmatter-gen?style=for-the-badge&token=Q9KJ6XXL67&logo=codecov "Codecov"
-[crates-badge]: https://img.shields.io/crates/v/frontmatter-gen.svg?style=for-the-badge&color=fc8d62&logo=rust "Crates.io"
-[docs-badge]: https://img.shields.io/badge/docs.rs-frontmatter--gen-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs "Docs.rs"
-[github-badge]: https://img.shields.io/badge/github-sebastienrousseau/frontmatter--gen-8da0cb?style=for-the-badge&labelColor=555555&logo=github "GitHub"
-[libs-badge]: https://img.shields.io/badge/lib.rs-v0.0.1-orange.svg?style=for-the-badge "View on lib.rs"
-[made-with-rust]: https://img.shields.io/badge/rust-f04041?style=for-the-badge&labelColor=c0282d&logo=rust 'Made With Rust'
+[build-badge]: https://img.shields.io/github/actions/workflow/status/sebastienrousseau/frontmatter--gen/release.yml?branch=main&style=for-the-badge&logo=github
+[codecov-badge]: https://img.shields.io/codecov/c/github/sebastienrousseau/frontmatter-gen?style=for-the-badge&token=Q9KJ6XXL67&logo=codecov
+[crates-badge]: https://img.shields.io/crates/v/frontmatter-gen.svg?style=for-the-badge&color=fc8d62&logo=rust
+[docs-badge]: https://img.shields.io/badge/docs.rs-frontmatter--gen-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs
+[github-badge]: https://img.shields.io/badge/github-sebastienrousseau/frontmatter--gen-8da0cb?style=for-the-badge&labelColor=555555&logo=github
+[libs-badge]: https://img.shields.io/badge/lib.rs-v0.0.1-orange.svg?style=for-the-badge
+[made-with-rust]: https://img.shields.io/badge/rust-f04041?style=for-the-badge&labelColor=c0282d&logo=rust
