@@ -4,15 +4,15 @@
 
 [package]
 name = "frontmatter-gen"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 rust-version = "1.56.0"
 license = "MIT OR Apache-2.0"
 description = """
 A Rust library for generating and parsing frontmatter in various formats.
 """
-homepage = "https://mdxgen.com/"
-documentation = "https://mdxgen.com/documentation/index.html"
+homepage = "https://frontmatter-gen.com/"
+documentation = "https://frontmatter-gen.com/documentation/index.html"
 repository = "https://github.com/sebastienrousseau/frontmatter-gen"
 readme = "README.md"
 build = "build.rs"
@@ -29,6 +29,10 @@ categories = [
 ]
 
 keywords = ["frontmatter", "yaml", "toml", "json", "frontmatter-gen"]
+
+[lib]
+name = "frontmatter_gen"
+path = "src/lib.rs"
 
 # -----------------------------------------------------------------------------
 # Dependencies
@@ -58,6 +62,10 @@ version_check = "0.9"
 criterion = "0.5"
 serde = { version = "1.0", features = ["derive"] }
 
+# -----------------------------------------------------------------------------
+# Examples
+# -----------------------------------------------------------------------------
+
 [[example]]
 name = "error"
 path = "examples/error_examples.rs"
@@ -78,6 +86,9 @@ path = "examples/parser_examples.rs"
 name = "types"
 path = "examples/types_examples.rs"
 
+# -----------------------------------------------------------------------------
+# Criterion Benchmark
+# -----------------------------------------------------------------------------
 
 [[bench]]
 name = "frontmatter_benchmark"
