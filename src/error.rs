@@ -171,6 +171,68 @@ pub fn example_usage() -> Result<(), FrontmatterError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde::de::Error;
+
+    #[test]
+    fn test_json_parse_error() {
+        let json_data = "{ invalid json }";
+        let result: Result<serde_json::Value, _> =
+            serde_json::from_str(json_data);
+        assert!(result.is_err());
+        let error =
+            FrontmatterError::JsonParseError(result.unwrap_err());
+        assert!(matches!(error, FrontmatterError::JsonParseError(_)));
+    }
+
+    #[test]
+    fn test_toml_parse_error() {
+        let toml_data = "invalid toml data";
+        let result: Result<toml::Value, _> = toml::from_str(toml_data);
+        assert!(result.is_err());
+        let error =
+            FrontmatterError::TomlParseError(result.unwrap_err());
+        assert!(matches!(error, FrontmatterError::TomlParseError(_)));
+    }
+
+    #[test]
+    fn test_yaml_parse_error() {
+        let yaml_data = "invalid: yaml: data";
+        let result: Result<serde_yml::Value, _> =
+            serde_yml::from_str(yaml_data);
+        assert!(result.is_err());
+        let error = FrontmatterError::YamlParseError {
+            source: result.unwrap_err(),
+        };
+        assert!(matches!(
+            error,
+            FrontmatterError::YamlParseError { .. }
+        ));
+    }
+
+    #[test]
+    fn test_conversion_error_message() {
+        let error_message = "Conversion failed";
+        let error = FrontmatterError::ConversionError(
+            error_message.to_string(),
+        );
+        assert!(matches!(error, FrontmatterError::ConversionError(_)));
+        assert_eq!(
+            error.to_string(),
+            "Failed to convert frontmatter: Conversion failed"
+        );
+    }
+
+    #[test]
+    fn test_parse_error_message() {
+        let error_message = "Failed to parse frontmatter";
+        let error =
+            FrontmatterError::ParseError(error_message.to_string());
+        assert!(matches!(error, FrontmatterError::ParseError(_)));
+        assert_eq!(
+            error.to_string(),
+            "Failed to parse frontmatter: Failed to parse frontmatter"
+        );
+    }
 
     #[test]
     fn test_generic_parse_error() {
@@ -213,5 +275,146 @@ mod tests {
         } else {
             panic!("Expected UnsupportedFormat");
         }
+    }
+
+    #[test]
+    fn test_invalid_format_error() {
+        let error = FrontmatterError::InvalidFormat;
+        assert!(matches!(error, FrontmatterError::InvalidFormat));
+    }
+
+    #[test]
+    fn test_conversion_error() {
+        let error = FrontmatterError::ConversionError(
+            "Test conversion error".to_string(),
+        );
+        assert!(matches!(error, FrontmatterError::ConversionError(_)));
+    }
+
+    #[test]
+    fn test_no_frontmatter_found_error() {
+        let error = FrontmatterError::NoFrontmatterFound;
+        assert!(matches!(error, FrontmatterError::NoFrontmatterFound));
+    }
+
+    #[test]
+    fn test_invalid_json_error() {
+        let error = FrontmatterError::InvalidJson;
+        assert!(matches!(error, FrontmatterError::InvalidJson));
+    }
+
+    #[test]
+    fn test_invalid_toml_error() {
+        let error = FrontmatterError::InvalidToml;
+        assert!(matches!(error, FrontmatterError::InvalidToml));
+    }
+
+    #[test]
+    fn test_invalid_yaml_error() {
+        let error = FrontmatterError::InvalidYaml;
+        assert!(matches!(error, FrontmatterError::InvalidYaml));
+    }
+
+    #[test]
+    fn test_json_depth_limit_exceeded_error() {
+        let error = FrontmatterError::JsonDepthLimitExceeded;
+        assert!(matches!(
+            error,
+            FrontmatterError::JsonDepthLimitExceeded
+        ));
+    }
+
+    #[test]
+    fn test_extraction_error() {
+        let error = FrontmatterError::ExtractionError(
+            "Test extraction error".to_string(),
+        );
+        assert!(matches!(error, FrontmatterError::ExtractionError(_)));
+    }
+
+    #[test]
+    fn test_error_messages() {
+        assert_eq!(
+            FrontmatterError::InvalidFormat.to_string(),
+            "Invalid frontmatter format"
+        );
+        assert_eq!(
+            FrontmatterError::NoFrontmatterFound.to_string(),
+            "No frontmatter found in the content"
+        );
+        assert_eq!(
+            FrontmatterError::JsonDepthLimitExceeded.to_string(),
+            "JSON frontmatter exceeds maximum nesting depth"
+        );
+    }
+
+    #[test]
+    fn test_example_usage() {
+        let result = example_usage();
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            FrontmatterError::TomlParseError(_)
+        ));
+    }
+
+    #[test]
+    fn test_clone_fallback_yaml_parse_error() {
+        let original = FrontmatterError::YamlParseError {
+            source: YamlError::custom("invalid yaml"),
+        };
+        let cloned = original.clone();
+        assert!(matches!(cloned, FrontmatterError::InvalidFormat));
+    }
+
+    #[test]
+    fn test_clone_fallback_json_parse_error() {
+        let original = FrontmatterError::JsonParseError(
+            serde_json::from_str::<serde_json::Value>("invalid json")
+                .unwrap_err(),
+        );
+        let cloned = original.clone();
+        assert!(matches!(cloned, FrontmatterError::InvalidFormat));
+    }
+
+    #[test]
+    fn test_unsupported_format_with_edge_cases() {
+        let error = FrontmatterError::unsupported_format(0);
+        if let FrontmatterError::UnsupportedFormat { line } = error {
+            assert_eq!(line, 0);
+        } else {
+            panic!("Expected UnsupportedFormat with line 0");
+        }
+
+        let error = FrontmatterError::unsupported_format(usize::MAX);
+        if let FrontmatterError::UnsupportedFormat { line } = error {
+            assert_eq!(line, usize::MAX);
+        } else {
+            panic!(
+                "Expected UnsupportedFormat with maximum line number"
+            );
+        }
+    }
+
+    #[test]
+    fn test_no_frontmatter_fallback() {
+        // Simulate a case where no frontmatter is found
+        let _content = "Some content without frontmatter";
+        let result: Result<(), FrontmatterError> =
+            Err(FrontmatterError::NoFrontmatterFound);
+
+        assert!(matches!(
+            result.unwrap_err(),
+            FrontmatterError::NoFrontmatterFound
+        ));
+    }
+
+    #[test]
+    fn test_json_depth_limit_exceeded() {
+        let error = FrontmatterError::JsonDepthLimitExceeded;
+        assert_eq!(
+            error.to_string(),
+            "JSON frontmatter exceeds maximum nesting depth"
+        );
     }
 }
