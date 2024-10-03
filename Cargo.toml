@@ -55,6 +55,7 @@ version_check = "0.9"
 # -----------------------------------------------------------------------------
 
 [dev-dependencies]
+criterion = "0.5"
 serde = { version = "1.0", features = ["derive"] }
 
 [[example]]
@@ -78,9 +79,9 @@ name = "types"
 path = "examples/types_examples.rs"
 
 
-# [[bench]]
-# name = "markdown_benchmark"
-# harness = false
+[[bench]]
+name = "frontmatter_benchmark"
+harness = false
 
-# [profile.bench]
-# debug = true
+[profile.bench]
+debug = true
