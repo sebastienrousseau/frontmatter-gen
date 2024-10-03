@@ -78,9 +78,19 @@ assert!(yaml.contains("date: '2023-05-20'"));
 
 For full API documentation, please visit [docs.rs/frontmatter-gen](https://docs.rs/frontmatter-gen).
 
-## Contributing
+## Examples
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+To run the examples, clone the repository and use the following command:
+
+```shell
+cargo run --example example_name
+```
+
+Replace `example_name` with the name of the example you want to run.
+
+## Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
 ## License
 

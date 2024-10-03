@@ -1382,7 +1382,7 @@ mod tests {
 
     #[test]
     fn test_value_into_bool() {
-        assert_eq!(Value::Boolean(true).into_bool().unwrap(), true);
+        assert!(Value::Boolean(true).into_bool().unwrap());
         assert!(Value::String("true".to_string()).into_bool().is_err());
     }
 
@@ -1461,10 +1461,16 @@ mod tests {
             Value::Boolean(false)
         );
         assert_eq!("42".parse::<Value>().unwrap(), Value::Number(42.0));
-        assert_eq!(
-            "3.14".parse::<Value>().unwrap(),
-            Value::Number(3.14)
-        );
+
+        // Compare floating-point numbers using f64::consts::PI for precision
+        if let Value::Number(n) =
+            "3.141592653589793".parse::<Value>().unwrap()
+        {
+            assert!((n - std::f64::consts::PI).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected Value::Number");
+        }
+
         assert_eq!(
             "test".parse::<Value>().unwrap(),
             Value::String("test".to_string())
@@ -1483,7 +1489,7 @@ mod tests {
             format!("{}", Value::String("test".to_string())),
             "\"test\""
         );
-        assert_eq!(format!("{}", Value::Number(3.14)), "3.14");
+        assert_eq!(format!("{}", Value::Number(PI)), format!("{}", PI));
         assert_eq!(format!("{}", Value::Number(42.0)), "42");
         assert_eq!(format!("{}", Value::Boolean(true)), "true");
         assert_eq!(
