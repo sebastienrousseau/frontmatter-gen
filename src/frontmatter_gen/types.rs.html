@@ -1619,7 +1619,13 @@
 <a href="#1618" id="1618">1618</a>
 <a href="#1619" id="1619">1619</a>
 <a href="#1620" id="1620">1620</a>
-<a href="#1621" id="1621">1621</a></pre></div><pre class="rust"><code><span class="comment">// types.rs
+<a href="#1621" id="1621">1621</a>
+<a href="#1622" id="1622">1622</a>
+<a href="#1623" id="1623">1623</a>
+<a href="#1624" id="1624">1624</a>
+<a href="#1625" id="1625">1625</a>
+<a href="#1626" id="1626">1626</a>
+<a href="#1627" id="1627">1627</a></pre></div><pre class="rust"><code><span class="comment">// types.rs
 
 </span><span class="doccomment">//! This module defines the core types used throughout the frontmatter-gen crate.
 //! It includes the `Format` enum for representing different frontmatter formats, the `Value` enum for representing various data types that can be stored in frontmatter, and the `Frontmatter` struct which is the main container for frontmatter data.
@@ -3003,7 +3009,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_value_into_bool() {
-        <span class="macro">assert_eq!</span>(Value::Boolean(<span class="bool-val">true</span>).into_bool().unwrap(), <span class="bool-val">true</span>);
+        <span class="macro">assert!</span>(Value::Boolean(<span class="bool-val">true</span>).into_bool().unwrap());
         <span class="macro">assert!</span>(Value::String(<span class="string">"true"</span>.to_string()).into_bool().is_err());
     }
 
@@ -3082,10 +3088,16 @@
             Value::Boolean(<span class="bool-val">false</span>)
         );
         <span class="macro">assert_eq!</span>(<span class="string">"42"</span>.parse::&lt;Value&gt;().unwrap(), Value::Number(<span class="number">42.0</span>));
-        <span class="macro">assert_eq!</span>(
-            <span class="string">"3.14"</span>.parse::&lt;Value&gt;().unwrap(),
-            Value::Number(<span class="number">3.14</span>)
-        );
+
+        <span class="comment">// Compare floating-point numbers using f64::consts::PI for precision
+        </span><span class="kw">if let </span>Value::Number(n) =
+            <span class="string">"3.141592653589793"</span>.parse::&lt;Value&gt;().unwrap()
+        {
+            <span class="macro">assert!</span>((n - std::f64::consts::PI).abs() &lt; f64::EPSILON);
+        } <span class="kw">else </span>{
+            <span class="macro">panic!</span>(<span class="string">"Expected Value::Number"</span>);
+        }
+
         <span class="macro">assert_eq!</span>(
             <span class="string">"test"</span>.parse::&lt;Value&gt;().unwrap(),
             Value::String(<span class="string">"test"</span>.to_string())
@@ -3104,7 +3116,7 @@
             <span class="macro">format!</span>(<span class="string">"{}"</span>, Value::String(<span class="string">"test"</span>.to_string())),
             <span class="string">"\"test\""
         </span>);
-        <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, Value::Number(<span class="number">3.14</span>)), <span class="string">"3.14"</span>);
+        <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, Value::Number(PI)), <span class="macro">format!</span>(<span class="string">"{}"</span>, PI));
         <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, Value::Number(<span class="number">42.0</span>)), <span class="string">"42"</span>);
         <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, Value::Boolean(<span class="bool-val">true</span>)), <span class="string">"true"</span>);
         <span class="macro">assert_eq!</span>(

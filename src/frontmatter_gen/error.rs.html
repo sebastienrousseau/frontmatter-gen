@@ -489,7 +489,18 @@
 <a href="#488" id="488">488</a>
 <a href="#489" id="489">489</a>
 <a href="#490" id="490">490</a>
-<a href="#491" id="491">491</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module defines the error types used throughout the frontmatter-gen crate.
+<a href="#491" id="491">491</a>
+<a href="#492" id="492">492</a>
+<a href="#493" id="493">493</a>
+<a href="#494" id="494">494</a>
+<a href="#495" id="495">495</a>
+<a href="#496" id="496">496</a>
+<a href="#497" id="497">497</a>
+<a href="#498" id="498">498</a>
+<a href="#499" id="499">499</a>
+<a href="#500" id="500">500</a>
+<a href="#501" id="501">501</a>
+<a href="#502" id="502">502</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module defines the error types used throughout the frontmatter-gen crate.
 //!
 //! It provides a comprehensive set of error variants to cover various failure scenarios that may occur during frontmatter parsing, conversion, and extraction.
 
@@ -895,8 +906,8 @@
             <span class="prelude-val">Err</span>(FrontmatterError::NoFrontmatterFound);
 
         <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-            result.unwrap_err(),
-            FrontmatterError::NoFrontmatterFound
+            result,
+            <span class="prelude-val">Err</span>(FrontmatterError::NoFrontmatterFound)
         ));
     }
 
@@ -928,56 +939,67 @@
     }
 
     <span class="attr">#[test]
-</span><span class="kw">fn </span>test_parse_error_custom_message() {
-    <span class="kw">let </span>error_message = <span class="string">"Unexpected character at line 5"</span>;
-    <span class="kw">let </span>error = FrontmatterError::ParseError(error_message.to_string());
-    <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Failed to parse frontmatter: Unexpected character at line 5"</span>);
-}
-
-<span class="attr">#[test]
-</span><span class="kw">fn </span>test_parse_error_empty_message() {
-    <span class="kw">let </span>error_message = <span class="string">""</span>;
-    <span class="kw">let </span>error = FrontmatterError::ParseError(error_message.to_string());
-    <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Failed to parse frontmatter: "</span>);
-}
-
-<span class="attr">#[test]
-</span><span class="kw">fn </span>test_no_frontmatter_found_in_content() {
-    <span class="kw">let </span>_content = <span class="string">"Regular content without any frontmatter"</span>;
-    <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;(), FrontmatterError&gt; = <span class="prelude-val">Err</span>(FrontmatterError::NoFrontmatterFound);
-    <span class="macro">assert!</span>(<span class="macro">matches!</span>(result.unwrap_err(), FrontmatterError::NoFrontmatterFound));
-}
-
-<span class="attr">#[test]
-</span><span class="kw">fn </span>test_extraction_error_custom_message() {
-    <span class="kw">let </span>error_message = <span class="string">"Failed to extract frontmatter from line 10"</span>;
-    <span class="kw">let </span>error = FrontmatterError::ExtractionError(error_message.to_string());
-    <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Extraction error: Failed to extract frontmatter from line 10"</span>);
-}
-
-<span class="attr">#[test]
-</span><span class="kw">fn </span>test_extraction_error_empty_message() {
-    <span class="kw">let </span>error = FrontmatterError::ExtractionError(<span class="string">""</span>.to_string());
-    <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Extraction error: "</span>);
-}
-
-<span class="attr">#[test]
-</span><span class="kw">fn </span>test_clone_extraction_error() {
-    <span class="kw">let </span>original = FrontmatterError::ExtractionError(<span class="string">"Test extraction error"</span>.to_string());
-    <span class="kw">let </span>cloned = original.clone();
-    <span class="kw">if let </span>FrontmatterError::ExtractionError(msg) = cloned {
-        <span class="macro">assert_eq!</span>(msg, <span class="string">"Test extraction error"</span>);
-    } <span class="kw">else </span>{
-        <span class="macro">panic!</span>(<span class="string">"Expected ExtractionError"</span>);
+    </span><span class="kw">fn </span>test_parse_error_custom_message() {
+        <span class="kw">let </span>error_message = <span class="string">"Unexpected character at line 5"</span>;
+        <span class="kw">let </span>error =
+            FrontmatterError::ParseError(error_message.to_string());
+        <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Failed to parse frontmatter: Unexpected character at line 5"</span>);
     }
-}
 
-<span class="attr">#[test]
-</span><span class="kw">fn </span>test_clone_no_frontmatter_found() {
-    <span class="kw">let </span>original = FrontmatterError::NoFrontmatterFound;
-    <span class="kw">let </span>cloned = original.clone();
-    <span class="macro">assert!</span>(<span class="macro">matches!</span>(cloned, FrontmatterError::NoFrontmatterFound));
-}
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_parse_error_empty_message() {
+        <span class="kw">let </span>error_message = <span class="string">""</span>;
+        <span class="kw">let </span>error =
+            FrontmatterError::ParseError(error_message.to_string());
+        <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Failed to parse frontmatter: "</span>);
+    }
 
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_no_frontmatter_found_in_content() {
+        <span class="kw">let </span>_content = <span class="string">"Regular content without any frontmatter"</span>;
+        <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;(), FrontmatterError&gt; =
+            <span class="prelude-val">Err</span>(FrontmatterError::NoFrontmatterFound);
+
+        <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+            result,
+            <span class="prelude-val">Err</span>(FrontmatterError::NoFrontmatterFound)
+        ));
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_extraction_error_custom_message() {
+        <span class="kw">let </span>error_message =
+            <span class="string">"Failed to extract frontmatter from line 10"</span>;
+        <span class="kw">let </span>error = FrontmatterError::ExtractionError(
+            error_message.to_string(),
+        );
+        <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Extraction error: Failed to extract frontmatter from line 10"</span>);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_extraction_error_empty_message() {
+        <span class="kw">let </span>error = FrontmatterError::ExtractionError(<span class="string">""</span>.to_string());
+        <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Extraction error: "</span>);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_clone_extraction_error() {
+        <span class="kw">let </span>original = FrontmatterError::ExtractionError(
+            <span class="string">"Test extraction error"</span>.to_string(),
+        );
+        <span class="kw">let </span>cloned = original.clone();
+        <span class="kw">if let </span>FrontmatterError::ExtractionError(msg) = cloned {
+            <span class="macro">assert_eq!</span>(msg, <span class="string">"Test extraction error"</span>);
+        } <span class="kw">else </span>{
+            <span class="macro">panic!</span>(<span class="string">"Expected ExtractionError"</span>);
+        }
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_clone_no_frontmatter_found() {
+        <span class="kw">let </span>original = FrontmatterError::NoFrontmatterFound;
+        <span class="kw">let </span>cloned = original.clone();
+        <span class="macro">assert!</span>(<span class="macro">matches!</span>(cloned, FrontmatterError::NoFrontmatterFound));
+    }
 }
 </code></pre></div></section></main></body></html>
