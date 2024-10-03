@@ -417,4 +417,75 @@ mod tests {
             "JSON frontmatter exceeds maximum nesting depth"
         );
     }
+
+    #[test]
+    fn test_invalid_json_error_message() {
+        let error = FrontmatterError::InvalidJson;
+        assert_eq!(error.to_string(), "Invalid JSON frontmatter");
+    }
+
+    #[test]
+    fn test_invalid_toml_error_message() {
+        let error = FrontmatterError::InvalidToml;
+        assert_eq!(error.to_string(), "Invalid TOML frontmatter");
+    }
+
+    #[test]
+    fn test_invalid_yaml_error_message() {
+        let error = FrontmatterError::InvalidYaml;
+        assert_eq!(error.to_string(), "Invalid YAML frontmatter");
+    }
+
+    #[test]
+fn test_parse_error_custom_message() {
+    let error_message = "Unexpected character at line 5";
+    let error = FrontmatterError::ParseError(error_message.to_string());
+    assert_eq!(error.to_string(), "Failed to parse frontmatter: Unexpected character at line 5");
+}
+
+#[test]
+fn test_parse_error_empty_message() {
+    let error_message = "";
+    let error = FrontmatterError::ParseError(error_message.to_string());
+    assert_eq!(error.to_string(), "Failed to parse frontmatter: ");
+}
+
+#[test]
+fn test_no_frontmatter_found_in_content() {
+    let _content = "Regular content without any frontmatter";
+    let result: Result<(), FrontmatterError> = Err(FrontmatterError::NoFrontmatterFound);
+    assert!(matches!(result.unwrap_err(), FrontmatterError::NoFrontmatterFound));
+}
+
+#[test]
+fn test_extraction_error_custom_message() {
+    let error_message = "Failed to extract frontmatter from line 10";
+    let error = FrontmatterError::ExtractionError(error_message.to_string());
+    assert_eq!(error.to_string(), "Extraction error: Failed to extract frontmatter from line 10");
+}
+
+#[test]
+fn test_extraction_error_empty_message() {
+    let error = FrontmatterError::ExtractionError("".to_string());
+    assert_eq!(error.to_string(), "Extraction error: ");
+}
+
+#[test]
+fn test_clone_extraction_error() {
+    let original = FrontmatterError::ExtractionError("Test extraction error".to_string());
+    let cloned = original.clone();
+    if let FrontmatterError::ExtractionError(msg) = cloned {
+        assert_eq!(msg, "Test extraction error");
+    } else {
+        panic!("Expected ExtractionError");
+    }
+}
+
+#[test]
+fn test_clone_no_frontmatter_found() {
+    let original = FrontmatterError::NoFrontmatterFound;
+    let cloned = original.clone();
+    assert!(matches!(cloned, FrontmatterError::NoFrontmatterFound));
+}
+
 }
