@@ -37,29 +37,44 @@ use crate::types::Format;
 pub fn extract_raw_frontmatter(
     content: &str,
 ) -> Result<(&str, &str), FrontmatterError> {
-    // Try to extract YAML frontmatter.
+    // Try to extract YAML frontmatter with flexible delimiters for Windows and Linux.
     if let Some(yaml) =
         extract_delimited_frontmatter(content, "---\n", "\n---")
+            .or_else(|| {
+                extract_delimited_frontmatter(
+                    content, "---\r\n", "\r\n---",
+                )
+            })
     {
         let remaining = &content[content
             .find("\n---\n")
+            .or_else(|| content.find("\r\n---\r\n"))
             .map_or(content.len(), |i| i + 5)..];
         return Ok((yaml, remaining));
     }
+
     // Try to extract TOML frontmatter.
     if let Some(toml) =
         extract_delimited_frontmatter(content, "+++\n", "\n+++")
+            .or_else(|| {
+                extract_delimited_frontmatter(
+                    content, "+++\r\n", "\r\n+++",
+                )
+            })
     {
         let remaining = &content[content
             .find("\n+++\n")
+            .or_else(|| content.find("\r\n+++\r\n"))
             .map_or(content.len(), |i| i + 5)..];
         return Ok((toml, remaining));
     }
+
     // Try to extract JSON frontmatter.
     if let Ok(json) = extract_json_frontmatter(content) {
         let remaining = &content[json.len()..];
         return Ok((json, remaining.trim_start()));
     }
+
     // Return an error if no valid frontmatter format is found.
     Err(FrontmatterError::InvalidFormat)
 }
@@ -316,6 +331,18 @@ Content here"#;
             content,
             "---\\n",
             "\\n---\\n",
+        )
+        .unwrap();
+        assert_eq!(result, "title: Example");
+    }
+
+    #[test]
+    fn test_extract_delimited_frontmatter_windows() {
+        let content = "---\r\ntitle: Example\r\n---\r\nContent here";
+        let result = extract_delimited_frontmatter(
+            content,
+            "---\r\n",
+            "\r\n---\r\n",
         )
         .unwrap();
         assert_eq!(result, "title: Example");
