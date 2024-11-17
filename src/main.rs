@@ -406,36 +406,11 @@ date: "2025-09-09"
 author: "Jane Doe"
 ---"#;
 
-        let test_file_path = "test.md";
-
-        // Write the test file
-        let write_result =
-            tokio::fs::write(test_file_path, content).await;
-        assert!(
-            write_result.is_ok(),
-            "Failed to write test file: {:?}",
-            write_result
-        );
-
-        // Debugging: Print the content of the test file
-        let read_content =
-            tokio::fs::read_to_string(test_file_path).await;
-        assert!(
-            read_content.is_ok(),
-            "Failed to read test file: {:?}",
-            read_content
-        );
-        println!("Content of test file:\n{}", read_content.unwrap());
-
         // Convert Vec<String> to Vec<&str>
         let required_fields = vec!["title", "date", "author"];
 
         // Run the validate_command function
-        let result = validate_command(
-            Path::new(test_file_path),
-            &required_fields,
-        )
-        .await;
+        let result = validate_command(content, &required_fields).await;
 
         // Debugging: Check the result of the validation
         if let Err(e) = &result {
@@ -447,22 +422,6 @@ author: "Jane Doe"
             "Validation failed with error: {:?}",
             result
         );
-
-        // Ensure the test file is removed
-        if Path::new(test_file_path).exists() {
-            let remove_result =
-                tokio::fs::remove_file(test_file_path).await;
-            assert!(
-                remove_result.is_ok(),
-                "Failed to remove test file: {:?}",
-                remove_result
-            );
-        } else {
-            println!(
-                "Test file '{}' does not exist during cleanup.",
-                test_file_path
-            );
-        }
     }
 
     #[tokio::test]
