@@ -28,7 +28,33 @@ categories = [
     "development-tools"
 ]
 
+# Keywords for easier discoverability on Crates.io.
 keywords = ["frontmatter", "yaml", "toml", "json", "frontmatter-gen"]
+
+# Excluding unnecessary files from the package
+exclude = [
+    "/.git/*",                          # Exclude version control files
+    "/.github/*",                       # Exclude GitHub workflows
+    "/.gitignore",                      # Ignore Git ignore file
+    "/.vscode/*"                        # Ignore VSCode settings
+]
+
+# Including necessary files in the package
+include = [
+    "/CONTRIBUTING.md",
+    "/LICENSE-APACHE",
+    "/LICENSE-MIT",
+    "/benches/**",
+    "/build.rs",
+    "/Cargo.toml",
+    "/examples/**",
+    "/README.md",
+    "/src/**",
+]
+
+# -----------------------------------------------------------------------------
+# Library Information
+# -----------------------------------------------------------------------------
 
 # The library file that contains the main logic for the binary.
 [lib]
@@ -39,27 +65,49 @@ path = "src/lib.rs"
 [[bin]]
 name = "frontmatter_gen"
 path = "src/main.rs"
+required-features = ["cli"]
+
+# -----------------------------------------------------------------------------
+# Features
+# -----------------------------------------------------------------------------
+[features]
+# Optional features that can be enabled or disabled.
+default = []            # SSG is not enabled by default
+cli = ["dep:clap"]      # CLI functionality only
+ssg = [                 # Full SSG functionality
+    "cli",              # Include CLI as part of SSG
+    "dep:tera",
+    "dep:pulldown-cmark",
+    "dep:tokio",
+    "dep:dtt",
+    "dep:url",
+]
+logging = ["dep:log"]   # Optional logging feature
 
 # -----------------------------------------------------------------------------
 # Dependencies
 # -----------------------------------------------------------------------------
 
 [dependencies]
+# Core dependencies
 anyhow = "1.0.93"
-clap = { version = "4.5.21", features = ["derive", "color", "help", "suggestions"] }
-dtt = "0.0.8"
-log = "0.4.22"
-pretty_assertions = "1.4.1"
-pulldown-cmark = "0.12.2"
 serde = { version = "1.0.215", features = ["derive"] }
-serde_json = "1.0.132"
+serde_json = "1.0.133"
 serde_yml = "0.0.12"
-tera = "1.20.0"
 thiserror = "2.0.3"
-tokio = { version = "1.41.1", features = ["full"] }
 toml = "0.8.19"
-url = "2.5.3"
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
+
+# Optional logging (only included when "logging" feature is enabled)
+log = { version = "0.4.22", optional = true }
+
+# Optional CLI and SSG dependencies - all must have optional = true
+clap = { version = "4.5.21", features = ["derive"], optional = true }
+dtt = { version = "0.0.8", optional = true }
+pulldown-cmark = { version = "0.12.2", optional = true }
+tera = { version = "1.20.0", optional = true }
+tokio = { version = "1.41.1", features = ["full"], optional = true }
+url = { version = "2.5.3", optional = true }
 
 # -----------------------------------------------------------------------------
 # Build Dependencies
@@ -74,7 +122,7 @@ version_check = "0.9.5"
 
 [dev-dependencies]
 criterion = "0.5.1"
-serde = { version = "1.0.215", features = ["derive"] }
+pretty_assertions = "1.4.1"
 tempfile = "3.14.0"
 
 # -----------------------------------------------------------------------------
@@ -111,3 +159,4 @@ harness = false
 
 [profile.bench]
 debug = true
+

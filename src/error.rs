@@ -100,6 +100,14 @@ pub enum FrontmatterError {
     #[error("Invalid YAML frontmatter")]
     InvalidYaml,
 
+    /// Invalid URL format
+    #[error("Invalid URL: {0}")]
+    InvalidUrl(String),
+
+    /// Invalid language code
+    #[error("Invalid language code: {0}")]
+    InvalidLanguage(String),
+
     /// JSON frontmatter exceeds maximum nesting depth
     #[error("JSON frontmatter exceeds maximum nesting depth")]
     JsonDepthLimitExceeded,
@@ -151,6 +159,10 @@ impl Clone for FrontmatterError {
             }
             Self::ValidationError(msg) => {
                 Self::ValidationError(msg.clone())
+            }
+            Self::InvalidUrl(msg) => Self::InvalidUrl(msg.clone()),
+            Self::InvalidLanguage(msg) => {
+                Self::InvalidLanguage(msg.clone())
             }
         }
     }

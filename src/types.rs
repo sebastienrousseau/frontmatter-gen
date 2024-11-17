@@ -4,9 +4,11 @@
 //! It includes the `Format` enum for representing different frontmatter formats, the `Value` enum for representing various data types that can be stored in frontmatter, and the `Frontmatter` struct which is the main container for frontmatter data.
 
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
-use std::fmt;
-use std::str::FromStr;
+use std::{
+    collections::{BTreeMap, HashMap},
+    fmt,
+    str::FromStr,
+};
 
 /// Represents the different formats supported for frontmatter serialization/deserialization.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -25,6 +27,18 @@ pub enum Format {
 impl Default for Format {
     fn default() -> Self {
         Format::Json
+    }
+}
+
+impl fmt::Display for Format {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let format_str = match self {
+            Format::Yaml => "YAML",
+            Format::Toml => "TOML",
+            Format::Json => "JSON",
+            Format::Unsupported => "Unsupported",
+        };
+        write!(f, "{}", format_str)
     }
 }
 

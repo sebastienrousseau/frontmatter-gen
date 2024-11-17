@@ -24,18 +24,21 @@ use frontmatter_gen::extractor::{
 /// # Errors
 ///
 /// Returns an error if any of the example functions fail.
-#[tokio::main]
-pub(crate) async fn main() -> Result<(), Box<dyn std::error::Error>> {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🧪 FrontMatterGen Extractor Examples\n");
 
+    // Core functionality examples
     extract_yaml_example()?;
     extract_toml_example()?;
     extract_json_example()?;
     extract_json_deeply_nested_example()?;
     detect_format_example()?;
 
-    println!("\n🎉  All extractor examples completed successfully!");
+    // SSG-specific examples
+    #[cfg(feature = "ssg")]
+    run_ssg_examples()?;
 
+    println!("\n🎉  All extractor examples completed successfully!");
     Ok(())
 }
 
@@ -43,7 +46,6 @@ pub(crate) async fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn extract_yaml_example() -> Result<(), FrontmatterError> {
     println!("🦀 YAML Frontmatter Extraction Example");
     println!("---------------------------------------------");
-
     let content = r#"---
 title: Example
 ---
@@ -51,7 +53,6 @@ Content here"#;
     let result = extract_raw_frontmatter(content)?;
     println!("    ✅  Extracted frontmatter: {}\n", result.0);
     println!("    Remaining content: {}", result.1);
-
     Ok(())
 }
 
@@ -59,7 +60,6 @@ Content here"#;
 fn extract_toml_example() -> Result<(), FrontmatterError> {
     println!("\n🦀 TOML Frontmatter Extraction Example");
     println!("---------------------------------------------");
-
     let content = r#"+++
 title = "Example"
 +++
@@ -67,7 +67,6 @@ Content here"#;
     let result = extract_raw_frontmatter(content)?;
     println!("    ✅  Extracted frontmatter: {}\n", result.0);
     println!("    Remaining content: {}", result.1);
-
     Ok(())
 }
 
@@ -75,12 +74,10 @@ Content here"#;
 fn extract_json_example() -> Result<(), FrontmatterError> {
     println!("\n🦀 JSON Frontmatter Extraction Example");
     println!("---------------------------------------------");
-
     let content = r#"{ "title": "Example" }
 Content here"#;
     let result = extract_json_frontmatter(content)?;
     println!("    ✅  Extracted JSON frontmatter: {}\n", result);
-
     Ok(())
 }
 
@@ -89,7 +86,6 @@ fn extract_json_deeply_nested_example() -> Result<(), FrontmatterError>
 {
     println!("\n🦀 Deeply Nested JSON Frontmatter Example");
     println!("---------------------------------------------");
-
     let content = r#"{ "a": { "b": { "c": { "d": { "e": {} }}}}}
 Content here"#;
     let result = extract_json_frontmatter(content)?;
@@ -97,7 +93,6 @@ Content here"#;
         "    ✅  Extracted deeply nested frontmatter: {}\n",
         result
     );
-
     Ok(())
 }
 
@@ -105,11 +100,9 @@ Content here"#;
 fn detect_format_example() -> Result<(), FrontmatterError> {
     println!("\n🦀 Frontmatter Format Detection Example");
     println!("---------------------------------------------");
-
     let yaml = "title: Example";
     let toml = "title = \"Example\"";
     let json = "{ \"title\": \"Example\" }";
-
     println!(
         "    Detected format for YAML: {:?}",
         detect_format(yaml)?
@@ -122,6 +115,73 @@ fn detect_format_example() -> Result<(), FrontmatterError> {
         "    Detected format for JSON: {:?}",
         detect_format(json)?
     );
+    Ok(())
+}
+
+/// SSG-specific examples that are only available with the "ssg" feature
+#[cfg(feature = "ssg")]
+fn run_ssg_examples() -> Result<(), FrontmatterError> {
+    println!("\n🦀 SSG-Specific Examples");
+    println!("---------------------------------------------");
+
+    // Example of extracting frontmatter with SSG-specific metadata
+    let content = r#"---
+title: My Page
+layout: post
+template: blog
+date: 2025-01-01
+---
+Content here"#;
+
+    let result = extract_raw_frontmatter(content)?;
+    println!("    ✅  Extracted SSG frontmatter: {}\n", result.0);
+    println!("    Remaining content: {}", result.1);
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Core functionality tests
+    #[test]
+    fn test_yaml_extraction() -> Result<(), FrontmatterError> {
+        let content = r#"---
+title: Test
+---
+Content"#;
+        let result = extract_raw_frontmatter(content)?;
+        assert_eq!(result.0, "title: Test");
+        Ok(())
+    }
+
+    #[test]
+    fn test_toml_extraction() -> Result<(), FrontmatterError> {
+        let content = r#"+++
+title = "Test"
++++
+Content"#;
+        let result = extract_raw_frontmatter(content)?;
+        assert_eq!(result.0, "title = \"Test\"");
+        Ok(())
+    }
+
+    // SSG-specific tests
+    #[cfg(feature = "ssg")]
+    mod ssg_tests {
+        use super::*;
+
+        #[test]
+        fn test_ssg_frontmatter() -> Result<(), FrontmatterError> {
+            let content = r#"---
+title: Test
+template: post
+---
+Content"#;
+            let result = extract_raw_frontmatter(content)?;
+            assert!(result.0.contains("template: post"));
+            Ok(())
+        }
+    }
 }

@@ -20,16 +20,30 @@
 //! - Directory structure validation
 //! - Permission validation
 
+#[cfg(feature = "ssg")]
 use std::collections::HashSet;
+#[cfg(feature = "ssg")]
 use std::fs::File;
-use std::fs::{create_dir_all, remove_file};
+
+use std::fs::create_dir_all;
+#[cfg(feature = "ssg")]
+use std::fs::remove_file;
+
 use std::io::{self};
-use std::path::{Path, PathBuf};
+use std::path::Path;
+
+#[cfg(feature = "ssg")]
+use std::path::PathBuf;
+
+#[cfg(feature = "ssg")]
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use thiserror::Error;
+#[cfg(feature = "ssg")]
 use tokio::sync::RwLock;
+
+#[cfg(feature = "ssg")]
 use uuid::Uuid;
 
 /// Errors that can occur during utility operations
@@ -66,11 +80,13 @@ pub mod fs {
     use super::*;
 
     /// Tracks temporary files for cleanup
+    #[cfg(feature = "ssg")]
     #[derive(Debug, Default)]
     pub struct TempFileTracker {
         files: Arc<RwLock<HashSet<PathBuf>>>,
     }
 
+    #[cfg(feature = "ssg")]
     impl TempFileTracker {
         /// Creates a new temporary file tracker
         pub fn new() -> Self {
@@ -104,6 +120,7 @@ pub mod fs {
     }
 
     /// Creates a new temporary file with the given prefix
+    #[cfg(feature = "ssg")]
     pub async fn create_temp_file(
         prefix: &str,
     ) -> Result<(PathBuf, File)> {
@@ -270,6 +287,7 @@ pub mod fs {
     /// # Security
     ///
     /// Validates path safety before creation
+    #[cfg(feature = "ssg")]
     pub async fn create_directory(path: &Path) -> Result<()> {
         validate_path_safety(path)?;
 
@@ -321,9 +339,13 @@ pub mod fs {
 
 /// Logging utilities module
 pub mod log {
+    #[cfg(feature = "ssg")]
     use anyhow::{Context, Result};
+    #[cfg(feature = "ssg")]
     use dtt::datetime::DateTime;
+    #[cfg(feature = "ssg")]
     use log::{Level, Record};
+    #[cfg(feature = "ssg")]
     use std::{
         fs::{File, OpenOptions},
         io::Write,
@@ -331,6 +353,7 @@ pub mod log {
     };
 
     /// Log entry structure
+    #[cfg(feature = "ssg")]
     #[derive(Debug)]
     pub struct LogEntry {
         /// Timestamp of the log entry
@@ -343,6 +366,7 @@ pub mod log {
         pub error: Option<String>,
     }
 
+    #[cfg(feature = "ssg")]
     impl LogEntry {
         /// Creates a new log entry
         pub fn new(record: &Record<'_>) -> Self {
@@ -370,11 +394,13 @@ pub mod log {
     }
 
     /// Log writer for handling log output
+    #[cfg(feature = "ssg")]
     #[derive(Debug)]
     pub struct LogWriter {
         file: File,
     }
 
+    #[cfg(feature = "ssg")]
     impl LogWriter {
         /// Creates a new log writer
         pub fn new(path: &Path) -> Result<Self> {
@@ -401,7 +427,7 @@ pub mod log {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "ssg"))]
 mod tests {
     use super::*;
 

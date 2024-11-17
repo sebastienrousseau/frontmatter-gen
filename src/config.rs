@@ -17,6 +17,7 @@
 //!
 //! ## Examples
 //!
+//! Basic usage (always available):
 //! ```rust
 //! use frontmatter_gen::config::Config;
 //!
@@ -24,23 +25,51 @@
 //! let config = Config::builder()
 //!     .site_name("My Blog")
 //!     .site_title("My Awesome Blog")
-//!     .content_dir("content")
 //!     .build()?;
 //!
 //! assert_eq!(config.site_name(), "My Blog");
 //! # Ok(())
 //! # }
 //! ```
-
+//!
+//! With SSG features (requires "ssg" feature):
+//! ```rust,ignore
+//! use frontmatter_gen::config::Config;
+//!
+//! # fn main() -> anyhow::Result<()> {
+//! let config = Config::builder()
+//!     .site_name("My Blog")
+//!     .site_title("My Awesome Blog")
+//!     .content_dir("content")      // Requires "ssg" feature
+//!     .template_dir("templates")   // Requires "ssg" feature
+//!     .output_dir("public")        // Requires "ssg" feature
+//!     .build()?;
+//!
+//! assert_eq!(config.site_name(), "My Blog");
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! To use SSG-specific functionality, enable the "ssg" feature in your Cargo.toml:
+//! ```toml
+//! [dependencies]
+//! frontmatter-gen = { version = "0.0.3", features = ["ssg"] }
+//! ```
 use std::fmt;
+#[cfg(feature = "ssg")]
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+#[cfg(feature = "ssg")]
+use anyhow::Context;
+use anyhow::Result;
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+#[cfg(feature = "ssg")]
 use url::Url;
 use uuid::Uuid;
 
+#[cfg(feature = "ssg")]
 use crate::utils::fs::validate_path_safety;
 
 /// Errors specific to configuration operations
@@ -60,10 +89,12 @@ pub enum ConfigError {
     },
 
     /// Invalid URL format
+    #[cfg(feature = "ssg")]
     #[error("Invalid URL format: {0}")]
     InvalidUrl(String),
 
     /// Invalid language code
+    #[cfg(feature = "ssg")]
     #[error("Invalid language code '{0}': must be in format 'xx-XX'")]
     InvalidLanguage(String),
 
@@ -76,58 +107,70 @@ pub enum ConfigError {
     TomlError(#[from] toml::de::Error),
 
     /// Server configuration error
+    #[cfg(feature = "ssg")]
     #[error("Server configuration error: {0}")]
     ServerError(String),
 }
 
-/// Core configuration structure for the Static Site Generator
+/// Core configuration structure.
+///
+/// This structure defines the configuration options for the Static Site Generator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    /// Unique identifier for this configuration
+    /// Unique identifier for the configuration.
     #[serde(default = "Uuid::new_v4")]
     id: Uuid,
 
-    /// Name of the site (required)
+    /// Name of the site.
     pub site_name: String,
 
-    /// Site title used in metadata
+    /// Title of the site, displayed in the browser's title bar.
     #[serde(default = "default_site_title")]
     pub site_title: String,
 
-    /// Site description used in metadata
+    /// Description of the site.
+    #[cfg(feature = "ssg")]
     #[serde(default = "default_site_description")]
     pub site_description: String,
 
-    /// Primary language code (format: xx-XX)
+    /// Language of the site (e.g., "en" for English).
+    #[cfg(feature = "ssg")]
     #[serde(default = "default_language")]
     pub language: String,
 
-    /// Base URL for the site
+    /// Base URL of the site.
+    #[cfg(feature = "ssg")]
     #[serde(default = "default_base_url")]
     pub base_url: String,
 
-    /// Directory containing content files
+    /// Path to the directory containing content files.
+    #[cfg(feature = "ssg")]
     #[serde(default = "default_content_dir")]
     pub content_dir: PathBuf,
 
-    /// Directory for generated output
+    /// Path to the directory where the generated output will be stored.
+    #[cfg(feature = "ssg")]
     #[serde(default = "default_output_dir")]
     pub output_dir: PathBuf,
 
-    /// Directory containing templates
+    /// Path to the directory containing templates.
+    #[cfg(feature = "ssg")]
     #[serde(default = "default_template_dir")]
     pub template_dir: PathBuf,
 
-    /// Optional directory for development server
+    /// Optional directory to serve during development.
+    #[cfg(feature = "ssg")]
     #[serde(default)]
     pub serve_dir: Option<PathBuf>,
 
-    /// Whether the development server is enabled
+    /// Flag to enable or disable the development server.
+    #[cfg(feature = "ssg")]
     #[serde(default)]
     pub server_enabled: bool,
 
-    /// Port for development server
+    /// Port for the development server.
+    #[cfg(feature = "ssg")]
     #[serde(default = "default_port")]
     pub server_port: u16,
 }
@@ -137,45 +180,55 @@ fn default_site_title() -> String {
     "My Shokunin Site".to_string()
 }
 
+#[cfg(feature = "ssg")]
 fn default_site_description() -> String {
     "A site built with Shokunin".to_string()
 }
 
+#[cfg(feature = "ssg")]
 fn default_language() -> String {
     "en-GB".to_string()
 }
 
+#[cfg(feature = "ssg")]
 fn default_base_url() -> String {
     "http://localhost:8000".to_string()
 }
 
+#[cfg(feature = "ssg")]
 fn default_content_dir() -> PathBuf {
     PathBuf::from("content")
 }
 
+#[cfg(feature = "ssg")]
 fn default_output_dir() -> PathBuf {
     PathBuf::from("public")
 }
 
+#[cfg(feature = "ssg")]
 fn default_template_dir() -> PathBuf {
     PathBuf::from("templates")
 }
 
+#[cfg(feature = "ssg")]
 fn default_port() -> u16 {
     8000
 }
 
 impl fmt::Display for Config {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Site: {} ({})", self.site_name, self.site_title)?;
+
+        #[cfg(feature = "ssg")]
         write!(
             f,
-            "Site: {} ({})\nContent: {}\nOutput: {}\nTemplates: {}",
-            self.site_name,
-            self.site_title,
+            "\nContent: {}\nOutput: {}\nTemplates: {}",
             self.content_dir.display(),
             self.output_dir.display(),
             self.template_dir.display()
-        )
+        )?;
+
+        Ok(())
     }
 }
 
@@ -184,12 +237,24 @@ impl Config {
     ///
     /// # Examples
     ///
+    /// Basic usage (always available):
     /// ```rust
     /// use frontmatter_gen::config::Config;
     ///
     /// let config = Config::builder()
     ///     .site_name("My Site")
-    ///     .content_dir("content")
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    ///
+    /// With SSG features (requires "ssg" feature):
+    /// ```rust,ignore
+    /// use frontmatter_gen::config::Config;
+    ///
+    /// let config = Config::builder()
+    ///     .site_name("My Site")
+    ///     .content_dir("content")  // Only available with "ssg" feature
+    ///     .template_dir("templates")  // Only available with "ssg" feature
     ///     .build()
     ///     .unwrap();
     /// ```
@@ -222,6 +287,7 @@ impl Config {
     ///
     /// let config = Config::from_file(Path::new("config.toml")).unwrap();
     /// ```
+    #[cfg(feature = "ssg")]
     pub fn from_file(path: &Path) -> Result<Self> {
         let content =
             std::fs::read_to_string(path).with_context(|| {
@@ -257,7 +323,6 @@ impl Config {
     /// - URLs are malformed
     /// - Language code format is invalid
     pub fn validate(&self) -> Result<()> {
-        // Validate site name
         if self.site_name.trim().is_empty() {
             return Err(ConfigError::InvalidSiteName(
                 "Site name cannot be empty".to_string(),
@@ -265,43 +330,44 @@ impl Config {
             .into());
         }
 
-        // Validate paths with consistent error handling
-        self.validate_path(&self.content_dir, "content_dir")?;
-        self.validate_path(&self.output_dir, "output_dir")?;
-        self.validate_path(&self.template_dir, "template_dir")?;
-
-        // Validate serve_dir if present
-        if let Some(serve_dir) = &self.serve_dir {
-            self.validate_path(serve_dir, "serve_dir")?;
-        }
-
-        // Validate base URL
-        Url::parse(&self.base_url).map_err(|_| {
-            ConfigError::InvalidUrl(self.base_url.clone())
-        })?;
-
-        // Validate language code format (xx-XX)
-        if !self.is_valid_language_code(&self.language) {
-            return Err(ConfigError::InvalidLanguage(
-                self.language.clone(),
-            )
-            .into());
-        }
-
-        // Validate server port if enabled
-        if self.server_enabled && !self.is_valid_port(self.server_port)
+        #[cfg(feature = "ssg")]
         {
-            return Err(ConfigError::ServerError(format!(
-                "Invalid port number: {}",
-                self.server_port
-            ))
-            .into());
+            // SSG-specific validation
+            self.validate_path(&self.content_dir, "content_dir")?;
+            self.validate_path(&self.output_dir, "output_dir")?;
+            self.validate_path(&self.template_dir, "template_dir")?;
+
+            if let Some(serve_dir) = &self.serve_dir {
+                self.validate_path(serve_dir, "serve_dir")?;
+            }
+
+            Url::parse(&self.base_url).map_err(|_| {
+                ConfigError::InvalidUrl(self.base_url.clone())
+            })?;
+
+            if !self.is_valid_language_code(&self.language) {
+                return Err(ConfigError::InvalidLanguage(
+                    self.language.clone(),
+                )
+                .into());
+            }
+
+            if self.server_enabled
+                && !self.is_valid_port(self.server_port)
+            {
+                return Err(ConfigError::ServerError(format!(
+                    "Invalid port number: {}",
+                    self.server_port
+                ))
+                .into());
+            }
         }
 
         Ok(())
     }
 
     /// Validates a path for safety and accessibility
+    #[cfg(feature = "ssg")]
     fn validate_path(&self, path: &Path, name: &str) -> Result<()> {
         validate_path_safety(path).with_context(|| {
             format!("Invalid {} path: {}", name, path.display())
@@ -309,6 +375,7 @@ impl Config {
     }
 
     /// Checks if a language code is valid (format: xx-XX)
+    #[cfg(feature = "ssg")]
     fn is_valid_language_code(&self, code: &str) -> bool {
         let parts: Vec<&str> = code.split('-').collect();
         if parts.len() != 2 {
@@ -323,6 +390,7 @@ impl Config {
     }
 
     /// Checks if a port number is valid
+    #[cfg(feature = "ssg")]
     fn is_valid_port(&self, port: u16) -> bool {
         port >= 1024
     }
@@ -338,11 +406,13 @@ impl Config {
     }
 
     /// Gets whether the development server is enabled
+    #[cfg(feature = "ssg")]
     pub fn server_enabled(&self) -> bool {
         self.server_enabled
     }
 
     /// Gets the server port if the server is enabled
+    #[cfg(feature = "ssg")]
     pub fn server_port(&self) -> Option<u16> {
         if self.server_enabled {
             Some(self.server_port)
@@ -357,18 +427,28 @@ impl Config {
 pub struct ConfigBuilder {
     site_name: Option<String>,
     site_title: Option<String>,
+    #[cfg(feature = "ssg")]
     site_description: Option<String>,
+    #[cfg(feature = "ssg")]
     language: Option<String>,
+    #[cfg(feature = "ssg")]
     base_url: Option<String>,
+    #[cfg(feature = "ssg")]
     content_dir: Option<PathBuf>,
+    #[cfg(feature = "ssg")]
     output_dir: Option<PathBuf>,
+    #[cfg(feature = "ssg")]
     template_dir: Option<PathBuf>,
+    #[cfg(feature = "ssg")]
     serve_dir: Option<PathBuf>,
+    #[cfg(feature = "ssg")]
     server_enabled: bool,
+    #[cfg(feature = "ssg")]
     server_port: Option<u16>,
 }
 
 impl ConfigBuilder {
+    // Core builder methods
     /// Sets the site name
     pub fn site_name<S: Into<String>>(mut self, name: S) -> Self {
         self.site_name = Some(name.into());
@@ -381,6 +461,8 @@ impl ConfigBuilder {
         self
     }
 
+    // SSG-specific builder methods
+    #[cfg(feature = "ssg")]
     /// Sets the site description
     pub fn site_description<S: Into<String>>(
         mut self,
@@ -391,48 +473,56 @@ impl ConfigBuilder {
     }
 
     /// Sets the language code
+    #[cfg(feature = "ssg")]
     pub fn language<S: Into<String>>(mut self, lang: S) -> Self {
         self.language = Some(lang.into());
         self
     }
 
     /// Sets the base URL
+    #[cfg(feature = "ssg")]
     pub fn base_url<S: Into<String>>(mut self, url: S) -> Self {
         self.base_url = Some(url.into());
         self
     }
 
     /// Sets the content directory
+    #[cfg(feature = "ssg")]
     pub fn content_dir<P: Into<PathBuf>>(mut self, path: P) -> Self {
         self.content_dir = Some(path.into());
         self
     }
 
     /// Sets the output directory
+    #[cfg(feature = "ssg")]
     pub fn output_dir<P: Into<PathBuf>>(mut self, path: P) -> Self {
         self.output_dir = Some(path.into());
         self
     }
 
     /// Sets the template directory
+    #[cfg(feature = "ssg")]
     pub fn template_dir<P: Into<PathBuf>>(mut self, path: P) -> Self {
         self.template_dir = Some(path.into());
         self
     }
 
     /// Sets the serve directory
+    #[cfg(feature = "ssg")]
     pub fn serve_dir<P: Into<PathBuf>>(mut self, path: P) -> Self {
         self.serve_dir = Some(path.into());
         self
     }
 
     /// Enables or disables the development server
+    #[cfg(feature = "ssg")]
     pub fn server_enabled(mut self, enabled: bool) -> Self {
         self.server_enabled = enabled;
         self
     }
 
     /// Sets the server port
+    #[cfg(feature = "ssg")]
     pub fn server_port(mut self, port: u16) -> Self {
         self.server_port = Some(port);
         self
@@ -456,22 +546,31 @@ impl ConfigBuilder {
             site_title: self
                 .site_title
                 .unwrap_or_else(default_site_title),
+            #[cfg(feature = "ssg")]
             site_description: self
                 .site_description
                 .unwrap_or_else(default_site_description),
+            #[cfg(feature = "ssg")]
             language: self.language.unwrap_or_else(default_language),
+            #[cfg(feature = "ssg")]
             base_url: self.base_url.unwrap_or_else(default_base_url),
+            #[cfg(feature = "ssg")]
             content_dir: self
                 .content_dir
                 .unwrap_or_else(default_content_dir),
+            #[cfg(feature = "ssg")]
             output_dir: self
                 .output_dir
                 .unwrap_or_else(default_output_dir),
+            #[cfg(feature = "ssg")]
             template_dir: self
                 .template_dir
                 .unwrap_or_else(default_template_dir),
+            #[cfg(feature = "ssg")]
             serve_dir: self.serve_dir,
+            #[cfg(feature = "ssg")]
             server_enabled: self.server_enabled,
+            #[cfg(feature = "ssg")]
             server_port: self.server_port.unwrap_or_else(default_port),
         };
 
@@ -483,6 +582,7 @@ impl ConfigBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(feature = "ssg")]
     use tempfile::tempdir;
 
     /// Tests for default value functions
@@ -493,7 +593,18 @@ mod tests {
         fn test_default_site_title() {
             assert_eq!(default_site_title(), "My Shokunin Site");
         }
+    }
 
+    // SSG-specific tests
+    #[cfg(feature = "ssg")]
+    mod ssg_tests {
+        use crate::config::default_base_url;
+        use crate::config::default_content_dir;
+        use crate::config::default_language;
+        use crate::config::default_output_dir;
+        use crate::config::default_site_description;
+        use crate::config::default_template_dir;
+        use crate::config::PathBuf;
         #[test]
         fn test_default_site_description() {
             assert_eq!(
@@ -540,14 +651,23 @@ mod tests {
             let builder = Config::builder();
             assert_eq!(builder.site_name, None);
             assert_eq!(builder.site_title, None);
+            #[cfg(feature = "ssg")]
             assert_eq!(builder.site_description, None);
+            #[cfg(feature = "ssg")]
             assert_eq!(builder.language, None);
+            #[cfg(feature = "ssg")]
             assert_eq!(builder.base_url, None);
+            #[cfg(feature = "ssg")]
             assert_eq!(builder.content_dir, None);
+            #[cfg(feature = "ssg")]
             assert_eq!(builder.output_dir, None);
+            #[cfg(feature = "ssg")]
             assert_eq!(builder.template_dir, None);
+            #[cfg(feature = "ssg")]
             assert_eq!(builder.serve_dir, None);
+            #[cfg(feature = "ssg")]
             assert!(!builder.server_enabled);
+            #[cfg(feature = "ssg")]
             assert_eq!(builder.server_port, None);
         }
 
@@ -559,17 +679,26 @@ mod tests {
                 .unwrap();
 
             assert_eq!(config.site_title, default_site_title());
+            #[cfg(feature = "ssg")]
             assert_eq!(
                 config.site_description,
                 default_site_description()
             );
+            #[cfg(feature = "ssg")]
             assert_eq!(config.language, default_language());
+            #[cfg(feature = "ssg")]
             assert_eq!(config.base_url, default_base_url());
+            #[cfg(feature = "ssg")]
             assert_eq!(config.content_dir, default_content_dir());
+            #[cfg(feature = "ssg")]
             assert_eq!(config.output_dir, default_output_dir());
+            #[cfg(feature = "ssg")]
             assert_eq!(config.template_dir, default_template_dir());
+            #[cfg(feature = "ssg")]
             assert_eq!(config.server_port, default_port());
+            #[cfg(feature = "ssg")]
             assert!(!config.server_enabled);
+            #[cfg(feature = "ssg")]
             assert!(config.serve_dir.is_none());
         }
 
@@ -626,6 +755,16 @@ mod tests {
 
         #[test]
         fn test_empty_site_name() {
+            let result = Config::builder().site_name("").build();
+            assert!(
+                result.is_err(),
+                "Empty site name should fail validation"
+            );
+        }
+
+        #[cfg(feature = "ssg")]
+        #[test]
+        fn test_empty_site_name_ssg() {
             let result = Config::builder()
                 .site_name("")
                 .content_dir("content")
@@ -636,6 +775,7 @@ mod tests {
             );
         }
 
+        #[cfg(feature = "ssg")]
         #[test]
         fn test_invalid_url_format() {
             let invalid_urls = vec![
@@ -657,6 +797,7 @@ mod tests {
             }
         }
 
+        #[cfg(feature = "ssg")]
         #[test]
         fn test_validate_path_safety_mocked() {
             let path = PathBuf::from("valid/path");
@@ -713,8 +854,10 @@ mod tests {
 
     /// Tests for helper methods
     mod helper_method_tests {
+        #[cfg(feature = "ssg")]
         use super::*;
 
+        #[cfg(feature = "ssg")]
         #[test]
         fn test_is_valid_language_code() {
             let config =
@@ -723,6 +866,7 @@ mod tests {
             assert!(!config.is_valid_language_code("invalid-code"));
         }
 
+        #[cfg(feature = "ssg")]
         #[test]
         fn test_is_valid_port() {
             let config =
@@ -755,8 +899,10 @@ mod tests {
 
     /// Tests for file operations
     mod file_tests {
+        #[cfg(feature = "ssg")]
         use super::*;
 
+        #[cfg(feature = "ssg")]
         #[test]
         fn test_missing_config_file() {
             let result =
@@ -767,6 +913,7 @@ mod tests {
             );
         }
 
+        #[cfg(feature = "ssg")]
         #[test]
         fn test_invalid_toml_file() -> Result<()> {
             let dir = tempdir()?;
@@ -784,6 +931,7 @@ mod tests {
     mod utility_tests {
         use super::*;
 
+        #[cfg(feature = "ssg")]
         #[test]
         fn test_config_display_format() {
             let config = Config::builder()

@@ -21,24 +21,27 @@ use frontmatter_gen::error::FrontmatterError;
 /// # Errors
 ///
 /// Returns an error if any of the example functions fail.
-pub(crate) fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let rt = tokio::runtime::Runtime::new()?;
-    rt.block_on(async {
-        println!("\n🧪 FrontMatterGen Error Handling Examples\n");
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n🧪 FrontMatterGen Error Handling Examples\n");
 
-        yaml_parse_error_example()?;
-        toml_parse_error_example()?;
-        json_parse_error_example()?;
-        conversion_error_example()?;
-        unsupported_format_error_example()?;
-        extraction_error_example()?;
+    yaml_parse_error_example()?;
+    toml_parse_error_example()?;
+    json_parse_error_example()?;
+    conversion_error_example()?;
+    unsupported_format_error_example()?;
+    extraction_error_example()?;
 
-        println!(
-            "\n🎉  All error handling examples completed successfully!"
-        );
+    // Add SSG-specific examples when the feature is enabled
+    #[cfg(feature = "ssg")]
+    {
+        ssg_specific_error_example()?;
+    }
 
-        Ok(())
-    })
+    println!(
+        "\n🎉  All error handling examples completed successfully!"
+    );
+
+    Ok(())
 }
 
 /// Demonstrates handling of YAML parsing errors.
@@ -152,4 +155,53 @@ fn extraction_error_example() -> Result<(), FrontmatterError> {
     println!("    ✅  Created Extraction Error: {}", error);
 
     Ok(())
+}
+
+/// Demonstrates SSG-specific error handling.
+/// This function is only available when the "ssg" feature is enabled.
+#[cfg(feature = "ssg")]
+fn ssg_specific_error_example() -> Result<(), FrontmatterError> {
+    println!("\n🦀 SSG-Specific Error Example");
+    println!("---------------------------------------------");
+
+    // Example of URL validation error (SSG-specific)
+    let invalid_url = "not-a-url";
+    let error = FrontmatterError::InvalidUrl(invalid_url.to_string());
+    println!("    ✅  Created URL Validation Error: {}", error);
+
+    // Example of language code error (SSG-specific)
+    let invalid_lang = "invalid";
+    let error =
+        FrontmatterError::InvalidLanguage(invalid_lang.to_string());
+    println!("    ✅  Created Language Code Error: {}", error);
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_basic_error_handling(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // Test core functionality
+        yaml_parse_error_example()?;
+        toml_parse_error_example()?;
+        json_parse_error_example()?;
+        Ok(())
+    }
+
+    // SSG-specific tests
+    #[cfg(feature = "ssg")]
+    mod ssg_tests {
+        use super::*;
+
+        #[test]
+        fn test_ssg_error_handling(
+        ) -> Result<(), Box<dyn std::error::Error>> {
+            ssg_specific_error_example()?;
+            Ok(())
+        }
+    }
 }

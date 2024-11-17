@@ -5,7 +5,7 @@ alt="FrontMatter Gen logo" height="66" align="right" />
 
 # Frontmatter Gen (frontmatter-gen)
 
-A robust, high-performance Rust library for parsing and serialising frontmatter in various formats, including YAML, TOML, and JSON. Built with safety, efficiency, and ease of use in mind.
+A high-performance Rust library for parsing and serialising frontmatter in YAML, TOML, and JSON formats. Built for safety, efficiency, and ease of use.
 
 <!-- markdownlint-disable MD033 MD041 -->
 <center>
@@ -21,26 +21,39 @@ A robust, high-performance Rust library for parsing and serialising frontmatter 
 
 ## Overview
 
-`frontmatter-gen` is a comprehensive Rust library designed for handling frontmatter in content files. It offers a type-safe, efficient solution for extracting, parsing, and serialising frontmatter in multiple formats. Whether you're building a static site generator, content management system, or any application requiring structured metadata, `frontmatter-gen` provides the tools you need.
+`frontmatter-gen` is a Rust library that provides robust handling of frontmatter in content files. It offers a type-safe, efficient solution for extracting, parsing and serialising frontmatter in multiple formats. Whether you're building a static site generator, content management system, or any application requiring structured metadata, `frontmatter-gen` delivers the tools you need.
 
 ### Key Features
 
-- **Complete Format Support**: Efficiently handle YAML, TOML, and JSON frontmatter formats with zero-copy parsing
-- **Flexible Extraction**: Extract frontmatter using standard delimiters (`---` for YAML, `+++` for TOML) with robust error handling
-- **Type-Safe Processing**: Utilise Rust's type system for safe frontmatter manipulation with the `Value` enum
-- **High Performance**: Optimised parsing and serialisation with minimal allocations
+- **Zero-Copy Parsing**: Parse YAML, TOML and JSON frontmatter efficiently with zero memory copying
+- **Safe Extraction**: Extract frontmatter using standard delimiters (`---` for YAML, `+++` for TOML) with comprehensive error handling
+- **Type Safety**: Leverage Rust's type system with the `Value` enum for safe frontmatter manipulation
+- **High Performance**: Optimised for speed with minimal allocations and efficient algorithms
 - **Memory Safety**: Guaranteed memory safety through Rust's ownership system
-- **Error Handling**: Comprehensive error types with detailed context for debugging
-- **Async Support**: First-class support for asynchronous operations
-- **Configuration Options**: Customisable parsing behaviour to suit your needs
+- **Rich Error Handling**: Detailed error types with context for effective debugging
+- **Async Support**: First-class asynchronous operation support
+- **Flexible Configuration**: Customisable parsing behaviour to match your needs
 
-## Quick Start
+### Available Features
+
+This crate provides several feature flags to customise its functionality:
+
+- **default**: Core frontmatter parsing functionality only
+- **cli**: Command-line interface tools for quick operations
+- **ssg**: Static Site Generator functionality (includes CLI features)
+- **logging**: Debug logging capabilities
+
+## Getting Started
 
 Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
+# Basic frontmatter parsing only
 frontmatter-gen = "0.0.3"
+
+# With Static Site Generator functionality
+frontmatter-gen = { version = "0.0.3", features = ["ssg"] }
 ```
 
 ### Basic Usage

@@ -4,8 +4,7 @@
 //! # Site Generation Engine
 //!
 //! This module provides the core site generation functionality for the Static Site Generator.
-//! It handles content processing, template rendering, and file generation in a secure and
-//! efficient manner.
+//! It is only available when the `ssg` feature is enabled.
 //!
 //! ## Features
 //!
@@ -19,56 +18,47 @@
 //! ## Example
 //!
 //! ```rust,no_run
+//! # #[cfg(feature = "ssg")]
+//! # async fn example() -> anyhow::Result<()> {
 //! use frontmatter_gen::config::Config;
 //! use frontmatter_gen::engine::Engine;
 //!
-//! #[tokio::main]
-//! async fn main() -> anyhow::Result<()> {
-//!     let config = Config::builder()
-//!         .site_name("My Blog")
-//!         .content_dir("content")
-//!         .template_dir("templates")
-//!         .output_dir("output")
-//!         .build()?;
+//! let config = Config::builder()
+//!     .site_name("My Blog")
+//!     .content_dir("content")
+//!     .template_dir("templates")
+//!     .output_dir("output")
+//!     .build()?;
 //!
-//!     let engine = Engine::new()?;
-//!     engine.generate(&config).await?;
+//! let engine = Engine::new()?;
+//! engine.generate(&config).await?;
 //!
-//!     Ok(())
-//! }
+//! # Ok(())
+//! # }
 //! ```
-//!
-//! ## Security Considerations
-//!
-//! This module implements several security measures:
-//!
-//! - Path traversal prevention
-//! - Safe file handling
-//! - Template injection protection
-//! - Resource limiting
-//! - Proper error handling
-//!
-//! ## Performance
-//!
-//! The engine utilises caching and asynchronous processing to optimise performance:
-//!
-//! - Content caching with size limits
-//! - Parallel content processing where possible
-//! - Efficient template caching
-//! - Optimised asset handling
 
+#[cfg(feature = "ssg")]
 use crate::config::Config;
+#[cfg(feature = "ssg")]
 use anyhow::{Context, Result};
+#[cfg(feature = "ssg")]
 use pulldown_cmark::{html, Parser};
+#[cfg(feature = "ssg")]
 use std::collections::HashMap;
+#[cfg(feature = "ssg")]
 use std::path::{Path, PathBuf};
+#[cfg(feature = "ssg")]
 use std::sync::Arc;
+#[cfg(feature = "ssg")]
 use tera::{Context as TeraContext, Tera};
+#[cfg(feature = "ssg")]
 use tokio::{fs, sync::RwLock};
 
+#[cfg(feature = "ssg")]
 /// Maximum number of items to store in caches.
 const MAX_CACHE_SIZE: usize = 1000;
 
+#[cfg(feature = "ssg")]
 /// A size-limited cache for storing key-value pairs.
 ///
 /// Ensures the cache does not exceed the defined `max_size`. When the limit
@@ -79,6 +69,7 @@ struct SizeCache<K, V> {
     max_size: usize,
 }
 
+#[cfg(feature = "ssg")]
 impl<K: Eq + std::hash::Hash + Clone, V> SizeCache<K, V> {
     fn new(max_size: usize) -> Self {
         Self {
@@ -105,6 +96,7 @@ impl<K: Eq + std::hash::Hash + Clone, V> SizeCache<K, V> {
     }
 }
 
+#[cfg(feature = "ssg")]
 /// Represents a processed content file, including its metadata and content body.
 #[derive(Debug)]
 pub struct ContentFile {
@@ -113,6 +105,7 @@ pub struct ContentFile {
     content: String,
 }
 
+#[cfg(feature = "ssg")]
 /// The primary engine responsible for site generation.
 ///
 /// Handles the loading of templates, processing of content files, rendering
@@ -123,12 +116,13 @@ pub struct Engine {
     template_cache: Arc<RwLock<SizeCache<String, String>>>,
 }
 
+#[cfg(feature = "ssg")]
 impl Engine {
     /// Creates a new `Engine` instance.
-    ///
-    /// # Returns
-    /// A new instance of `Engine`, or an error if initialisation fails.
     pub fn new() -> Result<Self> {
+        #[cfg(feature = "logging")]
+        log::debug!("Initializing SSG Engine");
+
         Ok(Self {
             content_cache: Arc::new(RwLock::new(SizeCache::new(
                 MAX_CACHE_SIZE,
@@ -140,14 +134,10 @@ impl Engine {
     }
 
     /// Orchestrates the complete site generation process.
-    ///
-    /// This includes:
-    /// 1. Creating necessary directories.
-    /// 2. Loading and caching templates.
-    /// 3. Processing content files.
-    /// 4. Rendering and generating HTML pages.
-    /// 5. Copying static assets to the output directory.
     pub async fn generate(&self, config: &Config) -> Result<()> {
+        #[cfg(feature = "logging")]
+        log::info!("Starting site generation");
+
         fs::create_dir_all(&config.output_dir)
             .await
             .context("Failed to create output directory")?;
@@ -156,13 +146,21 @@ impl Engine {
         self.process_content_files(config).await?;
         self.generate_pages(config).await?;
         self.copy_assets(config).await?;
+
+        #[cfg(feature = "logging")]
+        log::info!("Site generation completed successfully");
+
         Ok(())
     }
 
     /// Loads and caches all templates from the template directory.
-    ///
-    /// Templates are stored in the cache for efficient access during rendering.
     pub async fn load_templates(&self, config: &Config) -> Result<()> {
+        #[cfg(feature = "logging")]
+        log::debug!(
+            "Loading templates from: {}",
+            config.template_dir.display()
+        );
+
         let mut templates = self.template_cache.write().await;
         templates.clear();
 
@@ -179,24 +177,36 @@ impl Engine {
                         path.display()
                     ),
                 )?;
+
                 if let Some(name) = path.file_stem() {
                     templates.insert(
                         name.to_string_lossy().into_owned(),
                         content,
                     );
+
+                    #[cfg(feature = "logging")]
+                    log::debug!(
+                        "Loaded template: {}",
+                        name.to_string_lossy()
+                    );
                 }
             }
         }
+
         Ok(())
     }
 
     /// Processes all content files in the content directory.
-    ///
-    /// Each file is parsed for frontmatter metadata and stored in the content cache.
     pub async fn process_content_files(
         &self,
         config: &Config,
     ) -> Result<()> {
+        #[cfg(feature = "logging")]
+        log::debug!(
+            "Processing content files from: {}",
+            config.content_dir.display()
+        );
+
         let mut content_cache = self.content_cache.write().await;
         content_cache.clear();
 
@@ -206,9 +216,16 @@ impl Engine {
             if path.extension().map_or(false, |ext| ext == "md") {
                 let content =
                     self.process_content_file(&path, config).await?;
-                content_cache.insert(path, content);
+                content_cache.insert(path.clone(), content);
+
+                #[cfg(feature = "logging")]
+                log::debug!(
+                    "Processed content file: {}",
+                    path.display()
+                );
             }
         }
+
         Ok(())
     }
 
@@ -221,6 +238,7 @@ impl Engine {
         let raw_content = fs::read_to_string(path).await.context(
             format!("Failed to read content file: {}", path.display()),
         )?;
+
         let (metadata, markdown_content) =
             self.extract_front_matter(&raw_content)?;
 
@@ -262,9 +280,11 @@ impl Engine {
         template: &str,
         content: &ContentFile,
     ) -> Result<String> {
-        // eprintln!("Rendering template: {}", template);
-        // eprintln!("Context (metadata): {:?}", content.metadata);
-        // eprintln!("Context (content): {:?}", content.content);
+        #[cfg(feature = "logging")]
+        log::debug!(
+            "Rendering template for: {}",
+            content.dest_path.display()
+        );
 
         let mut context = TeraContext::new();
         context.insert("content", &content.content);
@@ -275,6 +295,7 @@ impl Engine {
 
         let mut tera = Tera::default();
         tera.add_raw_template("template", template)?;
+
         tera.render("template", &context).map_err(|e| {
             anyhow::Error::msg(format!(
                 "Template rendering failed: {}",
@@ -287,6 +308,12 @@ impl Engine {
     pub async fn copy_assets(&self, config: &Config) -> Result<()> {
         let assets_dir = config.content_dir.join("assets");
         if assets_dir.exists() {
+            #[cfg(feature = "logging")]
+            log::debug!(
+                "Copying assets from: {}",
+                assets_dir.display()
+            );
+
             let dest_assets_dir = config.output_dir.join("assets");
             if dest_assets_dir.exists() {
                 fs::remove_dir_all(&dest_assets_dir).await?;
@@ -300,39 +327,39 @@ impl Engine {
 
     /// Recursively copies a directory and its contents.
     async fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
+        // Ensure the destination directory exists.
         fs::create_dir_all(dst).await?;
-        let mut entries = fs::read_dir(src).await?;
-        while let Some(entry) = entries.next_entry().await? {
-            let path = entry.path();
-            let dest_path = dst.join(entry.file_name());
-            if entry.file_type().await?.is_dir() {
-                Box::pin(Self::copy_dir_recursive(&path, &dest_path))
-                    .await?;
-            } else {
-                fs::copy(&path, &dest_path).await?;
+
+        // Stack for directories to process.
+        let mut stack = vec![(src.to_path_buf(), dst.to_path_buf())];
+
+        while let Some((src_dir, dst_dir)) = stack.pop() {
+            // Read the source directory.
+            let mut entries = fs::read_dir(&src_dir).await?;
+
+            while let Some(entry) = entries.next_entry().await? {
+                let path = entry.path();
+                let dest_path = dst_dir.join(entry.file_name());
+
+                if entry.file_type().await?.is_dir() {
+                    // Push directories onto the stack for later processing.
+                    fs::create_dir_all(&dest_path).await?;
+                    stack.push((path, dest_path));
+                } else {
+                    // Copy files directly.
+                    fs::copy(&path, &dest_path).await?;
+                }
             }
         }
+
         Ok(())
     }
 
     /// Generates HTML pages from processed content files.
-    ///
-    /// This method retrieves content from the cache, applies the associated templates,
-    /// and writes the rendered HTML to the output directory.
-    ///
-    /// # Arguments
-    /// - `config`: A reference to the site configuration.
-    ///
-    /// # Returns
-    /// A `Result` indicating success or failure.
-    ///
-    /// # Errors
-    /// This method will return an error if:
-    /// - The template for a content file is missing.
-    /// - Rendering a template fails.
-    /// - Writing the rendered HTML to disk fails.
     pub async fn generate_pages(&self, _config: &Config) -> Result<()> {
-        // Use `_config` only if necessary; otherwise, remove it.
+        #[cfg(feature = "logging")]
+        log::info!("Generating HTML pages");
+
         let content_cache = self.content_cache.read().await;
         let template_cache = self.template_cache.read().await;
 
@@ -365,13 +392,20 @@ impl Engine {
             }
 
             fs::write(&content_file.dest_path, rendered_html).await?;
+
+            #[cfg(feature = "logging")]
+            log::debug!(
+                "Generated page: {}",
+                content_file.dest_path.display()
+            );
         }
 
         Ok(())
     }
 }
 
-#[cfg(test)]
+// Tests are also gated behind the "ssg" feature
+#[cfg(all(test, feature = "ssg"))]
 mod tests {
     use super::*;
     use tempfile::tempdir;
