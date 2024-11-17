@@ -490,27 +490,88 @@ mod tests {
         use super::*;
 
         #[test]
-        fn test_default_values() {
+        fn test_default_site_title() {
             assert_eq!(default_site_title(), "My Shokunin Site");
+        }
+
+        #[test]
+        fn test_default_site_description() {
             assert_eq!(
                 default_site_description(),
                 "A site built with Shokunin"
             );
+        }
+
+        #[test]
+        fn test_default_language() {
             assert_eq!(default_language(), "en-GB");
+        }
+
+        #[test]
+        fn test_default_base_url() {
             assert_eq!(default_base_url(), "http://localhost:8000");
+        }
+
+        #[test]
+        fn test_default_content_dir() {
             assert_eq!(default_content_dir(), PathBuf::from("content"));
+        }
+
+        #[test]
+        fn test_default_output_dir() {
             assert_eq!(default_output_dir(), PathBuf::from("public"));
+        }
+
+        #[test]
+        fn test_default_template_dir() {
             assert_eq!(
                 default_template_dir(),
                 PathBuf::from("templates")
             );
-            assert_eq!(default_port(), 8000);
         }
     }
 
     /// Tests for the `ConfigBuilder` functionality
     mod builder_tests {
         use super::*;
+
+        #[test]
+        fn test_builder_initialization() {
+            let builder = Config::builder();
+            assert_eq!(builder.site_name, None);
+            assert_eq!(builder.site_title, None);
+            assert_eq!(builder.site_description, None);
+            assert_eq!(builder.language, None);
+            assert_eq!(builder.base_url, None);
+            assert_eq!(builder.content_dir, None);
+            assert_eq!(builder.output_dir, None);
+            assert_eq!(builder.template_dir, None);
+            assert_eq!(builder.serve_dir, None);
+            assert_eq!(builder.server_enabled, false);
+            assert_eq!(builder.server_port, None);
+        }
+
+        #[test]
+        fn test_builder_defaults_applied() {
+            let config = Config::builder()
+                .site_name("Test Site")
+                .build()
+                .unwrap();
+
+            assert_eq!(config.site_title, default_site_title());
+            assert_eq!(
+                config.site_description,
+                default_site_description()
+            );
+            assert_eq!(config.language, default_language());
+            assert_eq!(config.base_url, default_base_url());
+            assert_eq!(config.content_dir, default_content_dir());
+            assert_eq!(config.output_dir, default_output_dir());
+            assert_eq!(config.template_dir, default_template_dir());
+            assert_eq!(config.server_port, default_port());
+            assert_eq!(config.server_enabled, false);
+            assert!(config.serve_dir.is_none());
+        }
 
         #[test]
         fn test_builder_missing_site_name() {
@@ -726,12 +787,19 @@ mod tests {
         #[test]
         fn test_config_display_format() {
             let config = Config::builder()
-                .site_name("Display Test")
+                .site_name("Test Site")
+                .site_title("Display Title")
+                .content_dir("test_content")
+                .output_dir("test_output")
+                .template_dir("test_templates")
                 .build()
                 .unwrap();
 
             let display = format!("{}", config);
-            assert!(display.contains("Display Test"));
+            assert!(display.contains("Site: Test Site (Display Title)"));
+            assert!(display.contains("Content: test_content"));
+            assert!(display.contains("Output: test_output"));
+            assert!(display.contains("Templates: test_templates"));
         }
 
         #[test]
