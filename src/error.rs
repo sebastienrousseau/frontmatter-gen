@@ -452,4 +452,134 @@ mod tests {
             );
         }
     }
+
+    /// Tests for the Clone implementation of `FrontmatterError`.
+    mod clone_tests {
+        use crate::error::FrontmatterError;
+
+        #[test]
+        fn test_clone_content_too_large() {
+            let original = FrontmatterError::ContentTooLarge {
+                size: 1000,
+                max: 500,
+            };
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::ContentTooLarge { size, max }
+                if size == 1000 && max == 500
+            ));
+        }
+
+        #[test]
+        fn test_clone_nesting_too_deep() {
+            let original =
+                FrontmatterError::NestingTooDeep { depth: 10, max: 5 };
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::NestingTooDeep { depth, max }
+                if depth == 10 && max == 5
+            ));
+        }
+
+        #[test]
+        fn test_clone_conversion_error() {
+            let original = FrontmatterError::ConversionError(
+                "conversion issue".to_string(),
+            );
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::ConversionError(msg) if msg == "conversion issue"
+            ));
+        }
+
+        #[test]
+        fn test_clone_parse_error() {
+            let original =
+                FrontmatterError::ParseError("parse issue".to_string());
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::ParseError(msg) if msg == "parse issue"
+            ));
+        }
+
+        #[test]
+        fn test_clone_unsupported_format() {
+            let original =
+                FrontmatterError::UnsupportedFormat { line: 42 };
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::UnsupportedFormat { line } if line == 42
+            ));
+        }
+
+        #[test]
+        fn test_clone_no_frontmatter_found() {
+            let original = FrontmatterError::NoFrontmatterFound;
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::NoFrontmatterFound
+            ));
+        }
+
+        #[test]
+        fn test_clone_invalid_json() {
+            let original = FrontmatterError::InvalidJson;
+            let cloned = original.clone();
+            assert!(matches!(cloned, FrontmatterError::InvalidJson));
+        }
+
+        #[test]
+        fn test_clone_invalid_toml() {
+            let original = FrontmatterError::InvalidToml;
+            let cloned = original.clone();
+            assert!(matches!(cloned, FrontmatterError::InvalidToml));
+        }
+
+        #[test]
+        fn test_clone_invalid_yaml() {
+            let original = FrontmatterError::InvalidYaml;
+            let cloned = original.clone();
+            assert!(matches!(cloned, FrontmatterError::InvalidYaml));
+        }
+
+        #[test]
+        fn test_clone_json_depth_limit_exceeded() {
+            let original = FrontmatterError::JsonDepthLimitExceeded;
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::JsonDepthLimitExceeded
+            ));
+        }
+
+        #[test]
+        fn test_clone_extraction_error() {
+            let original = FrontmatterError::ExtractionError(
+                "extraction issue".to_string(),
+            );
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::ExtractionError(msg) if msg == "extraction issue"
+            ));
+        }
+
+        #[test]
+        fn test_clone_validation_error() {
+            let original = FrontmatterError::ValidationError(
+                "validation issue".to_string(),
+            );
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::ValidationError(msg) if msg == "validation issue"
+            ));
+        }
+    }
 }
