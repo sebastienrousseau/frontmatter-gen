@@ -30,7 +30,7 @@
 //! fn main() -> Result<()> {
 //!     let content = r#"---
 //! title: My Post
-//! date: 2024-01-01
+//! date: 2025-09-09
 //! draft: false
 //! ---
 //! # Post content here
@@ -98,7 +98,7 @@ pub type Result<T> = std::result::Result<T, FrontmatterError>;
 ///
 /// let content = r#"---
 /// title: My Post
-/// date: 2024-01-01
+/// date: 2025-09-09
 /// ---
 /// Content here"#;
 ///

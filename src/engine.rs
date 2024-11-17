@@ -463,7 +463,7 @@ mod tests {
 
         let content = r#"---
 title: Test Post
-date: 2024-01-01
+date: 2025-09-09
 tags: ["tag1", "tag2"]
 template: "default"
 ---
@@ -471,7 +471,7 @@ This is the main content."#;
 
         let (metadata, body) = engine.extract_front_matter(content)?;
         assert_eq!(metadata.get("title").unwrap(), "Test Post");
-        assert_eq!(metadata.get("date").unwrap(), "2024-01-01");
+        assert_eq!(metadata.get("date").unwrap(), "2025-09-09");
         assert_eq!(
             metadata.get("tags").unwrap(),
             &serde_json::json!(["tag1", "tag2"])
@@ -502,7 +502,7 @@ This is the main content."#;
 
         let content = r#"---
 title: Test Post
-date: 2024-01-01
+date: 2025-09-09
 tags: ["tag1"]
 template: "default"
 ---

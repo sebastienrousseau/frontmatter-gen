@@ -330,7 +330,7 @@ mod tests {
     async fn test_validate_command_all_fields_present() {
         let content = r#"---
 title: "My Title"
-date: "2024-01-01"
+date: "2025-09-09"
 author: "Jane Doe"
 ---"#;
 
@@ -372,7 +372,7 @@ author: "Jane Doe"
     async fn test_extract_command_to_stdout() {
         let content = r#"---
 title: "My Title"
-date: "2024-01-01"
+date: "2025-09-09"
 author: "Jane Doe"
 ---"#;
 

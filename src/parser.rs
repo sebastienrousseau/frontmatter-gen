@@ -99,7 +99,7 @@ fn optimize_string(s: &str) -> String {
 /// use frontmatter_gen::{Format, parser};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let yaml = "title: My Post\ndate: 2024-11-16\n";
+/// let yaml = "title: My Post\ndate: 2025-09-09\n";
 /// let frontmatter = parser::parse_with_options(
 ///     yaml,
 ///     Format::Yaml,

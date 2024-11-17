@@ -6,7 +6,7 @@ use frontmatter_gen::{extract, parser, Format, Frontmatter, Value};
 fn benchmark_extract(c: &mut Criterion) {
     let content = r#"---
 title: My Post
-date: 2024-11-16
+date: 2025-09-09
 tags:
   - rust
   - benchmarking
@@ -21,7 +21,7 @@ This is the content of the post."#;
 fn benchmark_parse_yaml(c: &mut Criterion) {
     let yaml = r#"
 title: My Post
-date: 2024-11-16
+date: 2025-09-09
 tags:
   - rust
   - benchmarking
@@ -35,7 +35,7 @@ tags:
 fn benchmark_parse_toml(c: &mut Criterion) {
     let toml = r#"
 title = "My Post"
-date = 2024-11-16
+date = 2025-09-09
 tags = ["rust", "benchmarking"]
 "#;
 
@@ -48,7 +48,7 @@ fn benchmark_parse_json(c: &mut Criterion) {
     let json = r#"
 {
     "title": "My Post",
-    "date": "2024-11-16",
+    "date": "2025-09-09",
     "tags": ["rust", "benchmarking"]
 }
 "#;
@@ -66,7 +66,7 @@ fn benchmark_to_format(c: &mut Criterion) {
     );
     frontmatter.insert(
         "date".to_string(),
-        Value::String("2024-11-16".to_string()),
+        Value::String("2025-09-09".to_string()),
     );
     frontmatter.insert(
         "tags".to_string(),
