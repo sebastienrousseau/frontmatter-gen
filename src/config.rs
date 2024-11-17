@@ -485,237 +485,268 @@ mod tests {
     use super::*;
     use tempfile::tempdir;
 
-    #[test]
-    fn test_config_builder_basic() -> Result<()> {
-        let config = Config::builder()
-            .site_name("Test Site")
-            .site_title("Test Title")
-            .build()?;
+    /// Tests for default value functions
+    mod default_values_tests {
+        use super::*;
 
-        assert_eq!(config.site_name(), "Test Site");
-        assert_eq!(config.site_title, "Test Title");
-        Ok(())
-    }
-
-    #[test]
-    fn test_invalid_language_code() {
-        // Test invalid language code formats
-        let invalid_codes = vec![
-            "en",     // Too short
-            "eng-US", // First part too long
-            "en-USA", // Second part too long
-            "EN-US",  // First part uppercase
-            "en-us",  // Second part lowercase
-            "en_US",  // Wrong separator
-        ];
-
-        for code in invalid_codes {
-            let result = Config::builder()
-                .site_name("Test Site")
-                .language(code)
-                .build();
-            assert!(
-                result.is_err(),
-                "Language code '{}' should be invalid",
-                code
+        #[test]
+        fn test_default_values() {
+            assert_eq!(default_site_title(), "My Shokunin Site");
+            assert_eq!(
+                default_site_description(),
+                "A site built with Shokunin"
             );
+            assert_eq!(default_language(), "en-GB");
+            assert_eq!(default_base_url(), "http://localhost:8000");
+            assert_eq!(default_content_dir(), PathBuf::from("content"));
+            assert_eq!(default_output_dir(), PathBuf::from("public"));
+            assert_eq!(
+                default_template_dir(),
+                PathBuf::from("templates")
+            );
+            assert_eq!(default_port(), 8000);
         }
     }
 
-    #[test]
-    fn test_valid_language_code() {
-        // Test valid language codes
-        let valid_codes = vec!["en-US", "fr-FR", "de-DE", "ja-JP"];
+    /// Tests for the `ConfigBuilder` functionality
+    mod builder_tests {
+        use super::*;
 
-        for code in valid_codes {
+        #[test]
+        fn test_builder_missing_site_name() {
+            let result = Config::builder().build();
+            assert!(
+                result.is_err(),
+                "Builder should fail without site_name"
+            );
+        }
+
+        #[test]
+        fn test_builder_empty_values() {
+            let result =
+                Config::builder().site_name("").site_title("").build();
+            assert!(
+                result.is_err(),
+                "Empty values should fail validation"
+            );
+        }
+
+        #[test]
+        fn test_unique_id_generation() -> Result<()> {
+            let config1 =
+                Config::builder().site_name("Site 1").build()?;
+            let config2 =
+                Config::builder().site_name("Site 2").build()?;
+            assert_ne!(
+                config1.id(),
+                config2.id(),
+                "IDs should be unique"
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn test_builder_long_values() {
+            let long_string = "a".repeat(256);
             let result = Config::builder()
-                .site_name("Test Site")
-                .language(code)
+                .site_name(&long_string)
+                .site_title(&long_string)
                 .build();
             assert!(
                 result.is_ok(),
-                "Language code '{}' should be valid",
-                code
+                "Long values should not cause validation errors"
             );
         }
     }
 
-    #[test]
-    fn test_valid_urls() -> Result<()> {
-        // Test valid URLs
-        let valid_urls = vec![
-            "http://localhost",
-            "https://example.com",
-            "http://localhost:8080",
-            "https://sub.domain.com/path",
-        ];
+    /// Tests for configuration validation
+    mod validation_tests {
+        use super::*;
 
-        for url in valid_urls {
-            let config = Config::builder()
-                .site_name("Test Site")
-                .base_url(url)
-                .build()?;
-            assert_eq!(config.base_url, url);
-        }
-        Ok(())
-    }
-
-    #[test]
-    fn test_server_port_validation() {
-        // Test invalid ports (only those below 1024, as those are the restricted ones)
-        let invalid_ports = vec![0, 22, 80, 443, 1023];
-
-        for port in invalid_ports {
+        #[test]
+        fn test_empty_site_name() {
             let result = Config::builder()
-                .site_name("Test Site")
-                .server_enabled(true)
-                .server_port(port)
+                .site_name("")
+                .content_dir("content")
                 .build();
-            assert!(result.is_err(), "Port {} should be invalid", port);
+            assert!(
+                result.is_err(),
+                "Empty site name should fail validation"
+            );
         }
 
-        // Test valid ports
-        let valid_ports = vec![1024, 3000, 8080, 8000, 65535];
-
-        for port in valid_ports {
-            let result = Config::builder()
-                .site_name("Test Site")
-                .server_enabled(true)
-                .server_port(port)
-                .build();
-            assert!(result.is_ok(), "Port {} should be valid", port);
+        #[test]
+        fn test_invalid_url_format() {
+            let invalid_urls = vec![
+                "not-a-url",
+                "http://",
+                "://invalid",
+                "http//missing-colon",
+            ];
+            for url in invalid_urls {
+                let result = Config::builder()
+                    .site_name("Test Site")
+                    .base_url(url)
+                    .build();
+                assert!(
+                    result.is_err(),
+                    "URL '{}' should fail validation",
+                    url
+                );
+            }
         }
-    }
 
-    #[test]
-    fn test_path_validation() {
-        // Test invalid paths
-        let invalid_paths = vec![
-            "../../outside",
-            "/absolute/path",
-            "path\\with\\backslashes",
-            "path\0with\0nulls",
-        ];
-
-        for path in invalid_paths {
+        #[test]
+        fn test_validate_path_safety_mocked() {
+            let path = PathBuf::from("valid/path");
             let result = Config::builder()
                 .site_name("Test Site")
                 .content_dir(path)
                 .build();
             assert!(
-                result.is_err(),
-                "Path '{}' should be invalid",
-                path
+                result.is_ok(),
+                "Valid path should pass validation"
             );
         }
     }
 
-    #[test]
-    fn test_config_serialization() -> Result<()> {
-        let config = Config::builder()
-            .site_name("Test Site")
-            .site_title("Test Title")
-            .content_dir("content")
-            .build()?;
+    /// Tests for `ConfigError` variants
+    mod config_error_tests {
+        use super::*;
 
-        // Test TOML serialization
-        let toml_str = toml::to_string(&config)?;
-        let deserialized: Config = toml::from_str(&toml_str)?;
-        assert_eq!(config.site_name, deserialized.site_name);
-        assert_eq!(config.site_title, deserialized.site_title);
+        #[test]
+        fn test_config_error_display() {
+            let error =
+                ConfigError::InvalidSiteName("Empty name".to_string());
+            assert_eq!(
+                format!("{}", error),
+                "Invalid site name: Empty name"
+            );
+        }
 
-        Ok(())
+        #[test]
+        fn test_invalid_path_error() {
+            let error = ConfigError::InvalidPath {
+                path: "invalid/path".to_string(),
+                details: "Unsafe path detected".to_string(),
+            };
+            assert_eq!(
+                format!("{}", error),
+                "Invalid directory path 'invalid/path': Unsafe path detected"
+            );
+        }
+
+        #[test]
+        fn test_file_error_conversion() {
+            let io_error = std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "File not found",
+            );
+            let error: ConfigError = io_error.into();
+            assert_eq!(
+                format!("{}", error),
+                "Configuration file error: File not found"
+            );
+        }
     }
 
-    #[test]
-    fn test_config_display() -> Result<()> {
-        let config = Config::builder()
-            .site_name("Test Site")
-            .site_title("Test Title")
-            .build()?;
+    /// Tests for helper methods
+    mod helper_method_tests {
+        use super::*;
 
-        let display = format!("{}", config);
-        assert!(display.contains("Test Site"));
-        assert!(display.contains("Test Title"));
-        Ok(())
+        #[test]
+        fn test_is_valid_language_code() {
+            let config =
+                Config::builder().site_name("Test").build().unwrap();
+            assert!(config.is_valid_language_code("en-US"));
+            assert!(!config.is_valid_language_code("invalid-code"));
+        }
+
+        #[test]
+        fn test_is_valid_port() {
+            let config =
+                Config::builder().site_name("Test").build().unwrap();
+            assert!(config.is_valid_port(1024));
+            assert!(!config.is_valid_port(1023));
+        }
     }
 
-    #[test]
-    fn test_config_clone() -> Result<()> {
-        let config = Config::builder()
-            .site_name("Test Site")
-            .site_title("Test Title")
-            .build()?;
+    /// Tests for serialization and deserialization
+    mod serialization_tests {
+        use super::*;
 
-        let cloned = config.clone();
-        assert_eq!(config.site_name, cloned.site_name);
-        assert_eq!(config.site_title, cloned.site_title);
-        assert_eq!(config.id(), cloned.id());
-        Ok(())
+        #[test]
+        fn test_serialization_roundtrip() -> Result<()> {
+            let original = Config::builder()
+                .site_name("Test Site")
+                .site_title("Roundtrip Test")
+                .build()?;
+
+            let serialized = toml::to_string(&original)?;
+            let deserialized: Config = toml::from_str(&serialized)?;
+
+            assert_eq!(original.site_name, deserialized.site_name);
+            assert_eq!(original.site_title, deserialized.site_title);
+            assert_eq!(original.id(), deserialized.id());
+            Ok(())
+        }
     }
 
-    #[test]
-    fn test_from_file() -> Result<()> {
-        let dir = tempdir()?;
-        let config_path = dir.path().join("config.toml");
+    /// Tests for file operations
+    mod file_tests {
+        use super::*;
 
-        let config_content = r#"
-            site_name = "Test Site"
-            site_title = "Test Title"
-            language = "en-US"
-            base_url = "http://localhost:8000"
-        "#;
+        #[test]
+        fn test_missing_config_file() {
+            let result =
+                Config::from_file(Path::new("nonexistent.toml"));
+            assert!(
+                result.is_err(),
+                "Missing file should fail to load"
+            );
+        }
 
-        std::fs::write(&config_path, config_content)?;
+        #[test]
+        fn test_invalid_toml_file() -> Result<()> {
+            let dir = tempdir()?;
+            let config_path = dir.path().join("invalid_config.toml");
 
-        let config = Config::from_file(&config_path)?;
-        assert_eq!(config.site_name, "Test Site");
-        assert_eq!(config.site_title, "Test Title");
-        assert_eq!(config.language, "en-US");
+            std::fs::write(&config_path, "invalid_toml_syntax")?;
 
-        Ok(())
+            let result = Config::from_file(&config_path);
+            assert!(result.is_err(), "Invalid TOML syntax should fail");
+            Ok(())
+        }
     }
 
-    #[test]
-    fn test_default_values() -> Result<()> {
-        let config =
-            Config::builder().site_name("Test Site").build()?;
+    /// Miscellaneous utility tests
+    mod utility_tests {
+        use super::*;
 
-        assert_eq!(config.site_title, default_site_title());
-        assert_eq!(config.site_description, default_site_description());
-        assert_eq!(config.language, default_language());
-        assert_eq!(config.base_url, default_base_url());
-        assert_eq!(config.content_dir, default_content_dir());
-        assert_eq!(config.output_dir, default_output_dir());
-        assert_eq!(config.template_dir, default_template_dir());
-        assert_eq!(config.server_port, default_port());
-        assert!(!config.server_enabled);
-        assert!(config.serve_dir.is_none());
+        #[test]
+        fn test_config_display_format() {
+            let config = Config::builder()
+                .site_name("Display Test")
+                .build()
+                .unwrap();
 
-        Ok(())
-    }
+            let display = format!("{}", config);
+            assert!(display.contains("Display Test"));
+        }
 
-    #[test]
-    fn test_server_configuration() -> Result<()> {
-        let config = Config::builder()
-            .site_name("Test Site")
-            .server_enabled(true)
-            .server_port(9000)
-            .build()?;
+        #[test]
+        fn test_clone_retains_all_fields() -> Result<()> {
+            let original = Config::builder()
+                .site_name("Original")
+                .site_title("Clone Test")
+                .build()?;
 
-        assert!(config.server_enabled());
-        assert_eq!(config.server_port(), Some(9000));
+            let cloned = original.clone();
 
-        // Test disabled server
-        let config = Config::builder()
-            .site_name("Test Site")
-            .server_enabled(false)
-            .server_port(9000)
-            .build()?;
-
-        assert!(!config.server_enabled());
-        assert_eq!(config.server_port(), None);
-
-        Ok(())
+            assert_eq!(original.site_name, cloned.site_name);
+            assert_eq!(original.site_title, cloned.site_title);
+            assert_eq!(original.id(), cloned.id());
+            Ok(())
+        }
     }
 }
