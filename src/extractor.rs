@@ -239,7 +239,7 @@ pub fn extract_delimited_frontmatter<'a>(
     let end_index = content.find(end_delim)?;
 
     if start_index <= end_index {
-        Some(&content[start_index..end_index].trim())
+        Some(content[start_index..end_index].trim())
     } else {
         None
     }
