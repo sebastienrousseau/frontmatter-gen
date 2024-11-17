@@ -66,8 +66,8 @@ fn to_format_example() -> Result<(), FrontmatterError> {
     println!("---------------------------------------------");
 
     let mut frontmatter = Frontmatter::new();
-    frontmatter.insert("title".to_string(), "My Post".into());
-    frontmatter.insert("date".to_string(), "2025-09-09".into());
+    let _ = frontmatter.insert("title".to_string(), "My Post".into());
+    let _ = frontmatter.insert("date".to_string(), "2025-09-09".into());
 
     let yaml = to_format(&frontmatter, Format::Yaml)?;
     println!("    ✅  Converted frontmatter to YAML:\n{}", yaml);

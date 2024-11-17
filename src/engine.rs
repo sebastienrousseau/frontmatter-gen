@@ -81,7 +81,7 @@ impl<K: Eq + std::hash::Hash + Clone, V> SizeCache<K, V> {
     fn insert(&mut self, key: K, value: V) -> Option<V> {
         if self.items.len() >= self.max_size {
             if let Some(old_key) = self.items.keys().next().cloned() {
-                self.items.remove(&old_key);
+                let _ = self.items.remove(&old_key);
             }
         }
         self.items.insert(key, value)
@@ -179,7 +179,7 @@ impl Engine {
                 )?;
 
                 if let Some(name) = path.file_stem() {
-                    templates.insert(
+                    let _ = templates.insert(
                         name.to_string_lossy().into_owned(),
                         content,
                     );
@@ -216,7 +216,7 @@ impl Engine {
             if path.extension().map_or(false, |ext| ext == "md") {
                 let content =
                     self.process_content_file(&path, config).await?;
-                content_cache.insert(path.clone(), content);
+                let _ = content_cache.insert(path.clone(), content);
 
                 #[cfg(feature = "logging")]
                 log::debug!(
@@ -347,7 +347,7 @@ impl Engine {
                     stack.push((path, dest_path));
                 } else {
                     // Copy files directly.
-                    fs::copy(&path, &dest_path).await?;
+                    let _ = fs::copy(&path, &dest_path).await?;
                 }
             }
         }
@@ -414,7 +414,7 @@ mod tests {
     ///
     /// This function creates the necessary `content`, `templates`, and `public` directories
     /// within a temporary folder and returns the `TempDir` instance along with a test `Config`.
-    pub async fn setup_test_directory(
+    async fn setup_test_directory(
     ) -> Result<(tempfile::TempDir, Config)> {
         let temp_dir = tempdir()?;
         let base_path = temp_dir.path();

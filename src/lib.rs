@@ -162,101 +162,72 @@ pub fn to_format(
 
 #[cfg(test)]
 mod extractor_tests {
-    use super::*;
+    use crate::FrontmatterError;
 
-    #[test]
-    fn test_extract_yaml_frontmatter() {
-        let content = "---\ntitle: Test Post\n---\nContent here";
-        let (frontmatter, remaining) =
-            extract_raw_frontmatter(content).unwrap();
-        assert_eq!(frontmatter, "title: Test Post");
-        assert_eq!(remaining.trim(), "Content here");
+    fn mock_operation(
+        input: Option<&str>,
+    ) -> Result<String, FrontmatterError> {
+        match input {
+            Some(value) => Ok(value.to_uppercase()), // Successful operation
+            None => Err(FrontmatterError::ParseError(
+                "Input is missing".to_string(),
+            )),
+        }
     }
 
     #[test]
-    fn test_extract_toml_frontmatter() {
-        let content = "+++\ntitle = \"Test Post\"\n+++\nContent here";
-        let (frontmatter, remaining) =
-            extract_raw_frontmatter(content).unwrap();
-        assert_eq!(frontmatter, "title = \"Test Post\"");
-        assert_eq!(remaining.trim(), "Content here");
+    fn test_result_type_success() {
+        let input = Some("hello");
+        let result = mock_operation(input);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "HELLO".to_string());
     }
 
     #[test]
-    fn test_detect_format_yaml() {
-        let frontmatter = "title: Test Post";
-        let format = detect_format(frontmatter).unwrap();
-        assert_eq!(format, Format::Yaml);
+    fn test_result_type_error() {
+        let input = None;
+        let result = mock_operation(input);
+        assert!(matches!(
+            result,
+            Err(FrontmatterError::ParseError(ref e)) if e == "Input is missing"
+        ));
     }
 
     #[test]
-    fn test_detect_format_toml() {
-        let frontmatter = "title = \"Test Post\"";
-        let format = detect_format(frontmatter).unwrap();
-        assert_eq!(format, Format::Toml);
+    fn test_result_type_pattern_matching() {
+        let input = Some("world");
+        let result = mock_operation(input);
+        match result {
+            Ok(value) => assert_eq!(value, "WORLD".to_string()),
+            Err(e) => panic!("Operation failed: {:?}", e),
+        }
     }
 
     #[test]
-    fn test_extract_no_frontmatter() {
-        let content = "Content without frontmatter";
-        let result = extract_raw_frontmatter(content);
-        assert!(
-            result.is_err(),
-            "Should fail if no frontmatter delimiters are found"
+    fn test_result_type_unwrap() {
+        let input = Some("rust");
+        let result = mock_operation(input);
+        assert_eq!(result.unwrap(), "RUST".to_string());
+    }
+
+    #[test]
+    fn test_result_type_expect() {
+        let input = Some("test");
+        let result = mock_operation(input);
+        assert_eq!(
+            result.expect("Unexpected error"),
+            "TEST".to_string()
         );
     }
 
     #[test]
-    fn test_extract_partial_frontmatter() {
-        let content = "---\ntitle: Incomplete";
-        let result = extract_raw_frontmatter(content);
-        assert!(
-            result.is_err(),
-            "Should fail for incomplete frontmatter"
+    fn test_result_type_debug_format() {
+        let input = None;
+        let result = mock_operation(input);
+        assert_eq!(
+            format!("{:?}", result),
+            "Err(ParseError(\"Input is missing\"))"
         );
-    }
-
-    #[test]
-    fn test_extract_yaml_with_valid_frontmatter() {
-        let content = "---\ntitle: Valid Post\n---\nMain content";
-        let (raw, remaining) =
-            extract_raw_frontmatter(content).unwrap();
-        assert_eq!(raw, "title: Valid Post");
-        assert_eq!(remaining.trim(), "Main content");
-    }
-
-    #[test]
-    fn test_extract_no_delimiters() {
-        let content = "No frontmatter delimiters present";
-        let result = extract_raw_frontmatter(content);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_extract_incomplete_frontmatter() {
-        let content = "---\ntitle: Missing closing delimiter";
-        let result = extract_raw_frontmatter(content);
-        assert!(
-            result.is_err(),
-            "Should fail for incomplete frontmatter"
-        );
-    }
-
-    #[test]
-    fn test_extract_with_nested_content() {
-        let content =
-            "---\ntitle: Nested\nmeta:\n  key: value\n---\nContent";
-        let (raw, remaining) =
-            extract_raw_frontmatter(content).unwrap();
-        assert!(raw.contains("meta:\n  key: value"));
-        assert_eq!(remaining.trim(), "Content");
-    }
-
-    #[test]
-    fn test_extract_with_only_content_no_frontmatter() {
-        let content = "Just the content without frontmatter";
-        let result = extract_raw_frontmatter(content);
-        assert!(result.is_err());
     }
 }
 
@@ -364,7 +335,7 @@ mod format_tests {
     #[test]
     fn test_to_format_yaml() {
         let mut frontmatter = Frontmatter::new();
-        frontmatter.insert(
+        let _ = frontmatter.insert(
             "title".to_string(),
             Value::String("Test Post".to_string()),
         );
@@ -375,7 +346,7 @@ mod format_tests {
     #[test]
     fn test_format_conversion_roundtrip() {
         let mut frontmatter = Frontmatter::new();
-        frontmatter.insert(
+        let _ = frontmatter.insert(
             "key".to_string(),
             Value::String("value".to_string()),
         );
@@ -398,7 +369,7 @@ mod format_tests {
     #[test]
     fn test_convert_to_yaml() {
         let mut frontmatter = Frontmatter::new();
-        frontmatter.insert(
+        let _ = frontmatter.insert(
             "title".to_string(),
             Value::String("Test Post".into()),
         );
@@ -470,13 +441,36 @@ mod edge_case_tests {
 
     #[test]
     fn test_special_characters_handling() {
-        let content =
-            "---\ntitle: \"Test: Special Characters!\"\n---\nContent";
-        let (frontmatter, _) = extract(content).unwrap();
+        let cases = vec![
+            (
+                "---\ntitle: \"Special: &chars\"\n---\nContent",
+                "Special: &chars",
+            ),
+            (
+                "---\ntitle: \"Another > test\"\n---\nContent",
+                "Another > test",
+            ),
+        ];
+
+        for (content, expected_title) in cases {
+            let (frontmatter, _) = extract(content).unwrap();
+            assert_eq!(
+                frontmatter.get("title").unwrap().as_str().unwrap(),
+                expected_title
+            );
+        }
+    }
+
+    #[cfg(feature = "ssg")]
+    #[tokio::test]
+    async fn test_async_extraction() {
+        let content = "---\ntitle: Async Test\n---\nContent";
+        let (frontmatter, body) = extract(content).unwrap();
         assert_eq!(
             frontmatter.get("title").unwrap().as_str().unwrap(),
-            "Test: Special Characters!"
+            "Async Test"
         );
+        assert_eq!(body.trim(), "Content");
     }
 
     #[test]

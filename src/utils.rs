@@ -98,7 +98,7 @@ pub mod fs {
         /// Registers a temporary file for tracking
         pub async fn register(&self, path: PathBuf) -> Result<()> {
             let mut files = self.files.write().await;
-            files.insert(path);
+            let _ = files.insert(path);
             Ok(())
         }
 
@@ -325,7 +325,7 @@ pub mod fs {
             })?;
         }
 
-        std::fs::copy(src, dst).with_context(|| {
+        let _ = std::fs::copy(src, dst).with_context(|| {
             format!(
                 "Failed to copy {} to {}",
                 src.display(),
@@ -469,12 +469,12 @@ mod tests {
         let temp_path = temp_dir.join("valid_temp.txt");
 
         // Ensure the file exists before validation
-        std::fs::File::create(&temp_path).unwrap();
+        let _ = File::create(&temp_path).unwrap();
 
         assert!(fs::validate_path_safety(&temp_path).is_ok());
 
         // Cleanup
-        std::fs::remove_file(temp_path).unwrap();
+        remove_file(temp_path).unwrap();
     }
 
     #[test]
@@ -483,7 +483,7 @@ mod tests {
         let temp_path = temp_dir.join("test_temp_file.txt");
 
         // Ensure the file exists before validation
-        std::fs::File::create(&temp_path).unwrap();
+        let _ = File::create(&temp_path).unwrap();
 
         let temp_dir_canonicalized = temp_dir.canonicalize().unwrap();
         let temp_path_canonicalized = temp_path.canonicalize().unwrap();
@@ -500,7 +500,7 @@ mod tests {
         assert!(fs::validate_path_safety(&temp_path).is_ok());
 
         // Cleanup
-        std::fs::remove_file(temp_path).unwrap();
+        remove_file(temp_path).unwrap();
     }
 
     #[test]

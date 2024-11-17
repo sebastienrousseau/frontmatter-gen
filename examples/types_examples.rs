@@ -90,7 +90,7 @@ fn value_examples() -> Result<(), Box<dyn std::error::Error>> {
 
     // Object value example
     let mut fm = Frontmatter::new();
-    fm.insert("key".to_string(), Value::String("value".to_string()));
+    let _ = fm.insert("key".to_string(), Value::String("value".to_string()));
     let object_value = Value::Object(Box::new(fm.clone()));
     println!("    ✅  Object value: {:?}", object_value);
     assert!(object_value.is_object());
@@ -106,11 +106,11 @@ fn frontmatter_examples() -> Result<(), Box<dyn std::error::Error>> {
     let mut frontmatter = Frontmatter::new();
 
     // Insert and retrieve values
-    frontmatter.insert(
+    let _ = frontmatter.insert(
         "title".to_string(),
         Value::String("My Post".to_string()),
     );
-    frontmatter.insert("views".to_string(), Value::Number(100.0));
+    let _ = frontmatter.insert("views".to_string(), Value::Number(100.0));
     println!("    ✅  Frontmatter with two entries: {:?}", frontmatter);
 
     let title = frontmatter.get("title").unwrap().as_str().unwrap();
@@ -119,7 +119,7 @@ fn frontmatter_examples() -> Result<(), Box<dyn std::error::Error>> {
     println!("    Views: {}", views);
 
     // Test removal
-    frontmatter.remove("views");
+    let _ = frontmatter.remove("views");
     println!(
         "    ✅  Frontmatter after removing 'views': {:?}",
         frontmatter
@@ -139,20 +139,20 @@ fn ssg_type_examples() -> Result<(), Box<dyn std::error::Error>> {
     let mut frontmatter = Frontmatter::new();
 
     // Add SSG-specific metadata
-    frontmatter.insert(
+    let _ = frontmatter.insert(
         "title".to_string(),
         Value::String("My Blog Post".to_string()),
     );
-    frontmatter.insert(
+    let _ = frontmatter.insert(
         "template".to_string(),
         Value::String("post".to_string()),
     );
-    frontmatter.insert(
+    let _ = frontmatter.insert(
         "layout".to_string(),
         Value::String("blog".to_string()),
     );
-    frontmatter.insert("draft".to_string(), Value::Boolean(false));
-    frontmatter.insert(
+    let _ = frontmatter.insert("draft".to_string(), Value::Boolean(false));
+    let _ = frontmatter.insert(
         "tags".to_string(),
         Value::Array(vec![
             Value::String("rust".to_string()),
@@ -162,15 +162,15 @@ fn ssg_type_examples() -> Result<(), Box<dyn std::error::Error>> {
 
     // Add nested metadata
     let mut metadata = Frontmatter::new();
-    metadata.insert(
+    let _ = metadata.insert(
         "author".to_string(),
         Value::String("John Doe".to_string()),
     );
-    metadata.insert(
+    let _ = metadata.insert(
         "category".to_string(),
         Value::String("Programming".to_string()),
     );
-    frontmatter.insert(
+    let _ = frontmatter.insert(
         "metadata".to_string(),
         Value::Object(Box::new(metadata)),
     );

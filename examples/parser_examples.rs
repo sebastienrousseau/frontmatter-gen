@@ -97,11 +97,11 @@ fn parse_json_example() -> Result<(), FrontmatterError> {
 /// Creates a sample frontmatter for examples
 fn create_sample_frontmatter() -> Frontmatter {
     let mut frontmatter = Frontmatter::new();
-    frontmatter.insert(
+    let _ = frontmatter.insert(
         "title".to_string(),
         Value::String("My Post".to_string()),
     );
-    frontmatter.insert(
+    let _ = frontmatter.insert(
         "date".to_string(),
         Value::String("2025-09-09".to_string()),
     );
@@ -158,20 +158,20 @@ fn ssg_parser_examples() -> Result<(), FrontmatterError> {
 
     // Create a complex frontmatter with SSG-specific fields
     let mut frontmatter = Frontmatter::new();
-    frontmatter.insert(
+    let _ = frontmatter.insert(
         "title".to_string(),
         Value::String("My Blog Post".to_string()),
     );
-    frontmatter.insert(
+    let _ = frontmatter.insert(
         "template".to_string(),
         Value::String("post".to_string()),
     );
-    frontmatter.insert(
+    let _ = frontmatter.insert(
         "layout".to_string(),
         Value::String("blog".to_string()),
     );
-    frontmatter.insert("draft".to_string(), Value::Boolean(false));
-    frontmatter.insert(
+    let _ = frontmatter.insert("draft".to_string(), Value::Boolean(false));
+    let _ = frontmatter.insert(
         "tags".to_string(),
         Value::Array(vec![
             Value::String("rust".to_string()),

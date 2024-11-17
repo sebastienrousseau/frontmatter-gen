@@ -341,7 +341,7 @@ impl Config {
                 self.validate_path(serve_dir, "serve_dir")?;
             }
 
-            Url::parse(&self.base_url).map_err(|_| {
+            let _ = Url::parse(&self.base_url).map_err(|_| {
                 ConfigError::InvalidUrl(self.base_url.clone())
             })?;
 
@@ -423,7 +423,7 @@ impl Config {
 }
 
 /// Builder for creating Config instances
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct ConfigBuilder {
     site_name: Option<String>,
     site_title: Option<String>,

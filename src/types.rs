@@ -979,7 +979,7 @@ impl fmt::Display for Frontmatter {
         // Use a BTreeMap to ensure consistent key order (sorted by key)
         let mut sorted_map = BTreeMap::new();
         for (key, value) in &self.0 {
-            sorted_map.insert(key, value);
+            let _ = sorted_map.insert(key, value);
         }
 
         for (i, (key, value)) in sorted_map.iter().enumerate() {
@@ -1143,7 +1143,7 @@ mod tests {
         #[test]
         fn test_value_as_object() {
             let mut fm = Frontmatter::new();
-            fm.insert(
+            let _ = fm.insert(
                 "key".to_string(),
                 Value::String("value".to_string()),
             );
@@ -1211,7 +1211,7 @@ mod tests {
         #[test]
         fn test_frontmatter_insert_and_get() {
             let mut fm = Frontmatter::new();
-            fm.insert(
+            let _ = fm.insert(
                 "title".to_string(),
                 Value::String("Hello World".to_string()),
             );
@@ -1227,7 +1227,7 @@ mod tests {
             let mut fm = Frontmatter::new();
             assert!(fm.is_empty());
 
-            fm.insert("key1".to_string(), Value::Null);
+            let _ = fm.insert("key1".to_string(), Value::Null);
             assert_eq!(fm.len(), 1);
             assert!(!fm.is_empty());
         }
@@ -1235,13 +1235,13 @@ mod tests {
         #[test]
         fn test_frontmatter_merge() {
             let mut fm1 = Frontmatter::new();
-            fm1.insert(
+            let _ = fm1.insert(
                 "key1".to_string(),
                 Value::String("value1".to_string()),
             );
 
             let mut fm2 = Frontmatter::new();
-            fm2.insert("key2".to_string(), Value::Number(42.0));
+            let _ = fm2.insert("key2".to_string(), Value::Number(42.0));
 
             fm1.merge(fm2);
             assert_eq!(fm1.len(), 2);
@@ -1251,11 +1251,11 @@ mod tests {
         #[test]
         fn test_frontmatter_display() {
             let mut fm = Frontmatter::new();
-            fm.insert(
+            let _ = fm.insert(
                 "key1".to_string(),
                 Value::String("value1".to_string()),
             );
-            fm.insert("key2".to_string(), Value::Number(42.0));
+            let _ = fm.insert("key2".to_string(), Value::Number(42.0));
             let display = format!("{}", fm);
 
             assert!(display.contains("\"key1\": \"value1\""));
@@ -1265,7 +1265,7 @@ mod tests {
         #[test]
         fn test_frontmatter_is_null() {
             let mut fm = Frontmatter::new();
-            fm.insert("key".to_string(), Value::Null);
+            let _ = fm.insert("key".to_string(), Value::Null);
 
             assert!(fm.is_null("key"));
             assert!(!fm.is_null("nonexistent_key"));
@@ -1299,11 +1299,11 @@ mod tests {
         #[test]
         fn test_frontmatter_clear() {
             let mut fm = Frontmatter::new();
-            fm.insert(
+            let _ = fm.insert(
                 "key1".to_string(),
                 Value::String("value1".to_string()),
             );
-            fm.insert("key2".to_string(), Value::Number(42.0));
+            let _ = fm.insert("key2".to_string(), Value::Number(42.0));
 
             fm.clear();
             assert!(fm.is_empty());
@@ -1393,13 +1393,13 @@ mod tests {
         #[test]
         fn test_frontmatter_duplicate_merge() {
             let mut fm1 = Frontmatter::new();
-            fm1.insert(
+            let _ = fm1.insert(
                 "key1".to_string(),
                 Value::String("value1".to_string()),
             );
 
             let mut fm2 = Frontmatter::new();
-            fm2.insert(
+            let _ = fm2.insert(
                 "key1".to_string(),
                 Value::String("new_value".to_string()),
             );

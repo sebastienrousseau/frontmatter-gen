@@ -34,7 +34,7 @@ const MAX_NESTING_DEPTH: usize = 32;
 const MAX_KEYS: usize = 1000;
 
 /// Options for controlling parsing behaviour
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct ParseOptions {
     /// Maximum allowed nesting depth
     pub max_depth: usize,
@@ -200,7 +200,7 @@ fn parse_yaml(raw: &str) -> Result<Frontmatter, FrontmatterError> {
     if let YmlValue::Mapping(mapping) = yml_value {
         for (key, value) in mapping {
             if let YmlValue::String(k) = key {
-                frontmatter.0.insert(k, yml_to_value(&value));
+                let _ = frontmatter.0.insert(k, yml_to_value(&value));
             }
         }
     }
@@ -232,7 +232,7 @@ fn yml_to_value(yml: &YmlValue) -> Value {
                 Frontmatter(HashMap::with_capacity(map.len()));
             for (k, v) in map {
                 if let YmlValue::String(key) = k {
-                    result
+                    let _ = result
                         .0
                         .insert(optimize_string(key), yml_to_value(v));
                 }
@@ -269,7 +269,7 @@ fn parse_toml(raw: &str) -> Result<Frontmatter, FrontmatterError> {
 
     if let TomlValue::Table(table) = toml_value {
         for (key, value) in table {
-            frontmatter.0.insert(key, toml_to_value(&value));
+            let _ = frontmatter.0.insert(key, toml_to_value(&value));
         }
     }
 
@@ -291,7 +291,7 @@ fn toml_to_value(toml: &TomlValue) -> Value {
             let mut result =
                 Frontmatter(HashMap::with_capacity(table.len()));
             for (k, v) in table {
-                result.0.insert(optimize_string(k), toml_to_value(v));
+                let _ = result.0.insert(optimize_string(k), toml_to_value(v));
             }
             Value::Object(Box::new(result))
         }
@@ -322,7 +322,7 @@ fn parse_json(raw: &str) -> Result<Frontmatter, FrontmatterError> {
 
     if let JsonValue::Object(obj) = json_value {
         for (key, value) in obj {
-            frontmatter.0.insert(key, json_to_value(&value));
+            let _ = frontmatter.0.insert(key, json_to_value(&value));
         }
     }
 
@@ -352,7 +352,7 @@ fn json_to_value(json: &JsonValue) -> Value {
             let mut result =
                 Frontmatter(HashMap::with_capacity(obj.len()));
             for (k, v) in obj {
-                result.0.insert(optimize_string(k), json_to_value(v));
+                let _ = result.0.insert(optimize_string(k), json_to_value(v));
             }
             Value::Object(Box::new(result))
         }
@@ -484,13 +484,13 @@ mod tests {
     // Helper function for creating test data
     fn create_test_frontmatter() -> Frontmatter {
         let mut fm = Frontmatter::new();
-        fm.insert(
+        let _ = fm.insert(
             "string".to_string(),
             Value::String("test".to_string()),
         );
-        fm.insert("number".to_string(), Value::Number(PI));
-        fm.insert("boolean".to_string(), Value::Boolean(true));
-        fm.insert(
+        let _ = fm.insert("number".to_string(), Value::Number(PI));
+        let _ = fm.insert("boolean".to_string(), Value::Boolean(true));
+        let _ = fm.insert(
             "array".to_string(),
             Value::Array(vec![
                 Value::Number(1.0),
@@ -519,7 +519,7 @@ mod tests {
         // Test max keys validation
         let mut large_fm = Frontmatter::new();
         for i in 0..MAX_KEYS + 1 {
-            large_fm.insert(
+            let _ = large_fm.insert(
                 i.to_string(),
                 Value::String("value".to_string()),
             );
@@ -539,7 +539,7 @@ mod tests {
                 [("nested".to_string(), current)].into_iter().collect(),
             )));
         }
-        nested_fm.insert("deep".to_string(), current);
+        let _ = nested_fm.insert("deep".to_string(), current);
         assert!(validate_frontmatter(
             &nested_fm,
             MAX_NESTING_DEPTH,
