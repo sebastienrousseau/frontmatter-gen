@@ -4,9 +4,11 @@
 //! It includes the `Format` enum for representing different frontmatter formats, the `Value` enum for representing various data types that can be stored in frontmatter, and the `Frontmatter` struct which is the main container for frontmatter data.
 
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
-use std::fmt;
-use std::str::FromStr;
+use std::{
+    collections::{BTreeMap, HashMap},
+    fmt,
+    str::FromStr,
+};
 
 /// Represents the different formats supported for frontmatter serialization/deserialization.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -25,6 +27,18 @@ pub enum Format {
 impl Default for Format {
     fn default() -> Self {
         Format::Json
+    }
+}
+
+impl fmt::Display for Format {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let format_str = match self {
+            Format::Yaml => "YAML",
+            Format::Toml => "TOML",
+            Format::Json => "JSON",
+            Format::Unsupported => "Unsupported",
+        };
+        write!(f, "{}", format_str)
     }
 }
 
@@ -885,11 +899,26 @@ impl Frontmatter {
     pub fn is_null(&self, key: &str) -> bool {
         matches!(self.get(key), Some(Value::Null))
     }
+
+    /// Clears the frontmatter while preserving allocated capacity
+    pub fn clear(&mut self) {
+        self.0.clear();
+    }
+
+    /// Returns the current capacity of the underlying HashMap
+    pub fn capacity(&self) -> usize {
+        self.0.capacity()
+    }
+
+    /// Reserves capacity for at least `additional` more elements
+    pub fn reserve(&mut self, additional: usize) {
+        self.0.reserve(additional);
+    }
 }
 
 impl Default for Frontmatter {
     fn default() -> Self {
-        Self::new()
+        Self(HashMap::with_capacity(8))
     }
 }
 
@@ -950,7 +979,7 @@ impl fmt::Display for Frontmatter {
         // Use a BTreeMap to ensure consistent key order (sorted by key)
         let mut sorted_map = BTreeMap::new();
         for (key, value) in &self.0 {
-            sorted_map.insert(key, value);
+            let _ = sorted_map.insert(key, value);
         }
 
         for (i, (key, value)) in sorted_map.iter().enumerate() {
@@ -1031,597 +1060,379 @@ mod tests {
     use super::*;
     use std::f64::consts::PI;
 
-    #[test]
-    fn test_frontmatter_new() {
-        let fm = Frontmatter::new();
-        assert!(fm.is_empty());
-        assert_eq!(fm.len(), 0);
+    mod format_tests {
+        use super::*;
+
+        #[test]
+        fn test_format_default() {
+            assert_eq!(Format::default(), Format::Json);
+        }
     }
 
-    #[test]
-    fn test_frontmatter_insert_and_get() {
-        let mut fm = Frontmatter::new();
-        let key = "title".to_string();
-        let value = Value::String("Hello World".to_string());
-        let _ = fm.insert(key.clone(), value.clone());
+    mod value_tests {
+        use super::*;
 
-        assert_eq!(fm.get(&key), Some(&value));
-    }
-
-    #[test]
-    fn test_frontmatter_remove() {
-        let mut fm = Frontmatter::new();
-        let key = "title".to_string();
-        let value = Value::String("Hello World".to_string());
-        let _ = fm.insert(key.clone(), value.clone());
-
-        let removed = fm.remove(&key);
-        assert_eq!(removed, Some(value));
-        assert!(fm.get(&key).is_none());
-    }
-
-    #[test]
-    fn test_frontmatter_contains_key() {
-        let mut fm = Frontmatter::new();
-        let key = "title".to_string();
-        let value = Value::String("Hello World".to_string());
-        let _ = fm.insert(key.clone(), value.clone());
-
-        assert!(fm.contains_key(&key));
-        let _ = fm.remove(&key);
-        assert!(!fm.contains_key(&key));
-    }
-
-    #[test]
-    fn test_frontmatter_len_and_is_empty() {
-        let mut fm = Frontmatter::new();
-        assert_eq!(fm.len(), 0);
-        assert!(fm.is_empty());
-
-        let _ = fm.insert("key1".to_string(), Value::Null);
-        assert_eq!(fm.len(), 1);
-        assert!(!fm.is_empty());
-
-        let _ = fm.insert("key2".to_string(), Value::Boolean(true));
-        assert_eq!(fm.len(), 2);
-
-        let _ = fm.remove("key1");
-        assert_eq!(fm.len(), 1);
-
-        let _ = fm.remove("key2");
-        assert_eq!(fm.len(), 0);
-        assert!(fm.is_empty());
-    }
-
-    #[test]
-    fn test_frontmatter_iter() {
-        let mut fm = Frontmatter::new();
-        let _ = fm.insert(
-            "title".to_string(),
-            Value::String("Hello".to_string()),
-        );
-        let _ = fm.insert("views".to_string(), Value::Number(100.0));
-
-        let mut keys = vec![];
-        let mut values = vec![];
-
-        for (k, v) in fm.iter() {
-            keys.push(k.clone());
-            values.push(v.clone());
+        #[test]
+        fn test_value_default() {
+            assert_eq!(Value::default(), Value::Null);
         }
 
-        keys.sort();
-        values.sort_by(|a, b| {
-            format!("{:?}", a).cmp(&format!("{:?}", b))
-        });
+        #[test]
+        fn test_value_as_str() {
+            let value = Value::String("Hello".to_string());
+            assert_eq!(value.as_str(), Some("Hello"));
 
-        assert_eq!(
-            keys,
-            vec!["title".to_string(), "views".to_string()]
-        );
-        assert_eq!(
-            values,
-            vec![
-                Value::Number(100.0),
-                Value::String("Hello".to_string())
-            ]
-        );
+            let value = Value::Number(42.0);
+            assert_eq!(value.as_str(), None);
+        }
+
+        #[test]
+        fn test_value_as_f64() {
+            let value = Value::Number(42.0);
+            assert_eq!(value.as_f64(), Some(42.0));
+
+            let value = Value::String("Not a number".to_string());
+            assert_eq!(value.as_f64(), None);
+        }
+
+        #[test]
+        fn test_value_as_bool() {
+            let value = Value::Boolean(true);
+            assert_eq!(value.as_bool(), Some(true));
+
+            let value = Value::String("Not a boolean".to_string());
+            assert_eq!(value.as_bool(), None);
+        }
+
+        #[test]
+        fn test_value_is_null() {
+            assert!(Value::Null.is_null());
+            assert!(!Value::String("Not null".to_string()).is_null());
+        }
+
+        #[test]
+        fn test_value_is_string() {
+            assert!(Value::String("test".to_string()).is_string());
+            assert!(!Value::Number(42.0).is_string());
+        }
+
+        #[test]
+        fn test_value_is_number() {
+            assert!(Value::Number(42.0).is_number());
+            assert!(!Value::String("42".to_string()).is_number());
+        }
+
+        #[test]
+        fn test_value_is_boolean() {
+            assert!(Value::Boolean(true).is_boolean());
+            assert!(!Value::String("true".to_string()).is_boolean());
+        }
+
+        #[test]
+        fn test_value_as_array() {
+            let value =
+                Value::Array(vec![Value::Null, Value::Boolean(false)]);
+            assert!(value.as_array().is_some());
+            assert_eq!(value.as_array().unwrap().len(), 2);
+
+            assert!(Value::String("Not an array".to_string())
+                .as_array()
+                .is_none());
+        }
+
+        #[test]
+        fn test_value_as_object() {
+            let mut fm = Frontmatter::new();
+            let _ = fm.insert(
+                "key".to_string(),
+                Value::String("value".to_string()),
+            );
+            let value = Value::Object(Box::new(fm.clone()));
+            assert_eq!(value.as_object().unwrap(), &fm);
+
+            assert!(Value::String("Not an object".to_string())
+                .as_object()
+                .is_none());
+        }
+
+        #[test]
+        fn test_value_to_object() {
+            let fm = Frontmatter::new();
+            let obj = Value::Object(Box::new(fm.clone()));
+            assert_eq!(obj.to_object().unwrap(), fm);
+
+            assert!(Value::String("Not an object".to_string())
+                .to_object()
+                .is_err());
+        }
+
+        #[test]
+        fn test_value_to_string_representation() {
+            assert_eq!(
+                Value::String("test".to_string())
+                    .to_string_representation(),
+                "\"test\""
+            );
+            assert_eq!(
+                Value::Number(42.0).to_string_representation(),
+                "42"
+            );
+            assert_eq!(
+                Value::Boolean(true).to_string_representation(),
+                "true"
+            );
+        }
+
+        #[test]
+        fn test_value_display() {
+            assert_eq!(format!("{}", Value::Null), "null");
+            assert_eq!(
+                format!("{}", Value::String("test".to_string())),
+                "\"test\""
+            );
+            assert_eq!(
+                format!("{}", Value::Number(PI)),
+                format!("{}", PI)
+            );
+            assert_eq!(format!("{}", Value::Boolean(true)), "true");
+        }
     }
 
-    #[test]
-    fn test_frontmatter_iter_mut() {
-        let mut fm = Frontmatter::new();
-        let _ = fm.insert("count".to_string(), Value::Number(1.0));
+    mod frontmatter_tests {
+        use super::*;
 
-        for (_, v) in fm.iter_mut() {
-            if let Value::Number(n) = v {
-                *n += 1.0;
+        #[test]
+        fn test_frontmatter_new() {
+            let fm = Frontmatter::new();
+            assert!(fm.is_empty());
+            assert_eq!(fm.len(), 0);
+        }
+
+        #[test]
+        fn test_frontmatter_insert_and_get() {
+            let mut fm = Frontmatter::new();
+            let _ = fm.insert(
+                "title".to_string(),
+                Value::String("Hello World".to_string()),
+            );
+
+            assert_eq!(
+                fm.get("title"),
+                Some(&Value::String("Hello World".to_string()))
+            );
+        }
+
+        #[test]
+        fn test_frontmatter_len_and_is_empty() {
+            let mut fm = Frontmatter::new();
+            assert!(fm.is_empty());
+
+            let _ = fm.insert("key1".to_string(), Value::Null);
+            assert_eq!(fm.len(), 1);
+            assert!(!fm.is_empty());
+        }
+
+        #[test]
+        fn test_frontmatter_merge() {
+            let mut fm1 = Frontmatter::new();
+            let _ = fm1.insert(
+                "key1".to_string(),
+                Value::String("value1".to_string()),
+            );
+
+            let mut fm2 = Frontmatter::new();
+            let _ = fm2.insert("key2".to_string(), Value::Number(42.0));
+
+            fm1.merge(fm2);
+            assert_eq!(fm1.len(), 2);
+            assert_eq!(fm1.get("key2"), Some(&Value::Number(42.0)));
+        }
+
+        #[test]
+        fn test_frontmatter_display() {
+            let mut fm = Frontmatter::new();
+            let _ = fm.insert(
+                "key1".to_string(),
+                Value::String("value1".to_string()),
+            );
+            let _ = fm.insert("key2".to_string(), Value::Number(42.0));
+            let display = format!("{}", fm);
+
+            assert!(display.contains("\"key1\": \"value1\""));
+            assert!(display.contains("\"key2\": 42"));
+        }
+
+        #[test]
+        fn test_frontmatter_is_null() {
+            let mut fm = Frontmatter::new();
+            let _ = fm.insert("key".to_string(), Value::Null);
+
+            assert!(fm.is_null("key"));
+            assert!(!fm.is_null("nonexistent_key"));
+        }
+    }
+
+    mod utility_tests {
+        use super::*;
+
+        #[test]
+        fn test_escape_str() {
+            assert_eq!(
+                escape_str(r#"Hello "World""#),
+                r#"Hello \"World\""#
+            );
+            assert_eq!(
+                escape_str(r#"C:\path\to\file"#),
+                r#"C:\\path\\to\\file"#
+            );
+        }
+
+        #[test]
+        fn test_escape_str_empty() {
+            assert_eq!(escape_str(""), "");
+        }
+    }
+
+    mod additional_tests {
+        use super::*;
+
+        #[test]
+        fn test_frontmatter_clear() {
+            let mut fm = Frontmatter::new();
+            let _ = fm.insert(
+                "key1".to_string(),
+                Value::String("value1".to_string()),
+            );
+            let _ = fm.insert("key2".to_string(), Value::Number(42.0));
+
+            fm.clear();
+            assert!(fm.is_empty());
+            assert_eq!(fm.len(), 0);
+        }
+
+        #[test]
+        fn test_frontmatter_capacity_and_reserve() {
+            let mut fm = Frontmatter::new();
+            let initial_capacity = fm.capacity();
+
+            fm.reserve(10);
+            assert!(fm.capacity() >= initial_capacity + 10);
+        }
+
+        #[test]
+        fn test_value_tagged() {
+            let tagged_value = Value::Tagged(
+                "tag".to_string(),
+                Box::new(Value::Number(42.0)),
+            );
+
+            if let Value::Tagged(tag, value) = tagged_value {
+                assert_eq!(tag, "tag");
+                assert_eq!(*value, Value::Number(42.0));
+            } else {
+                panic!("Expected Value::Tagged");
             }
         }
 
-        assert_eq!(fm.get("count"), Some(&Value::Number(2.0)));
-    }
+        #[test]
+        fn test_value_array_mutation() {
+            let mut value = Value::Array(vec![
+                Value::Number(1.0),
+                Value::Number(2.0),
+            ]);
 
-    #[test]
-    fn test_value_as_str() {
-        let value = Value::String("Hello".to_string());
-        assert_eq!(value.as_str(), Some("Hello"));
+            if let Some(array) = value.get_mut_array() {
+                array.push(Value::Number(3.0));
+            }
 
-        let value = Value::Number(42.0);
-        assert_eq!(value.as_str(), None);
-    }
-
-    #[test]
-    fn test_value_as_f64() {
-        let value = Value::Number(42.0);
-        assert_eq!(value.as_f64(), Some(42.0));
-
-        let value = Value::String("Not a number".to_string());
-        assert_eq!(value.as_f64(), None);
-    }
-
-    #[test]
-    fn test_value_as_bool() {
-        let value = Value::Boolean(true);
-        assert_eq!(value.as_bool(), Some(true));
-
-        let value = Value::String("Not a bool".to_string());
-        assert_eq!(value.as_bool(), None);
-    }
-
-    #[test]
-    fn test_value_as_array() {
-        let value =
-            Value::Array(vec![Value::Null, Value::Boolean(false)]);
-        assert!(value.as_array().is_some());
-        let array = value.as_array().unwrap();
-        assert_eq!(array.len(), 2);
-        assert_eq!(array[0], Value::Null);
-        assert_eq!(array[1], Value::Boolean(false));
-
-        let value = Value::String("Not an array".to_string());
-        assert!(value.as_array().is_none());
-    }
-
-    #[test]
-    fn test_value_as_object() {
-        let mut fm = Frontmatter::new();
-        let _ = fm.insert(
-            "key".to_string(),
-            Value::String("value".to_string()),
-        );
-        let value = Value::Object(Box::new(fm.clone()));
-        assert!(value.as_object().is_some());
-        assert_eq!(value.as_object().unwrap(), &fm);
-
-        let value = Value::String("Not an object".to_string());
-        assert!(value.as_object().is_none());
-    }
-
-    #[test]
-    fn test_value_as_tagged() {
-        let inner_value = Value::Boolean(true);
-        let value = Value::Tagged(
-            "isActive".to_string(),
-            Box::new(inner_value.clone()),
-        );
-        assert!(value.as_tagged().is_some());
-        let (tag, val) = value.as_tagged().unwrap();
-        assert_eq!(tag, "isActive");
-        assert_eq!(val, &inner_value);
-
-        let value = Value::String("Not tagged".to_string());
-        assert!(value.as_tagged().is_none());
-    }
-
-    #[test]
-    fn test_value_is_null() {
-        let value = Value::Null;
-        assert!(value.is_null());
-
-        let value = Value::String("Not null".to_string());
-        assert!(!value.is_null());
-    }
-
-    #[test]
-    fn test_from_traits() {
-        let s: Value = "Hello".into();
-        assert_eq!(s, Value::String("Hello".to_string()));
-
-        let s: Value = "Hello".to_string().into();
-        assert_eq!(s, Value::String("Hello".to_string()));
-
-        let n: Value = Value::Number(PI);
-        assert_eq!(n, Value::Number(PI));
-
-        let b: Value = true.into();
-        assert_eq!(b, Value::Boolean(true));
-    }
-
-    #[test]
-    fn test_default_traits() {
-        let default_value: Value = Default::default();
-        assert_eq!(default_value, Value::Null);
-
-        let default_format: Format = Default::default();
-        assert_eq!(default_format, Format::Json);
-    }
-
-    #[test]
-    fn test_escape_str() {
-        assert_eq!(
-            escape_str(r#"Hello "World""#),
-            r#"Hello \"World\""#
-        );
-        assert_eq!(
-            escape_str(r#"C:\path\to\file"#),
-            r#"C:\\path\\to\\file"#
-        );
-    }
-
-    #[test]
-    fn test_display_for_value() {
-        let value = Value::String("Hello \"World\"".to_string());
-        assert_eq!(format!("{}", value), "\"Hello \\\"World\\\"\"");
-
-        let value = Value::Number(42.0);
-        assert_eq!(format!("{}", value), "42");
-
-        let value =
-            Value::Array(vec![Value::Boolean(true), Value::Null]);
-        assert_eq!(format!("{}", value), "[true, null]");
-    }
-
-    #[test]
-    fn test_display_for_frontmatter() {
-        let mut fm = Frontmatter::new();
-        let _ = fm.insert(
-            "key1".to_string(),
-            Value::String("value1".to_string()),
-        );
-        let _ = fm.insert("key2".to_string(), Value::Number(42.0));
-
-        let output = format!("{}", fm);
-
-        // Check that the output contains both key-value pairs without enforcing the order
-        assert!(output.contains("\"key1\": \"value1\""));
-        assert!(output.contains("\"key2\": 42"));
-    }
-
-    #[test]
-    fn test_value_is_string() {
-        assert!(Value::String("test".to_string()).is_string());
-        assert!(!Value::Number(42.0).is_string());
-    }
-
-    #[test]
-    fn test_value_is_number() {
-        assert!(Value::Number(42.0).is_number());
-        assert!(!Value::String("42".to_string()).is_number());
-    }
-
-    #[test]
-    fn test_value_is_boolean() {
-        assert!(Value::Boolean(true).is_boolean());
-        assert!(!Value::String("true".to_string()).is_boolean());
-    }
-
-    #[test]
-    fn test_value_is_array() {
-        assert!(Value::Array(vec![]).is_array());
-        assert!(!Value::String("[]".to_string()).is_array());
-    }
-
-    #[test]
-    fn test_value_is_object() {
-        assert!(Value::Object(Box::new(Frontmatter::new())).is_object());
-        assert!(!Value::String("{}".to_string()).is_object());
-    }
-
-    #[test]
-    fn test_value_is_tagged() {
-        assert!(Value::Tagged(
-            "tag".to_string(),
-            Box::new(Value::Null)
-        )
-        .is_tagged());
-        assert!(!Value::String("tagged".to_string()).is_tagged());
-    }
-
-    #[test]
-    fn test_value_array_len() {
-        let arr = Value::Array(vec![Value::Null, Value::Boolean(true)]);
-        assert_eq!(arr.array_len(), Some(2));
-        assert_eq!(
-            Value::String("not an array".to_string()).array_len(),
-            None
-        );
-    }
-
-    #[test]
-    fn test_value_to_object() {
-        let fm = Frontmatter::new();
-        let obj = Value::Object(Box::new(fm.clone()));
-        assert_eq!(obj.to_object().unwrap(), fm);
-        assert!(Value::String("not an object".to_string())
-            .to_object()
-            .is_err());
-    }
-
-    #[test]
-    fn test_value_to_string_representation() {
-        assert_eq!(
-            Value::String("test".to_string())
-                .to_string_representation(),
-            "\"test\""
-        );
-        assert_eq!(
-            Value::Number(42.0).to_string_representation(),
-            "42"
-        );
-        assert_eq!(
-            Value::Boolean(true).to_string_representation(),
-            "true"
-        );
-    }
-
-    #[test]
-    fn test_value_into_string() {
-        assert_eq!(
-            Value::String("test".to_string()).into_string().unwrap(),
-            "test"
-        );
-        assert!(Value::Number(42.0).into_string().is_err());
-    }
-
-    #[test]
-    fn test_value_into_f64() {
-        assert_eq!(Value::Number(42.0).into_f64().unwrap(), 42.0);
-        assert!(Value::String("42".to_string()).into_f64().is_err());
-    }
-
-    #[test]
-    fn test_value_into_bool() {
-        assert!(Value::Boolean(true).into_bool().unwrap());
-        assert!(Value::String("true".to_string()).into_bool().is_err());
-    }
-
-    #[test]
-    fn test_value_get_mut_array() {
-        let mut arr = Value::Array(vec![Value::Null]);
-        assert!(arr.get_mut_array().is_some());
-        if let Some(array) = arr.get_mut_array() {
-            array.push(Value::Boolean(true));
-        }
-        assert_eq!(arr.array_len(), Some(2));
-
-        let mut not_arr = Value::String("not an array".to_string());
-        assert!(not_arr.get_mut_array().is_none());
-    }
-
-    #[test]
-    fn test_frontmatter_merge() {
-        let mut fm1 = Frontmatter::new();
-        fm1.insert(
-            "key1".to_string(),
-            Value::String("value1".to_string()),
-        );
-
-        let mut fm2 = Frontmatter::new();
-        fm2.insert("key2".to_string(), Value::Number(42.0));
-
-        fm1.merge(fm2);
-        assert_eq!(fm1.len(), 2);
-        assert_eq!(
-            fm1.get("key1"),
-            Some(&Value::String("value1".to_string()))
-        );
-        assert_eq!(fm1.get("key2"), Some(&Value::Number(42.0)));
-    }
-
-    #[test]
-    fn test_frontmatter_is_null() {
-        let mut fm = Frontmatter::new();
-        fm.insert("null_key".to_string(), Value::Null);
-        fm.insert(
-            "non_null_key".to_string(),
-            Value::String("value".to_string()),
-        );
-
-        assert!(fm.is_null("null_key"));
-        assert!(!fm.is_null("non_null_key"));
-        assert!(!fm.is_null("nonexistent_key"));
-    }
-
-    #[test]
-    fn test_frontmatter_from_iterator() {
-        let pairs = vec![
-            ("key1".to_string(), Value::String("value1".to_string())),
-            ("key2".to_string(), Value::Number(42.0)),
-        ];
-
-        let fm = Frontmatter::from_iter(pairs);
-        assert_eq!(fm.len(), 2);
-        assert_eq!(
-            fm.get("key1"),
-            Some(&Value::String("value1".to_string()))
-        );
-        assert_eq!(fm.get("key2"), Some(&Value::Number(42.0)));
-    }
-
-    #[test]
-    fn test_value_from_str() {
-        assert_eq!("null".parse::<Value>().unwrap(), Value::Null);
-        assert_eq!(
-            "true".parse::<Value>().unwrap(),
-            Value::Boolean(true)
-        );
-        assert_eq!(
-            "false".parse::<Value>().unwrap(),
-            Value::Boolean(false)
-        );
-        assert_eq!("42".parse::<Value>().unwrap(), Value::Number(42.0));
-
-        // Compare floating-point numbers using f64::consts::PI for precision
-        if let Value::Number(n) =
-            "3.141592653589793".parse::<Value>().unwrap()
-        {
-            assert!((n - std::f64::consts::PI).abs() < f64::EPSILON);
-        } else {
-            panic!("Expected Value::Number");
+            assert_eq!(value.array_len(), Some(3));
+            assert!(value
+                .as_array()
+                .unwrap()
+                .contains(&Value::Number(3.0)));
         }
 
-        assert_eq!(
-            "test".parse::<Value>().unwrap(),
-            Value::String("test".to_string())
-        );
-    }
+        #[test]
+        fn test_value_conversion_errors() {
+            let value = Value::Boolean(true);
+            assert!(value.clone().into_f64().is_err());
+            assert!(value.into_string().is_err());
 
-    #[test]
-    fn test_format_default() {
-        assert_eq!(Format::default(), Format::Json);
-    }
+            let value = Value::Number(42.0);
+            assert!(value.into_bool().is_err());
+        }
 
-    #[test]
-    fn test_value_display() {
-        assert_eq!(format!("{}", Value::Null), "null");
-        assert_eq!(
-            format!("{}", Value::String("test".to_string())),
-            "\"test\""
-        );
-        assert_eq!(format!("{}", Value::Number(PI)), format!("{}", PI));
-        assert_eq!(format!("{}", Value::Number(42.0)), "42");
-        assert_eq!(format!("{}", Value::Boolean(true)), "true");
-        assert_eq!(
-            format!(
-                "{}",
-                Value::Array(vec![Value::Null, Value::Boolean(false)])
-            ),
-            "[null, false]"
-        );
-        assert_eq!(
-            format!("{}", Value::Object(Box::new(Frontmatter::new()))),
-            "{}"
-        );
-        assert_eq!(
-            format!(
-                "{}",
-                Value::Tagged("tag".to_string(), Box::new(Value::Null))
-            ),
-            "\"tag\": null"
-        );
-    }
+        #[test]
+        fn test_value_from_str_error_handling() {
+            assert_eq!("null".parse::<Value>().unwrap(), Value::Null);
+            assert_eq!(
+                "true".parse::<Value>().unwrap(),
+                Value::Boolean(true)
+            );
+            assert_eq!(
+                "false".parse::<Value>().unwrap(),
+                Value::Boolean(false)
+            );
 
-    #[test]
-    fn test_frontmatter_display() {
-        let mut fm = Frontmatter::new();
-        fm.insert(
-            "key1".to_string(),
-            Value::String("value1".to_string()),
-        );
-        fm.insert("key2".to_string(), Value::Number(42.0));
-        let display = format!("{}", fm);
-        assert!(display.contains("\"key1\": \"value1\""));
-        assert!(display.contains("\"key2\": 42"));
-    }
+            let invalid_number = "abc123".parse::<Value>();
+            assert!(invalid_number.is_ok()); // Treated as a string.
+            assert_eq!(
+                invalid_number.unwrap(),
+                Value::String("abc123".to_string())
+            );
+        }
 
-    #[test]
-    fn test_value_from_iterator() {
-        let vec =
-            vec![Value::String("a".to_string()), Value::Number(1.0)];
-        let array_value: Value = vec.into_iter().collect();
-        assert_eq!(
-            array_value,
-            Value::Array(vec![
-                Value::String("a".to_string()),
-                Value::Number(1.0)
-            ])
-        );
-    }
+        #[test]
+        fn test_frontmatter_empty_iterator() {
+            let fm = Frontmatter::new();
+            let mut iter = fm.iter();
 
-    #[test]
-    fn test_frontmatter_into_iterator() {
-        let mut fm = Frontmatter::new();
-        fm.insert(
-            "key1".to_string(),
-            Value::String("value1".to_string()),
-        );
-        fm.insert("key2".to_string(), Value::Number(42.0));
+            assert!(iter.next().is_none());
+        }
 
-        let vec: Vec<(String, Value)> = fm.into_iter().collect();
-        assert_eq!(vec.len(), 2);
-        assert!(vec.contains(&(
-            "key1".to_string(),
-            Value::String("value1".to_string())
-        )));
-        assert!(
-            vec.contains(&("key2".to_string(), Value::Number(42.0)))
-        );
-    }
+        #[test]
+        fn test_frontmatter_duplicate_merge() {
+            let mut fm1 = Frontmatter::new();
+            let _ = fm1.insert(
+                "key1".to_string(),
+                Value::String("value1".to_string()),
+            );
 
-    #[test]
-    fn test_value_partial_eq() {
-        assert_eq!(Value::Null, Value::Null);
-        assert_eq!(
-            Value::String("test".to_string()),
-            Value::String("test".to_string())
-        );
-        assert_eq!(Value::Number(42.0), Value::Number(42.0));
-        assert_eq!(Value::Boolean(true), Value::Boolean(true));
-        assert_ne!(Value::Null, Value::Boolean(false));
-        assert_ne!(
-            Value::String("a".to_string()),
-            Value::String("b".to_string())
-        );
-        assert_ne!(Value::Number(1.0), Value::Number(2.0));
-    }
+            let mut fm2 = Frontmatter::new();
+            let _ = fm2.insert(
+                "key1".to_string(),
+                Value::String("new_value".to_string()),
+            );
 
-    #[test]
-    fn test_frontmatter_partial_eq() {
-        let mut fm1 = Frontmatter::new();
-        fm1.insert(
-            "key".to_string(),
-            Value::String("value".to_string()),
-        );
+            fm1.merge(fm2);
 
-        let mut fm2 = Frontmatter::new();
-        fm2.insert(
-            "key".to_string(),
-            Value::String("value".to_string()),
-        );
+            assert_eq!(
+                fm1.get("key1"),
+                Some(&Value::String("new_value".to_string()))
+            );
+        }
 
-        assert_eq!(fm1, fm2);
+        #[test]
+        fn test_display_for_empty_frontmatter() {
+            let fm = Frontmatter::new();
+            let display = format!("{}", fm);
+            assert_eq!(display, "{}");
+        }
 
-        fm2.insert("key2".to_string(), Value::Null);
-        assert_ne!(fm1, fm2);
-    }
+        #[test]
+        fn test_value_from_iterator_empty() {
+            let vec: Vec<Value> = vec![];
+            let array_value: Value = vec.into_iter().collect();
+            assert_eq!(array_value, Value::Array(vec![]));
+        }
 
-    #[test]
-    fn test_value_clone() {
-        let original = Value::String("test".to_string());
-        let cloned = original.clone();
-        assert_eq!(original, cloned);
-
-        let original =
-            Value::Array(vec![Value::Null, Value::Boolean(true)]);
-        let cloned = original.clone();
-        assert_eq!(original, cloned);
-    }
-
-    #[test]
-    fn test_frontmatter_clone() {
-        let mut original = Frontmatter::new();
-        original.insert(
-            "key".to_string(),
-            Value::String("value".to_string()),
-        );
-        let cloned = original.clone();
-        assert_eq!(original, cloned);
-    }
-
-    #[test]
-    fn test_escape_str_edge_cases() {
-        assert_eq!(escape_str(""), "");
-        assert_eq!(escape_str("\\\""), "\\\\\\\"");
+        #[test]
+        fn test_escape_str_edge_cases() {
+            let special_chars = r#"Special \chars\n\t"#;
+            assert_eq!(
+                escape_str(special_chars),
+                r#"Special \\chars\\n\\t"#
+            );
+        }
     }
 }

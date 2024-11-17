@@ -1,61 +1,121 @@
-// src/lib.rs
-
 #![doc = include_str!("../README.md")]
 #![doc(
     html_favicon_url = "https://kura.pro/frontmatter-gen/images/favicon.ico",
     html_logo_url = "https://kura.pro/frontmatter-gen/images/logos/frontmatter-gen.svg",
     html_root_url = "https://docs.rs/frontmatter-gen"
 )]
-#![crate_name = "frontmatter_gen"]
-#![crate_type = "lib"]
 
-/// The `error` module contains error types related to the frontmatter parsing process.
+//! # Frontmatter Gen
+//!
+//! `frontmatter-gen` is a fast, secure, and memory-efficient library for working with
+//! frontmatter in multiple formats (YAML, TOML, and JSON).
+//!
+//! ## Overview
+//!
+//! Frontmatter is metadata prepended to content files, commonly used in static site
+//! generators and content management systems. This library provides:
+//!
+//! - **Zero-copy parsing** for optimal performance
+//! - **Format auto-detection** between YAML, TOML, and JSON
+//! - **Memory safety** with no unsafe code
+//! - **Comprehensive validation** of all inputs
+//! - **Rich error handling** with detailed diagnostics
+//! - **Async support** for non-blocking operations
+//!
+//! ## Quick Start
+//!
+//! ```rust
+//! use frontmatter_gen::{extract, Format, Result};
+//!
+//! fn main() -> Result<()> {
+//!     let content = r#"---
+//! title: My Post
+//! date: 2025-09-09
+//! draft: false
+//! ---
+//! # Post content here
+//! "#;
+//!
+//!     let (frontmatter, content) = extract(content)?;
+//!     println!("Title: {}", frontmatter.get("title")
+//!         .and_then(|v| v.as_str())
+//!         .unwrap_or("Untitled"));
+//!
+//!     Ok(())
+//! }
+//! ```
+
+/// Prelude module for convenient imports.
+///
+/// This module provides the most commonly used types and traits.
+/// Import all contents with `use frontmatter_gen::prelude::*`.
+pub mod prelude {
+    pub use crate::{
+        extract, to_format, Config, Format, Frontmatter,
+        FrontmatterError, Result, Value,
+    };
+}
+
+// Re-export core types and traits
+pub use crate::{
+    config::Config,
+    error::FrontmatterError,
+    extractor::{detect_format, extract_raw_frontmatter},
+    parser::{parse, to_string},
+    types::{Format, Frontmatter, Value},
+};
+
+// Module declarations
+pub mod config;
+pub mod engine;
 pub mod error;
-/// The `extractor` module contains functions for extracting raw frontmatter from content.
 pub mod extractor;
-/// The `parser` module contains functions for parsing frontmatter into a structured format.
 pub mod parser;
-/// The `types` module contains types related to the frontmatter parsing process.
 pub mod types;
+pub mod utils;
 
-use error::FrontmatterError;
-use extractor::{detect_format, extract_raw_frontmatter};
-use parser::{parse, to_string};
-// Re-export types for external access
-pub use types::{Format, Frontmatter, Value}; // Add `Frontmatter` and `Format` to the public interface
+/// A specialized Result type for frontmatter operations.
+///
+/// This type alias provides a consistent error type throughout the crate
+/// and simplifies error handling for library users.
+pub type Result<T> = std::result::Result<T, FrontmatterError>;
 
-/// Extracts frontmatter from a string of content.
+/// Extracts and parses frontmatter from content with format auto-detection.
 ///
-/// This function attempts to extract frontmatter from the given content string.
-/// It supports YAML, TOML, and JSON formats.
+/// This function provides a zero-copy extraction of frontmatter, automatically
+/// detecting the format (YAML, TOML, or JSON) and parsing it into a structured
+/// representation.
 ///
-/// # Arguments
+/// # Performance
 ///
-/// * `content` - A string slice containing the content to parse.
-///
-/// # Returns
-///
-/// * `Ok((Frontmatter, &str))` - A tuple containing the parsed frontmatter and the remaining content.
-/// * `Err(FrontmatterError)` - An error if extraction or parsing fails.
+/// This function performs a single pass over the input with O(n) complexity
+/// and avoids unnecessary allocations where possible.
 ///
 /// # Examples
 ///
-/// ```
-/// use frontmatter_gen::{extract, Frontmatter};
+/// ```rust
+/// use frontmatter_gen::extract;
 ///
-/// let yaml_content = r#"---
+/// let content = r#"---
 /// title: My Post
-/// date: 2023-05-20
+/// date: 2025-09-09
 /// ---
 /// Content here"#;
 ///
-/// let (frontmatter, remaining_content) = extract(yaml_content).unwrap();
+/// let (frontmatter, content) = extract(content)?;
 /// assert_eq!(frontmatter.get("title").unwrap().as_str().unwrap(), "My Post");
-/// assert_eq!(remaining_content, "Content here");
+/// assert_eq!(content.trim(), "Content here");
+/// # Ok::<(), frontmatter_gen::FrontmatterError>(())
 /// ```
-pub fn extract(
-    content: &str,
-) -> Result<(Frontmatter, &str), FrontmatterError> {
+///
+/// # Errors
+///
+/// Returns `FrontmatterError` if:
+/// - Content is malformed
+/// - Frontmatter format is invalid
+/// - Parsing fails
+#[inline]
+pub fn extract(content: &str) -> Result<(Frontmatter, &str)> {
     let (raw_frontmatter, remaining_content) =
         extract_raw_frontmatter(content)?;
     let format = detect_format(raw_frontmatter)?;
@@ -67,30 +127,373 @@ pub fn extract(
 ///
 /// # Arguments
 ///
-/// * `frontmatter` - The Frontmatter to convert.
-/// * `format` - The target Format to convert to.
+/// * `frontmatter` - The frontmatter to convert
+/// * `format` - Target format for conversion
 ///
 /// # Returns
 ///
-/// * `Ok(String)` - The frontmatter converted to the specified format.
-/// * `Err(FrontmatterError)` - An error if conversion fails.
+/// Returns the formatted string representation or an error.
 ///
 /// # Examples
 ///
-/// ```
-/// use frontmatter_gen::{Frontmatter, Format, to_format};
+/// ```rust
+/// use frontmatter_gen::{Frontmatter, Format, Value, to_format};
 ///
 /// let mut frontmatter = Frontmatter::new();
-/// frontmatter.insert("title".to_string(), "My Post".into());
-/// frontmatter.insert("date".to_string(), "2023-05-20".into());
+/// frontmatter.insert("title".to_string(), Value::String("My Post".into()));
 ///
-/// let yaml = to_format(&frontmatter, Format::Yaml).unwrap();
+/// let yaml = to_format(&frontmatter, Format::Yaml)?;
 /// assert!(yaml.contains("title: My Post"));
-/// assert!(yaml.contains("date: '2023-05-20'"));
+/// # Ok::<(), frontmatter_gen::FrontmatterError>(())
 /// ```
+///
+/// # Errors
+///
+/// Returns `FrontmatterError` if:
+/// - Serialization fails
+/// - Format conversion fails
+/// - Invalid data types are encountered
 pub fn to_format(
     frontmatter: &Frontmatter,
     format: Format,
-) -> Result<String, FrontmatterError> {
+) -> Result<String> {
     to_string(frontmatter, format)
+}
+
+#[cfg(test)]
+mod extractor_tests {
+    use crate::FrontmatterError;
+
+    fn mock_operation(
+        input: Option<&str>,
+    ) -> Result<String, FrontmatterError> {
+        match input {
+            Some(value) => Ok(value.to_uppercase()), // Successful operation
+            None => Err(FrontmatterError::ParseError(
+                "Input is missing".to_string(),
+            )),
+        }
+    }
+
+    #[test]
+    fn test_result_type_success() {
+        let input = Some("hello");
+        let result = mock_operation(input);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "HELLO".to_string());
+    }
+
+    #[test]
+    fn test_result_type_error() {
+        let input = None;
+        let result = mock_operation(input);
+        assert!(matches!(
+            result,
+            Err(FrontmatterError::ParseError(ref e)) if e == "Input is missing"
+        ));
+    }
+
+    #[test]
+    fn test_result_type_pattern_matching() {
+        let input = Some("world");
+        let result = mock_operation(input);
+        match result {
+            Ok(value) => assert_eq!(value, "WORLD".to_string()),
+            Err(e) => panic!("Operation failed: {:?}", e),
+        }
+    }
+
+    #[test]
+    fn test_result_type_unwrap() {
+        let input = Some("rust");
+        let result = mock_operation(input);
+        assert_eq!(result.unwrap(), "RUST".to_string());
+    }
+
+    #[test]
+    fn test_result_type_expect() {
+        let input = Some("test");
+        let result = mock_operation(input);
+        assert_eq!(
+            result.expect("Unexpected error"),
+            "TEST".to_string()
+        );
+    }
+
+    #[test]
+    fn test_result_type_debug_format() {
+        let input = None;
+        let result = mock_operation(input);
+        assert_eq!(
+            format!("{:?}", result),
+            "Err(ParseError(\"Input is missing\"))"
+        );
+    }
+}
+
+#[cfg(test)]
+mod parser_tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_yaml_frontmatter() {
+        let raw = "title: Test Post\npublished: true";
+        let format = Format::Yaml;
+        let parsed = parse(raw, format).unwrap();
+        assert_eq!(
+            parsed.get("title").unwrap().as_str().unwrap(),
+            "Test Post"
+        );
+        assert!(parsed.get("published").unwrap().as_bool().unwrap());
+    }
+
+    #[test]
+    fn test_parse_toml_frontmatter() {
+        let raw = "title = \"Test Post\"\npublished = true";
+        let format = Format::Toml;
+        let parsed = parse(raw, format).unwrap();
+        assert_eq!(
+            parsed.get("title").unwrap().as_str().unwrap(),
+            "Test Post"
+        );
+        assert!(parsed.get("published").unwrap().as_bool().unwrap());
+    }
+
+    #[test]
+    fn test_invalid_yaml_syntax() {
+        let raw = "title: : invalid yaml";
+        let format = Format::Yaml;
+        let result = parse(raw, format);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_invalid_toml_syntax() {
+        let raw = "title = \"Unmatched quote";
+        let format = Format::Toml;
+        let result = parse(raw, format);
+        assert!(result.is_err(), "Should fail for invalid TOML syntax");
+    }
+
+    #[test]
+    fn test_parse_invalid_json_syntax() {
+        let raw = "{\"title\": \"Missing closing brace\"";
+        let format = Format::Json;
+        let result = parse(raw, format);
+        assert!(result.is_err(), "Should fail for invalid JSON syntax");
+    }
+
+    #[test]
+    fn test_parse_with_unknown_format() {
+        let raw = "random text";
+        let format = Format::Unsupported;
+        let result = parse(raw, format);
+        assert!(result.is_err(), "Should fail for unsupported formats");
+    }
+
+    #[test]
+    fn test_parse_valid_yaml() {
+        let raw = "title: Valid Post\npublished: true";
+        let format = Format::Yaml;
+        let frontmatter = parse(raw, format).unwrap();
+        assert_eq!(
+            frontmatter.get("title").unwrap().as_str().unwrap(),
+            "Valid Post"
+        );
+        assert!(frontmatter
+            .get("published")
+            .unwrap()
+            .as_bool()
+            .unwrap());
+    }
+
+    #[test]
+    fn test_parse_malformed_yaml() {
+        let raw = "title: : bad yaml";
+        let format = Format::Yaml;
+        let result = parse(raw, format);
+        assert!(result.is_err(), "Should fail for malformed YAML");
+    }
+
+    #[test]
+    fn test_parse_json() {
+        let raw = r#"{"title": "Valid Post", "draft": false}"#;
+        let format = Format::Json;
+        let frontmatter = parse(raw, format).unwrap();
+        assert_eq!(
+            frontmatter.get("title").unwrap().as_str().unwrap(),
+            "Valid Post"
+        );
+        assert!(!frontmatter.get("draft").unwrap().as_bool().unwrap());
+    }
+}
+
+#[cfg(test)]
+mod format_tests {
+    use super::*;
+
+    #[test]
+    fn test_to_format_yaml() {
+        let mut frontmatter = Frontmatter::new();
+        let _ = frontmatter.insert(
+            "title".to_string(),
+            Value::String("Test Post".to_string()),
+        );
+        let yaml = to_format(&frontmatter, Format::Yaml).unwrap();
+        assert!(yaml.contains("title: Test Post"));
+    }
+
+    #[test]
+    fn test_format_conversion_roundtrip() {
+        let mut frontmatter = Frontmatter::new();
+        let _ = frontmatter.insert(
+            "key".to_string(),
+            Value::String("value".to_string()),
+        );
+        let yaml = to_format(&frontmatter, Format::Yaml).unwrap();
+        let content = format!("---\n{}\n---\nContent", yaml);
+        let (parsed, _) = extract(&content).unwrap();
+        assert_eq!(
+            parsed.get("key").unwrap().as_str().unwrap(),
+            "value"
+        );
+    }
+
+    #[test]
+    fn test_unsupported_format() {
+        let result =
+            to_format(&Frontmatter::new(), Format::Unsupported);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_convert_to_yaml() {
+        let mut frontmatter = Frontmatter::new();
+        let _ = frontmatter.insert(
+            "title".to_string(),
+            Value::String("Test Post".into()),
+        );
+        let yaml = to_format(&frontmatter, Format::Yaml).unwrap();
+        assert!(yaml.contains("title: Test Post"));
+    }
+
+    #[test]
+    fn test_roundtrip_conversion() {
+        let content = "---\ntitle: Test Post\n---\nContent";
+        let (parsed, _) = extract(content).unwrap();
+        let yaml = to_format(&parsed, Format::Yaml).unwrap();
+        assert!(yaml.contains("title: Test Post"));
+    }
+
+    #[test]
+    fn test_format_invalid_data() {
+        let frontmatter = Frontmatter::new();
+        let result = to_format(&frontmatter, Format::Unsupported);
+        assert!(result.is_err());
+    }
+}
+
+#[cfg(test)]
+mod integration_tests {
+    use super::*;
+
+    #[test]
+    fn test_end_to_end_extraction_and_parsing() {
+        let content = "---\ntitle: Test Post\n---\nContent here";
+        let (frontmatter, content) = extract(content).unwrap();
+        assert_eq!(
+            frontmatter.get("title").unwrap().as_str().unwrap(),
+            "Test Post"
+        );
+        assert_eq!(content.trim(), "Content here");
+    }
+
+    #[test]
+    fn test_roundtrip_conversion() {
+        let content = "---\ntitle: Test Post\n---\nContent";
+        let (frontmatter, _) = extract(content).unwrap();
+        let yaml = to_format(&frontmatter, Format::Yaml).unwrap();
+        assert!(yaml.contains("title: Test Post"));
+    }
+
+    #[test]
+    fn test_complete_workflow() {
+        let content = "---\ntitle: Integration Test\n---\nBody content";
+        let (frontmatter, body) = extract(content).unwrap();
+        assert_eq!(
+            frontmatter.get("title").unwrap().as_str().unwrap(),
+            "Integration Test"
+        );
+        assert_eq!(body.trim(), "Body content");
+    }
+
+    #[test]
+    fn test_end_to_end_error_handling() {
+        let content = "Invalid frontmatter";
+        let result = extract(content);
+        assert!(result.is_err());
+    }
+}
+
+#[cfg(test)]
+mod edge_case_tests {
+    use super::*;
+
+    #[test]
+    fn test_special_characters_handling() {
+        let cases = vec![
+            (
+                "---\ntitle: \"Special: &chars\"\n---\nContent",
+                "Special: &chars",
+            ),
+            (
+                "---\ntitle: \"Another > test\"\n---\nContent",
+                "Another > test",
+            ),
+        ];
+
+        for (content, expected_title) in cases {
+            let (frontmatter, _) = extract(content).unwrap();
+            assert_eq!(
+                frontmatter.get("title").unwrap().as_str().unwrap(),
+                expected_title
+            );
+        }
+    }
+
+    #[cfg(feature = "ssg")]
+    #[tokio::test]
+    async fn test_async_extraction() {
+        let content = "---\ntitle: Async Test\n---\nContent";
+        let (frontmatter, body) = extract(content).unwrap();
+        assert_eq!(
+            frontmatter.get("title").unwrap().as_str().unwrap(),
+            "Async Test"
+        );
+        assert_eq!(body.trim(), "Content");
+    }
+
+    #[test]
+    fn test_large_frontmatter() {
+        let mut large_content = String::from("---\n");
+        for i in 0..1000 {
+            large_content
+                .push_str(&format!("key_{}: value_{}\n", i, i));
+        }
+        large_content.push_str("---\nContent");
+        let (frontmatter, content) = extract(&large_content).unwrap();
+        assert_eq!(frontmatter.len(), 1000);
+        assert_eq!(content.trim(), "Content");
+    }
+
+    #[test]
+    fn test_special_characters() {
+        let content =
+            "---\ntitle: \"Special & <characters>\"\n---\nContent";
+        let (frontmatter, _) = extract(content).unwrap();
+        assert_eq!(
+            frontmatter.get("title").unwrap().as_str().unwrap(),
+            "Special & <characters>"
+        );
+    }
 }

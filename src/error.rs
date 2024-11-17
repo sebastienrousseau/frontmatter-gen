@@ -1,117 +1,168 @@
-//! This module defines the error types used throughout the frontmatter-gen crate.
+//! Error handling for the frontmatter-gen crate.
 //!
-//! It provides a comprehensive set of error variants to cover various failure scenarios that may occur during frontmatter parsing, conversion, and extraction.
+//! This module provides a comprehensive set of error types to handle various
+//! failure scenarios that may occur during frontmatter parsing, conversion,
+//! and extraction. Each variant includes detailed error messages to aid in
+//! debugging and improve error handling.
+//!
+//! # Examples
+//!
+//! ```
+//! use frontmatter_gen::error::FrontmatterError;
+//!
+//! fn example() -> Result<(), FrontmatterError> {
+//!     let invalid_yaml = "invalid: : yaml";
+//!     match serde_yml::from_str::<serde_yml::Value>(invalid_yaml) {
+//!         Ok(_) => Ok(()),
+//!         Err(e) => Err(FrontmatterError::YamlParseError { source: e }),
+//!     }
+//! }
+//! ```
 
 use serde_json::Error as JsonError;
 use serde_yml::Error as YamlError;
 use thiserror::Error;
 
-/// Represents errors that can occur during frontmatter parsing, conversion, and extraction.
+/// Represents errors that can occur during frontmatter operations.
 ///
-/// This enum uses the `thiserror` crate to provide clear and structured error messages, making it easier to debug and handle issues that arise when processing frontmatter.
+/// This enum uses the `thiserror` crate to provide structured error messages,
+/// improving the ease of debugging and handling errors encountered in
+/// frontmatter processing.
 #[derive(Error, Debug)]
 pub enum FrontmatterError {
-    /// Error occurred while parsing YAML.
+    /// Content exceeds the maximum allowed size
+    #[error("Content size {size} exceeds maximum allowed size of {max} bytes")]
+    ContentTooLarge {
+        /// The actual size of the content
+        size: usize,
+        /// The maximum allowed size
+        max: usize,
+    },
+
+    /// Nesting depth exceeds the maximum allowed
+    #[error(
+        "Nesting depth {depth} exceeds maximum allowed depth of {max}"
+    )]
+    NestingTooDeep {
+        /// The actual nesting depth
+        depth: usize,
+        /// The maximum allowed depth
+        max: usize,
+    },
+
+    /// Error occurred while parsing YAML content
     #[error("Failed to parse YAML: {source}")]
     YamlParseError {
-        /// The source error from the YAML parser.
+        /// The original error from the YAML parser
         source: YamlError,
     },
 
-    /// Error occurred while parsing TOML.
+    /// Error occurred while parsing TOML content
     #[error("Failed to parse TOML: {0}")]
     TomlParseError(#[from] toml::de::Error),
 
-    /// Error occurred while parsing JSON.
+    /// Error occurred while parsing JSON content
     #[error("Failed to parse JSON: {0}")]
     JsonParseError(#[from] JsonError),
 
-    /// The frontmatter format is invalid or unsupported.
+    /// The frontmatter format is invalid or unsupported
     #[error("Invalid frontmatter format")]
     InvalidFormat,
 
-    /// Error occurred during conversion between formats.
+    /// Error occurred during conversion between formats
     #[error("Failed to convert frontmatter: {0}")]
     ConversionError(String),
 
-    /// Generic parse error.
+    /// Generic error during parsing
     #[error("Failed to parse frontmatter: {0}")]
     ParseError(String),
 
-    /// Error for unsupported or unknown frontmatter format.
+    /// Unsupported or unknown frontmatter format was detected
     #[error("Unsupported frontmatter format detected at line {line}")]
     UnsupportedFormat {
-        /// The line number where the unsupported format was detected.
+        /// The line number where the unsupported format was encountered
         line: usize,
     },
 
-    /// No frontmatter found in the content.
+    /// No frontmatter content was found
     #[error("No frontmatter found in the content")]
     NoFrontmatterFound,
 
-    /// Invalid JSON frontmatter.
+    /// Invalid JSON frontmatter
     #[error("Invalid JSON frontmatter")]
     InvalidJson,
 
-    /// Invalid TOML frontmatter.
+    /// Invalid TOML frontmatter
     #[error("Invalid TOML frontmatter")]
     InvalidToml,
 
-    /// Invalid YAML frontmatter.
+    /// Invalid YAML frontmatter
     #[error("Invalid YAML frontmatter")]
     InvalidYaml,
 
-    /// JSON frontmatter exceeds maximum nesting depth.
+    /// Invalid URL format
+    #[error("Invalid URL: {0}")]
+    InvalidUrl(String),
+
+    /// Invalid language code
+    #[error("Invalid language code: {0}")]
+    InvalidLanguage(String),
+
+    /// JSON frontmatter exceeds maximum nesting depth
     #[error("JSON frontmatter exceeds maximum nesting depth")]
     JsonDepthLimitExceeded,
 
-    /// Error occurred during frontmatter extraction.
+    /// Error during frontmatter extraction
     #[error("Extraction error: {0}")]
     ExtractionError(String),
+
+    /// Input validation error
+    #[error("Input validation error: {0}")]
+    ValidationError(String),
 }
 
 impl Clone for FrontmatterError {
     fn clone(&self) -> Self {
         match self {
-            // For non-clonable errors, we fallback to a custom or default error.
-            FrontmatterError::YamlParseError { .. } => {
-                FrontmatterError::InvalidFormat
+            Self::ContentTooLarge { size, max } => {
+                Self::ContentTooLarge {
+                    size: *size,
+                    max: *max,
+                }
             }
-            FrontmatterError::TomlParseError(e) => {
-                FrontmatterError::TomlParseError(e.clone())
+            Self::NestingTooDeep { depth, max } => {
+                Self::NestingTooDeep {
+                    depth: *depth,
+                    max: *max,
+                }
             }
-            FrontmatterError::JsonParseError { .. } => {
-                FrontmatterError::InvalidFormat
+            Self::YamlParseError { .. } => Self::InvalidFormat,
+            Self::TomlParseError(e) => Self::TomlParseError(e.clone()),
+            Self::JsonParseError(_) => Self::InvalidFormat,
+            Self::InvalidFormat => Self::InvalidFormat,
+            Self::ConversionError(msg) => {
+                Self::ConversionError(msg.clone())
             }
-            FrontmatterError::InvalidFormat => {
-                FrontmatterError::InvalidFormat
+            Self::ParseError(msg) => Self::ParseError(msg.clone()),
+            Self::UnsupportedFormat { line } => {
+                Self::UnsupportedFormat { line: *line }
             }
-            FrontmatterError::ConversionError(msg) => {
-                FrontmatterError::ConversionError(msg.clone())
+            Self::NoFrontmatterFound => Self::NoFrontmatterFound,
+            Self::InvalidJson => Self::InvalidJson,
+            Self::InvalidToml => Self::InvalidToml,
+            Self::InvalidYaml => Self::InvalidYaml,
+            Self::JsonDepthLimitExceeded => {
+                Self::JsonDepthLimitExceeded
             }
-            FrontmatterError::ExtractionError(msg) => {
-                FrontmatterError::ExtractionError(msg.clone())
+            Self::ExtractionError(msg) => {
+                Self::ExtractionError(msg.clone())
             }
-            FrontmatterError::ParseError(msg) => {
-                FrontmatterError::ParseError(msg.clone())
+            Self::ValidationError(msg) => {
+                Self::ValidationError(msg.clone())
             }
-            FrontmatterError::UnsupportedFormat { line } => {
-                FrontmatterError::UnsupportedFormat { line: *line }
-            }
-            FrontmatterError::NoFrontmatterFound => {
-                FrontmatterError::NoFrontmatterFound
-            }
-            FrontmatterError::InvalidJson => {
-                FrontmatterError::InvalidJson
-            }
-            FrontmatterError::InvalidToml => {
-                FrontmatterError::InvalidToml
-            }
-            FrontmatterError::InvalidYaml => {
-                FrontmatterError::InvalidYaml
-            }
-            FrontmatterError::JsonDepthLimitExceeded => {
-                FrontmatterError::JsonDepthLimitExceeded
+            Self::InvalidUrl(msg) => Self::InvalidUrl(msg.clone()),
+            Self::InvalidLanguage(msg) => {
+                Self::InvalidLanguage(msg.clone())
             }
         }
     }
@@ -122,381 +173,425 @@ impl FrontmatterError {
     ///
     /// # Arguments
     ///
-    /// * `message` - A string slice containing the error message.
+    /// * `message` - A string slice containing the error message
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```rust
-    /// use frontmatter_gen::error::FrontmatterError;
-    /// let error = FrontmatterError::generic_parse_error("Failed to parse at line 10");
     /// ```
-    pub fn generic_parse_error(message: &str) -> FrontmatterError {
-        FrontmatterError::ParseError(message.to_string())
+    /// use frontmatter_gen::error::FrontmatterError;
+    ///
+    /// let error = FrontmatterError::generic_parse_error("Invalid syntax");
+    /// assert!(matches!(error, FrontmatterError::ParseError(_)));
+    /// ```
+    #[must_use]
+    pub fn generic_parse_error(message: &str) -> Self {
+        Self::ParseError(message.to_string())
     }
 
-    /// Helper function to create an `UnsupportedFormat` error with a given line number.
+    /// Creates an unsupported format error for a specific line.
     ///
     /// # Arguments
     ///
-    /// * `line` - The line number where the unsupported format was detected.
+    /// * `line` - The line number where the unsupported format was detected
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```rust
-    /// use frontmatter_gen::error::FrontmatterError;
-    /// let error = FrontmatterError::unsupported_format(12);
     /// ```
-    pub fn unsupported_format(line: usize) -> FrontmatterError {
-        FrontmatterError::UnsupportedFormat { line }
+    /// use frontmatter_gen::error::FrontmatterError;
+    ///
+    /// let error = FrontmatterError::unsupported_format(42);
+    /// assert!(matches!(error, FrontmatterError::UnsupportedFormat { line: 42 }));
+    /// ```
+    #[must_use]
+    pub fn unsupported_format(line: usize) -> Self {
+        Self::UnsupportedFormat { line }
+    }
+
+    /// Creates a validation error with a custom message.
+    ///
+    /// # Arguments
+    ///
+    /// * `message` - A string slice containing the validation error message
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use frontmatter_gen::error::FrontmatterError;
+    ///
+    /// let error = FrontmatterError::validation_error("Invalid character in title");
+    /// assert!(matches!(error, FrontmatterError::ValidationError(_)));
+    /// ```
+    #[must_use]
+    pub fn validation_error(message: &str) -> Self {
+        Self::ValidationError(message.to_string())
     }
 }
 
-/// Example usage of the `FrontmatterError` enum.
-///
-/// This function demonstrates how you might handle various errors during frontmatter parsing.
-///
-/// # Returns
-///
-/// Returns a `Result` demonstrating a parsing error.
-pub fn example_usage() -> Result<(), FrontmatterError> {
-    let example_toml = "invalid toml content";
+/// Errors that can occur during site generation
+#[derive(Error, Debug)]
+pub enum EngineError {
+    /// Error occurred during content processing
+    #[error("Content processing error: {0}")]
+    ContentError(String),
 
-    // Attempt to parse TOML and handle errors
-    match toml::from_str::<toml::Value>(example_toml) {
-        Ok(_) => Ok(()),
-        Err(e) => Err(FrontmatterError::TomlParseError(e)),
-    }
+    /// Error occurred during template processing
+    #[error("Template processing error: {0}")]
+    TemplateError(String),
+
+    /// Error occurred during asset processing
+    #[error("Asset processing error: {0}")]
+    AssetError(String),
+
+    /// Error occurred during file system operations
+    #[error("File system error: {source}")]
+    FileSystemError {
+        #[from]
+        /// The underlying IO error
+        source: std::io::Error,
+    },
+
+    /// Error occurred during metadata processing
+    #[error("Metadata error: {0}")]
+    MetadataError(String),
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde::de::Error;
 
-    #[test]
-    fn test_json_parse_error() {
-        let json_data = "{ invalid json }";
-        let result: Result<serde_json::Value, _> =
-            serde_json::from_str(json_data);
-        assert!(result.is_err());
-        let error =
-            FrontmatterError::JsonParseError(result.unwrap_err());
-        assert!(matches!(error, FrontmatterError::JsonParseError(_)));
-    }
+    /// Tests for FrontmatterError
+    mod frontmatter_error {
+        use super::*;
 
-    #[test]
-    fn test_toml_parse_error() {
-        let toml_data = "invalid toml data";
-        let result: Result<toml::Value, _> = toml::from_str(toml_data);
-        assert!(result.is_err());
-        let error =
-            FrontmatterError::TomlParseError(result.unwrap_err());
-        assert!(matches!(error, FrontmatterError::TomlParseError(_)));
-    }
-
-    #[test]
-    fn test_yaml_parse_error() {
-        let yaml_data = "invalid: yaml: data";
-        let result: Result<serde_yml::Value, _> =
-            serde_yml::from_str(yaml_data);
-        assert!(result.is_err());
-        let error = FrontmatterError::YamlParseError {
-            source: result.unwrap_err(),
-        };
-        assert!(matches!(
-            error,
-            FrontmatterError::YamlParseError { .. }
-        ));
-    }
-
-    #[test]
-    fn test_conversion_error_message() {
-        let error_message = "Conversion failed";
-        let error = FrontmatterError::ConversionError(
-            error_message.to_string(),
-        );
-        assert!(matches!(error, FrontmatterError::ConversionError(_)));
-        assert_eq!(
-            error.to_string(),
-            "Failed to convert frontmatter: Conversion failed"
-        );
-    }
-
-    #[test]
-    fn test_parse_error_message() {
-        let error_message = "Failed to parse frontmatter";
-        let error =
-            FrontmatterError::ParseError(error_message.to_string());
-        assert!(matches!(error, FrontmatterError::ParseError(_)));
-        assert_eq!(
-            error.to_string(),
-            "Failed to parse frontmatter: Failed to parse frontmatter"
-        );
-    }
-
-    #[test]
-    fn test_generic_parse_error() {
-        let error =
-            FrontmatterError::generic_parse_error("Parsing failed");
-        match error {
-            FrontmatterError::ParseError(msg) => {
-                assert_eq!(msg, "Parsing failed")
-            }
-            _ => panic!("Expected ParseError"),
-        }
-    }
-
-    #[test]
-    fn test_unsupported_format_error() {
-        let error = FrontmatterError::unsupported_format(10);
-        match error {
-            FrontmatterError::UnsupportedFormat { line } => {
-                assert_eq!(line, 10)
-            }
-            _ => panic!("Expected UnsupportedFormat"),
-        }
-    }
-
-    #[test]
-    fn test_clone_implementation() {
-        let original =
-            FrontmatterError::ConversionError("Test error".to_string());
-        let cloned = original.clone();
-        if let FrontmatterError::ConversionError(msg) = cloned {
-            assert_eq!(msg, "Test error");
-        } else {
-            panic!("Expected ConversionError");
+        #[test]
+        fn test_content_too_large_error() {
+            let error = FrontmatterError::ContentTooLarge {
+                size: 1000,
+                max: 500,
+            };
+            assert!(error
+                .to_string()
+                .contains("Content size 1000 exceeds maximum"));
         }
 
-        let original = FrontmatterError::UnsupportedFormat { line: 42 };
-        let cloned = original.clone();
-        if let FrontmatterError::UnsupportedFormat { line } = cloned {
-            assert_eq!(line, 42);
-        } else {
-            panic!("Expected UnsupportedFormat");
-        }
-    }
-
-    #[test]
-    fn test_invalid_format_error() {
-        let error = FrontmatterError::InvalidFormat;
-        assert!(matches!(error, FrontmatterError::InvalidFormat));
-    }
-
-    #[test]
-    fn test_conversion_error() {
-        let error = FrontmatterError::ConversionError(
-            "Test conversion error".to_string(),
-        );
-        assert!(matches!(error, FrontmatterError::ConversionError(_)));
-    }
-
-    #[test]
-    fn test_no_frontmatter_found_error() {
-        let error = FrontmatterError::NoFrontmatterFound;
-        assert!(matches!(error, FrontmatterError::NoFrontmatterFound));
-    }
-
-    #[test]
-    fn test_invalid_json_error() {
-        let error = FrontmatterError::InvalidJson;
-        assert!(matches!(error, FrontmatterError::InvalidJson));
-    }
-
-    #[test]
-    fn test_invalid_toml_error() {
-        let error = FrontmatterError::InvalidToml;
-        assert!(matches!(error, FrontmatterError::InvalidToml));
-    }
-
-    #[test]
-    fn test_invalid_yaml_error() {
-        let error = FrontmatterError::InvalidYaml;
-        assert!(matches!(error, FrontmatterError::InvalidYaml));
-    }
-
-    #[test]
-    fn test_json_depth_limit_exceeded_error() {
-        let error = FrontmatterError::JsonDepthLimitExceeded;
-        assert!(matches!(
-            error,
-            FrontmatterError::JsonDepthLimitExceeded
-        ));
-    }
-
-    #[test]
-    fn test_extraction_error() {
-        let error = FrontmatterError::ExtractionError(
-            "Test extraction error".to_string(),
-        );
-        assert!(matches!(error, FrontmatterError::ExtractionError(_)));
-    }
-
-    #[test]
-    fn test_error_messages() {
-        assert_eq!(
-            FrontmatterError::InvalidFormat.to_string(),
-            "Invalid frontmatter format"
-        );
-        assert_eq!(
-            FrontmatterError::NoFrontmatterFound.to_string(),
-            "No frontmatter found in the content"
-        );
-        assert_eq!(
-            FrontmatterError::JsonDepthLimitExceeded.to_string(),
-            "JSON frontmatter exceeds maximum nesting depth"
-        );
-    }
-
-    #[test]
-    fn test_example_usage() {
-        let result = example_usage();
-        assert!(result.is_err());
-        assert!(matches!(
-            result.unwrap_err(),
-            FrontmatterError::TomlParseError(_)
-        ));
-    }
-
-    #[test]
-    fn test_clone_fallback_yaml_parse_error() {
-        let original = FrontmatterError::YamlParseError {
-            source: YamlError::custom("invalid yaml"),
-        };
-        let cloned = original.clone();
-        assert!(matches!(cloned, FrontmatterError::InvalidFormat));
-    }
-
-    #[test]
-    fn test_clone_fallback_json_parse_error() {
-        let original = FrontmatterError::JsonParseError(
-            serde_json::from_str::<serde_json::Value>("invalid json")
-                .unwrap_err(),
-        );
-        let cloned = original.clone();
-        assert!(matches!(cloned, FrontmatterError::InvalidFormat));
-    }
-
-    #[test]
-    fn test_unsupported_format_with_edge_cases() {
-        let error = FrontmatterError::unsupported_format(0);
-        if let FrontmatterError::UnsupportedFormat { line } = error {
-            assert_eq!(line, 0);
-        } else {
-            panic!("Expected UnsupportedFormat with line 0");
+        #[test]
+        fn test_nesting_too_deep_error() {
+            let error =
+                FrontmatterError::NestingTooDeep { depth: 10, max: 5 };
+            assert!(error
+                .to_string()
+                .contains("Nesting depth 10 exceeds maximum"));
         }
 
-        let error = FrontmatterError::unsupported_format(usize::MAX);
-        if let FrontmatterError::UnsupportedFormat { line } = error {
-            assert_eq!(line, usize::MAX);
-        } else {
-            panic!(
-                "Expected UnsupportedFormat with maximum line number"
+        #[test]
+        fn test_json_parse_error() {
+            let json_data = "{ invalid json }";
+            let result: Result<serde_json::Value, _> =
+                serde_json::from_str(json_data);
+            assert!(result.is_err());
+            let error =
+                FrontmatterError::JsonParseError(result.unwrap_err());
+            assert!(matches!(
+                error,
+                FrontmatterError::JsonParseError(_)
+            ));
+        }
+
+        #[test]
+        fn test_yaml_parse_error() {
+            let yaml_data = "invalid: : yaml";
+            let result: Result<serde_yml::Value, _> =
+                serde_yml::from_str(yaml_data);
+            assert!(result.is_err());
+            let error = FrontmatterError::YamlParseError {
+                source: result.unwrap_err(),
+            };
+            assert!(matches!(
+                error,
+                FrontmatterError::YamlParseError { .. }
+            ));
+        }
+
+        #[test]
+        fn test_validation_error() {
+            let error = FrontmatterError::validation_error(
+                "Test validation error",
+            );
+            assert!(matches!(
+                error,
+                FrontmatterError::ValidationError(_)
+            ));
+            assert_eq!(
+                error.to_string(),
+                "Input validation error: Test validation error"
+            );
+        }
+
+        #[test]
+        fn test_generic_parse_error() {
+            let error = FrontmatterError::generic_parse_error(
+                "Test parse error",
+            );
+            assert!(matches!(error, FrontmatterError::ParseError(_)));
+            assert_eq!(
+                error.to_string(),
+                "Failed to parse frontmatter: Test parse error"
+            );
+        }
+
+        #[test]
+        fn test_unsupported_format_error() {
+            let error = FrontmatterError::unsupported_format(42);
+            assert!(matches!(
+                error,
+                FrontmatterError::UnsupportedFormat { line: 42 }
+            ));
+            assert_eq!(
+                error.to_string(),
+                "Unsupported frontmatter format detected at line 42"
+            );
+        }
+
+        #[test]
+        fn test_clone_implementation() {
+            let original = FrontmatterError::ContentTooLarge {
+                size: 1000,
+                max: 500,
+            };
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::ContentTooLarge {
+                    size: 1000,
+                    max: 500
+                }
+            ));
+
+            let original =
+                FrontmatterError::NestingTooDeep { depth: 10, max: 5 };
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::NestingTooDeep { depth: 10, max: 5 }
+            ));
+        }
+
+        #[test]
+        fn test_error_display() {
+            let error = FrontmatterError::ContentTooLarge {
+                size: 1000,
+                max: 500,
+            };
+            assert_eq!(
+                error.to_string(),
+                "Content size 1000 exceeds maximum allowed size of 500 bytes"
+            );
+
+            let error = FrontmatterError::ValidationError(
+                "Invalid input".to_string(),
+            );
+            assert_eq!(
+                error.to_string(),
+                "Input validation error: Invalid input"
             );
         }
     }
 
-    #[test]
-    fn test_no_frontmatter_fallback() {
-        // Simulate a case where no frontmatter is found
-        let _content = "Some content without frontmatter";
-        let result: Result<(), FrontmatterError> =
-            Err(FrontmatterError::NoFrontmatterFound);
+    /// Tests for EngineError
+    mod engine_error {
+        use super::*;
+        use std::io;
 
-        assert!(matches!(
-            result,
-            Err(FrontmatterError::NoFrontmatterFound)
-        ));
-    }
+        #[test]
+        fn test_content_error() {
+            let error =
+                EngineError::ContentError("Content issue".to_string());
+            assert!(matches!(error, EngineError::ContentError(_)));
+            assert_eq!(
+                error.to_string(),
+                "Content processing error: Content issue"
+            );
+        }
 
-    #[test]
-    fn test_json_depth_limit_exceeded() {
-        let error = FrontmatterError::JsonDepthLimitExceeded;
-        assert_eq!(
-            error.to_string(),
-            "JSON frontmatter exceeds maximum nesting depth"
-        );
-    }
+        #[test]
+        fn test_template_error() {
+            let error = EngineError::TemplateError(
+                "Template issue".to_string(),
+            );
+            assert!(matches!(error, EngineError::TemplateError(_)));
+            assert_eq!(
+                error.to_string(),
+                "Template processing error: Template issue"
+            );
+        }
 
-    #[test]
-    fn test_invalid_json_error_message() {
-        let error = FrontmatterError::InvalidJson;
-        assert_eq!(error.to_string(), "Invalid JSON frontmatter");
-    }
+        #[test]
+        fn test_asset_error() {
+            let error =
+                EngineError::AssetError("Asset issue".to_string());
+            assert!(matches!(error, EngineError::AssetError(_)));
+            assert_eq!(
+                error.to_string(),
+                "Asset processing error: Asset issue"
+            );
+        }
 
-    #[test]
-    fn test_invalid_toml_error_message() {
-        let error = FrontmatterError::InvalidToml;
-        assert_eq!(error.to_string(), "Invalid TOML frontmatter");
-    }
+        #[test]
+        fn test_filesystem_error() {
+            let io_error =
+                io::Error::new(io::ErrorKind::Other, "IO failure");
+            let error =
+                EngineError::FileSystemError { source: io_error };
+            assert!(matches!(
+                error,
+                EngineError::FileSystemError { .. }
+            ));
+            assert_eq!(
+                error.to_string(),
+                "File system error: IO failure"
+            );
+        }
 
-    #[test]
-    fn test_invalid_yaml_error_message() {
-        let error = FrontmatterError::InvalidYaml;
-        assert_eq!(error.to_string(), "Invalid YAML frontmatter");
-    }
-
-    #[test]
-    fn test_parse_error_custom_message() {
-        let error_message = "Unexpected character at line 5";
-        let error =
-            FrontmatterError::ParseError(error_message.to_string());
-        assert_eq!(error.to_string(), "Failed to parse frontmatter: Unexpected character at line 5");
-    }
-
-    #[test]
-    fn test_parse_error_empty_message() {
-        let error_message = "";
-        let error =
-            FrontmatterError::ParseError(error_message.to_string());
-        assert_eq!(error.to_string(), "Failed to parse frontmatter: ");
-    }
-
-    #[test]
-    fn test_no_frontmatter_found_in_content() {
-        let _content = "Regular content without any frontmatter";
-        let result: Result<(), FrontmatterError> =
-            Err(FrontmatterError::NoFrontmatterFound);
-
-        assert!(matches!(
-            result,
-            Err(FrontmatterError::NoFrontmatterFound)
-        ));
-    }
-
-    #[test]
-    fn test_extraction_error_custom_message() {
-        let error_message =
-            "Failed to extract frontmatter from line 10";
-        let error = FrontmatterError::ExtractionError(
-            error_message.to_string(),
-        );
-        assert_eq!(error.to_string(), "Extraction error: Failed to extract frontmatter from line 10");
-    }
-
-    #[test]
-    fn test_extraction_error_empty_message() {
-        let error = FrontmatterError::ExtractionError("".to_string());
-        assert_eq!(error.to_string(), "Extraction error: ");
-    }
-
-    #[test]
-    fn test_clone_extraction_error() {
-        let original = FrontmatterError::ExtractionError(
-            "Test extraction error".to_string(),
-        );
-        let cloned = original.clone();
-        if let FrontmatterError::ExtractionError(msg) = cloned {
-            assert_eq!(msg, "Test extraction error");
-        } else {
-            panic!("Expected ExtractionError");
+        #[test]
+        fn test_metadata_error() {
+            let error = EngineError::MetadataError(
+                "Metadata issue".to_string(),
+            );
+            assert!(matches!(error, EngineError::MetadataError(_)));
+            assert_eq!(
+                error.to_string(),
+                "Metadata error: Metadata issue"
+            );
         }
     }
 
-    #[test]
-    fn test_clone_no_frontmatter_found() {
-        let original = FrontmatterError::NoFrontmatterFound;
-        let cloned = original.clone();
-        assert!(matches!(cloned, FrontmatterError::NoFrontmatterFound));
+    /// Tests for the Clone implementation of `FrontmatterError`.
+    mod clone_tests {
+        use crate::error::FrontmatterError;
+
+        #[test]
+        fn test_clone_content_too_large() {
+            let original = FrontmatterError::ContentTooLarge {
+                size: 1000,
+                max: 500,
+            };
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::ContentTooLarge { size, max }
+                if size == 1000 && max == 500
+            ));
+        }
+
+        #[test]
+        fn test_clone_nesting_too_deep() {
+            let original =
+                FrontmatterError::NestingTooDeep { depth: 10, max: 5 };
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::NestingTooDeep { depth, max }
+                if depth == 10 && max == 5
+            ));
+        }
+
+        #[test]
+        fn test_clone_conversion_error() {
+            let original = FrontmatterError::ConversionError(
+                "conversion issue".to_string(),
+            );
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::ConversionError(msg) if msg == "conversion issue"
+            ));
+        }
+
+        #[test]
+        fn test_clone_parse_error() {
+            let original =
+                FrontmatterError::ParseError("parse issue".to_string());
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::ParseError(msg) if msg == "parse issue"
+            ));
+        }
+
+        #[test]
+        fn test_clone_unsupported_format() {
+            let original =
+                FrontmatterError::UnsupportedFormat { line: 42 };
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::UnsupportedFormat { line } if line == 42
+            ));
+        }
+
+        #[test]
+        fn test_clone_no_frontmatter_found() {
+            let original = FrontmatterError::NoFrontmatterFound;
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::NoFrontmatterFound
+            ));
+        }
+
+        #[test]
+        fn test_clone_invalid_json() {
+            let original = FrontmatterError::InvalidJson;
+            let cloned = original.clone();
+            assert!(matches!(cloned, FrontmatterError::InvalidJson));
+        }
+
+        #[test]
+        fn test_clone_invalid_toml() {
+            let original = FrontmatterError::InvalidToml;
+            let cloned = original.clone();
+            assert!(matches!(cloned, FrontmatterError::InvalidToml));
+        }
+
+        #[test]
+        fn test_clone_invalid_yaml() {
+            let original = FrontmatterError::InvalidYaml;
+            let cloned = original.clone();
+            assert!(matches!(cloned, FrontmatterError::InvalidYaml));
+        }
+
+        #[test]
+        fn test_clone_json_depth_limit_exceeded() {
+            let original = FrontmatterError::JsonDepthLimitExceeded;
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::JsonDepthLimitExceeded
+            ));
+        }
+
+        #[test]
+        fn test_clone_extraction_error() {
+            let original = FrontmatterError::ExtractionError(
+                "extraction issue".to_string(),
+            );
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::ExtractionError(msg) if msg == "extraction issue"
+            ));
+        }
+
+        #[test]
+        fn test_clone_validation_error() {
+            let original = FrontmatterError::ValidationError(
+                "validation issue".to_string(),
+            );
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::ValidationError(msg) if msg == "validation issue"
+            ));
+        }
     }
 }

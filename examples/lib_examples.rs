@@ -21,15 +21,18 @@ use frontmatter_gen::{extract, to_format, Format, Frontmatter};
 /// # Errors
 ///
 /// Returns an error if any of the example functions fail.
-#[tokio::main]
-pub(crate) async fn main() -> Result<(), Box<dyn std::error::Error>> {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🧪 FrontMatterGen Library Examples\n");
 
+    // Core functionality examples
     extract_example()?;
     to_format_example()?;
 
-    println!("\n🎉  All library examples completed successfully!");
+    // SSG-specific examples
+    #[cfg(feature = "ssg")]
+    ssg_examples()?;
 
+    println!("\n🎉  All library examples completed successfully!");
     Ok(())
 }
 
@@ -40,7 +43,7 @@ fn extract_example() -> Result<(), FrontmatterError> {
 
     let yaml_content = r#"---
 title: My Post
-date: 2023-05-20
+date: 2025-09-09
 ---
 Content here"#;
 
@@ -63,8 +66,8 @@ fn to_format_example() -> Result<(), FrontmatterError> {
     println!("---------------------------------------------");
 
     let mut frontmatter = Frontmatter::new();
-    frontmatter.insert("title".to_string(), "My Post".into());
-    frontmatter.insert("date".to_string(), "2023-05-20".into());
+    let _ = frontmatter.insert("title".to_string(), "My Post".into());
+    let _ = frontmatter.insert("date".to_string(), "2025-09-09".into());
 
     let yaml = to_format(&frontmatter, Format::Yaml)?;
     println!("    ✅  Converted frontmatter to YAML:\n{}", yaml);
@@ -73,9 +76,102 @@ fn to_format_example() -> Result<(), FrontmatterError> {
     println!("    ✅  Converted frontmatter to JSON:\n{}", json);
 
     assert!(yaml.contains("title: My Post"));
-    assert!(yaml.contains("date: '2023-05-20'"));
+    assert!(yaml.contains("date: '2025-09-09'"));
     assert!(json.contains("\"title\": \"My Post\""));
-    assert!(json.contains("\"date\": \"2023-05-20\""));
+    assert!(json.contains("\"date\": \"2025-09-09\""));
 
     Ok(())
+}
+
+/// SSG-specific examples that are only available with the "ssg" feature
+#[cfg(feature = "ssg")]
+fn ssg_examples() -> Result<(), FrontmatterError> {
+    println!("\n🦀 SSG-Specific Frontmatter Examples");
+    println!("---------------------------------------------");
+
+    let content = r#"---
+title: My Blog Post
+date: 2025-09-09
+template: blog
+layout: post
+tags:
+  - rust
+  - ssg
+---
+# Blog Content Here"#;
+
+    let (frontmatter, content) = extract(content)?;
+    println!("    ✅  Extracted SSG frontmatter: {:?}", frontmatter);
+    println!("    Content with markdown: {}", content);
+
+    // Convert to different formats
+    let yaml = to_format(&frontmatter, Format::Yaml)?;
+    let toml = to_format(&frontmatter, Format::Toml)?;
+    let json = to_format(&frontmatter, Format::Json)?;
+
+    println!("\n    Formats:");
+    println!("    YAML:\n{}", yaml);
+    println!("    TOML:\n{}", toml);
+    println!("    JSON:\n{}", json);
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Core functionality tests
+    #[test]
+    fn test_basic_extraction() -> Result<(), FrontmatterError> {
+        let content = r#"---
+title: Test
+---
+Content"#;
+        let (frontmatter, content) = extract(content)?;
+        assert_eq!(
+            frontmatter.get("title").unwrap().as_str().unwrap(),
+            "Test"
+        );
+        assert_eq!(content, "Content");
+        Ok(())
+    }
+
+    #[test]
+    fn test_format_conversion() -> Result<(), FrontmatterError> {
+        let mut frontmatter = Frontmatter::new();
+        frontmatter.insert("title".to_string(), "Test".into());
+
+        let yaml = to_format(&frontmatter, Format::Yaml)?;
+        assert!(yaml.contains("title: Test"));
+
+        let json = to_format(&frontmatter, Format::Json)?;
+        assert!(json.contains("\"title\": \"Test\""));
+
+        Ok(())
+    }
+
+    // SSG-specific tests
+    #[cfg(feature = "ssg")]
+    mod ssg_tests {
+        use super::*;
+
+        #[test]
+        fn test_ssg_metadata() -> Result<(), FrontmatterError> {
+            let content = r#"---
+title: Test
+template: post
+layout: blog
+tags:
+  - rust
+  - ssg
+---
+Content"#;
+            let (frontmatter, _) = extract(content)?;
+            assert!(frontmatter.get("template").is_some());
+            assert!(frontmatter.get("layout").is_some());
+            assert!(frontmatter.get("tags").is_some());
+            Ok(())
+        }
+    }
 }

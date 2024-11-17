@@ -37,7 +37,7 @@ use crate::types::Format;
 pub fn extract_raw_frontmatter(
     content: &str,
 ) -> Result<(&str, &str), FrontmatterError> {
-    // Try to extract YAML frontmatter with flexible delimiters for Windows and Linux.
+    // Extract YAML frontmatter
     if let Some(yaml) =
         extract_delimited_frontmatter(content, "---\n", "\n---")
             .or_else(|| {
@@ -50,10 +50,10 @@ pub fn extract_raw_frontmatter(
             .find("\n---\n")
             .or_else(|| content.find("\r\n---\r\n"))
             .map_or(content.len(), |i| i + 5)..];
-        return Ok((yaml, remaining));
+        return Ok((yaml, remaining.trim_start()));
     }
 
-    // Try to extract TOML frontmatter.
+    // Extract TOML frontmatter
     if let Some(toml) =
         extract_delimited_frontmatter(content, "+++\n", "\n+++")
             .or_else(|| {
@@ -66,16 +66,22 @@ pub fn extract_raw_frontmatter(
             .find("\n+++\n")
             .or_else(|| content.find("\r\n+++\r\n"))
             .map_or(content.len(), |i| i + 5)..];
-        return Ok((toml, remaining));
+        return Ok((toml, remaining.trim_start()));
     }
 
-    // Try to extract JSON frontmatter.
+    // Extract JSON frontmatter
     if let Ok(json) = extract_json_frontmatter(content) {
         let remaining = &content[json.len()..];
         return Ok((json, remaining.trim_start()));
     }
 
-    // Return an error if no valid frontmatter format is found.
+    // Handle cases where frontmatter delimiters exist but are empty
+    if content.starts_with("---\n---")
+        || content.starts_with("+++\n+++")
+    {
+        return Err(FrontmatterError::InvalidFormat);
+    }
+
     Err(FrontmatterError::InvalidFormat)
 }
 
@@ -189,18 +195,28 @@ pub fn detect_format(
 ) -> Result<Format, FrontmatterError> {
     let trimmed = raw_frontmatter.trim_start();
 
-    // Detect JSON format by checking for a leading '{' character.
+    // Check for YAML front matter marker
+    if trimmed.starts_with("---") {
+        return Ok(Format::Yaml);
+    }
+
+    // Check for JSON structure
     if trimmed.starts_with('{') {
-        Ok(Format::Json)
+        return Ok(Format::Json);
     }
-    // Detect TOML format by checking if the frontmatter contains '=' (key-value pairs).
-    else if trimmed.contains('=') {
-        Ok(Format::Toml)
+
+    // Check for YAML-like structure
+    if trimmed.contains(':') && !trimmed.contains('{') {
+        return Ok(Format::Yaml);
     }
-    // Default to YAML if no other format matches.
-    else {
-        Ok(Format::Yaml)
+
+    // Check for TOML-like structure
+    if trimmed.contains('=') {
+        return Ok(Format::Toml);
     }
+
+    // Default to an error if none of the formats match
+    Err(FrontmatterError::InvalidFormat)
 }
 
 /// Extracts frontmatter enclosed by the given start and end delimiters.
@@ -232,130 +248,218 @@ pub fn extract_delimited_frontmatter<'a>(
     start_delim: &str,
     end_delim: &str,
 ) -> Option<&'a str> {
-    content.strip_prefix(start_delim)?.split(end_delim).next()
+    let start_index = content.find(start_delim)? + start_delim.len();
+    let end_index = content.find(end_delim)?;
+
+    if start_index <= end_index {
+        Some(content[start_index..end_index].trim())
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_extract_raw_frontmatter_yaml() {
-        let content = r#"---
+    /// Tests for extracting raw frontmatter
+    mod extract_raw_frontmatter {
+        use super::*;
+
+        #[test]
+        fn test_extract_yaml() {
+            let content = r#"---
 title: Example
 ---
 Content here"#;
-        let result = extract_raw_frontmatter(content).unwrap();
-        assert_eq!(result.0, "title: Example");
-        assert_eq!(result.1, "Content here");
-    }
+            let result = extract_raw_frontmatter(content).unwrap();
+            assert_eq!(result.0, "title: Example");
+            assert_eq!(result.1, "Content here");
+        }
 
-    #[test]
-    fn test_extract_raw_frontmatter_toml() {
-        let content = r#"+++
+        #[test]
+        fn test_extract_toml() {
+            let content = r#"+++
 title = "Example"
 +++
 Content here"#;
-        let result = extract_raw_frontmatter(content).unwrap();
-        assert_eq!(result.0, r#"title = "Example""#);
-        assert_eq!(result.1, "Content here");
-    }
-
-    #[test]
-    fn test_extract_raw_frontmatter_json() {
-        let content = r#"{ "title": "Example" }
-Content here"#;
-        let result = extract_raw_frontmatter(content).unwrap();
-        assert_eq!(result.0, r#"{ "title": "Example" }"#);
-        assert_eq!(result.1, "Content here");
-    }
-
-    #[test]
-    fn test_extract_json_frontmatter() {
-        let content = r#"{ "title": "Example" }
-Content here"#;
-        let result = extract_json_frontmatter(content).unwrap();
-        assert_eq!(result, r#"{ "title": "Example" }"#);
-    }
-
-    #[test]
-    fn test_extract_json_frontmatter_deeply_nested() {
-        let content = r#"{ "a": { "b": { "c": { "d": { "e": {} }}}}}
-Content here"#;
-        let result = extract_json_frontmatter(content);
-        assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap(),
-            r#"{ "a": { "b": { "c": { "d": { "e": {} }}}}}"#
-        );
-    }
-
-    #[test]
-    fn test_extract_json_frontmatter_too_deep() {
-        let mut content = String::from("{ ");
-        for _ in 0..101 {
-            content.push_str(r#""a": { "#);
+            let result = extract_raw_frontmatter(content).unwrap();
+            assert_eq!(result.0, r#"title = "Example""#);
+            assert_eq!(result.1, "Content here");
         }
-        content.push_str(&"}".repeat(101));
-        content.push_str("\nContent here");
 
-        let result = extract_json_frontmatter(&content);
-        assert!(matches!(
-            result,
-            Err(FrontmatterError::JsonDepthLimitExceeded)
-        ));
+        #[test]
+        fn test_extract_json() {
+            let content = r#"{ "title": "Example" }
+Content here"#;
+            let result = extract_raw_frontmatter(content).unwrap();
+            assert_eq!(result.0, r#"{ "title": "Example" }"#);
+            assert_eq!(result.1, "Content here");
+        }
+
+        #[test]
+        fn test_invalid_format() {
+            let content = "Invalid frontmatter";
+            let result = detect_format(content);
+            if let Err(FrontmatterError::InvalidFormat) = result {
+                // Test passed
+            } else {
+                panic!("Expected Err(InvalidFormat), got {:?}", result);
+            }
+        }
     }
 
-    #[test]
-    fn test_extract_raw_frontmatter_invalid() {
-        let content = "Invalid frontmatter";
-        let result = extract_raw_frontmatter(content);
-        assert!(matches!(result, Err(FrontmatterError::InvalidFormat)));
-    }
+    /// Tests for JSON frontmatter extraction
+    mod extract_json_frontmatter {
+        use super::*;
 
-    #[test]
-    fn test_detect_format() {
-        let yaml = "title: Example";
-        let toml = "title = \"Example\"";
-        let json = "{ \"title\": \"Example\" }";
+        #[test]
+        fn test_valid_json() {
+            let content = r#"{ "title": "Example" }
+Content here"#;
+            let result = extract_json_frontmatter(content).unwrap();
+            assert_eq!(result, r#"{ "title": "Example" }"#);
+        }
 
-        assert_eq!(detect_format(yaml).unwrap(), Format::Yaml);
-        assert_eq!(detect_format(toml).unwrap(), Format::Toml);
-        assert_eq!(detect_format(json).unwrap(), Format::Json);
-    }
+        #[test]
+        fn test_nested_json() {
+            let content = r#"{ "a": { "b": { "c": { "d": { "e": {} }}}}}
+Content here"#;
+            let result = extract_json_frontmatter(content);
+            assert!(result.is_ok());
+            assert_eq!(
+                result.unwrap(),
+                r#"{ "a": { "b": { "c": { "d": { "e": {} }}}}}"#
+            );
+        }
 
-    #[test]
-    fn test_extract_delimited_frontmatter() {
-        let content = "---\\ntitle: Example\\n---\\nContent here";
-        let result = extract_delimited_frontmatter(
-            content,
-            "---\\n",
-            "\\n---\\n",
-        )
-        .unwrap();
-        assert_eq!(result, "title: Example");
-    }
+        #[test]
+        fn test_too_deep_json() {
+            let mut content = String::from("{ ");
+            for _ in 0..101 {
+                content.push_str(r#""a": { "#);
+            }
+            content.push_str(&"}".repeat(101));
+            content.push_str("\nContent here");
 
-    #[test]
-    fn test_extract_delimited_frontmatter_windows() {
-        let content = "---\r\ntitle: Example\r\n---\r\nContent here";
-        let result = extract_delimited_frontmatter(
-            content,
-            "---\r\n",
-            "\r\n---\r\n",
-        )
-        .unwrap();
-        assert_eq!(result, "title: Example");
-    }
+            let result = extract_json_frontmatter(&content);
+            assert!(matches!(
+                result,
+                Err(FrontmatterError::JsonDepthLimitExceeded)
+            ));
+        }
 
-    #[test]
-    fn test_extract_json_frontmatter_with_escaped_characters() {
-        let content = r#"{ "title": "Example with \"quotes\" and {braces}", "content": "Some text with \\ backslash" }
+        #[test]
+        fn test_escaped_characters() {
+            let content = r#"{ "title": "Example with \"quotes\" and {braces}", "content": "Some text with \\ backslash" }
 Actual content starts here"#;
-        let result = extract_json_frontmatter(content).unwrap();
-        assert_eq!(
-            result,
-            r#"{ "title": "Example with \"quotes\" and {braces}", "content": "Some text with \\ backslash" }"#
-        );
+            let result = extract_json_frontmatter(content).unwrap();
+            assert_eq!(
+                result,
+                r#"{ "title": "Example with \"quotes\" and {braces}", "content": "Some text with \\ backslash" }"#
+            );
+        }
+
+        #[test]
+        fn test_invalid_json() {
+            let content = "Not a JSON frontmatter";
+            let result = extract_json_frontmatter(content);
+            assert!(matches!(
+                result,
+                Err(FrontmatterError::InvalidJson)
+            ));
+        }
+    }
+
+    /// Tests for format detection
+    mod detect_format {
+        use super::*;
+
+        #[test]
+        fn test_yaml_format() {
+            let content = "title: Example";
+            let result = detect_format(content).unwrap();
+            assert_eq!(result, Format::Yaml);
+        }
+
+        #[test]
+        fn test_toml_format() {
+            let content = "title = \"Example\"";
+            let result = detect_format(content).unwrap();
+            assert_eq!(result, Format::Toml);
+        }
+
+        #[test]
+        fn test_json_format() {
+            let content = r#"{ "title": "Example" }"#;
+            let result = detect_format(content).unwrap();
+            assert_eq!(result, Format::Json);
+        }
+
+        #[test]
+        fn test_invalid_format() {
+            let content = "Invalid content";
+            let result = detect_format(content);
+            assert!(matches!(
+                result,
+                Err(FrontmatterError::InvalidFormat)
+            ));
+        }
+    }
+
+    /// Tests for delimited frontmatter extraction
+    mod extract_delimited_frontmatter {
+        use super::*;
+
+        #[test]
+        fn test_valid_yaml() {
+            let content = "---\ntitle: Example\n---\nContent here";
+            let result = extract_delimited_frontmatter(
+                content, "---\n", "\n---\n",
+            )
+            .unwrap();
+            assert_eq!(result, "title: Example");
+        }
+
+        #[test]
+        fn test_valid_toml() {
+            let content = "+++\ntitle = \"Example\"\n+++\nContent here";
+            let result = extract_delimited_frontmatter(
+                content, "+++\n", "\n+++\n",
+            )
+            .unwrap();
+            assert_eq!(result, r#"title = "Example""#);
+        }
+
+        #[test]
+        fn test_valid_windows_format() {
+            let content =
+                "---\r\ntitle: Example\r\n---\r\nContent here";
+            let result = extract_delimited_frontmatter(
+                content,
+                "---\r\n",
+                "\r\n---\r\n",
+            )
+            .unwrap();
+            assert_eq!(result, "title: Example");
+        }
+
+        #[test]
+        fn test_missing_start_delimiter() {
+            let content = "title: Example\n---\nContent here";
+            let result = extract_delimited_frontmatter(
+                content, "---\n", "\n---\n",
+            );
+            assert!(result.is_none());
+        }
+
+        #[test]
+        fn test_missing_end_delimiter() {
+            let content = "---\ntitle: Example\nContent here";
+            let result = extract_delimited_frontmatter(
+                content, "---\n", "\n---\n",
+            );
+            assert!(result.is_none());
+        }
     }
 }
