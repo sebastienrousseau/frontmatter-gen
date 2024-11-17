@@ -195,15 +195,28 @@ pub fn detect_format(
 ) -> Result<Format, FrontmatterError> {
     let trimmed = raw_frontmatter.trim_start();
 
-    if trimmed.starts_with('{') {
-        Ok(Format::Json)
-    } else if trimmed.contains('=') {
-        Ok(Format::Toml)
-    } else if trimmed.contains(':') && !trimmed.contains('{') {
-        Ok(Format::Yaml)
-    } else {
-        Err(FrontmatterError::InvalidFormat)
+    // Check for YAML front matter marker
+    if trimmed.starts_with("---") {
+        return Ok(Format::Yaml);
     }
+
+    // Check for JSON structure
+    if trimmed.starts_with('{') {
+        return Ok(Format::Json);
+    }
+
+    // Check for YAML-like structure
+    if trimmed.contains(':') && !trimmed.contains('{') {
+        return Ok(Format::Yaml);
+    }
+
+    // Check for TOML-like structure
+    if trimmed.contains('=') {
+        return Ok(Format::Toml);
+    }
+
+    // Default to an error if none of the formats match
+    Err(FrontmatterError::InvalidFormat)
 }
 
 /// Extracts frontmatter enclosed by the given start and end delimiters.

@@ -34,8 +34,6 @@ A high-performance Rust library for parsing and serialising frontmatter in YAML,
 - **Async Support**: First-class asynchronous operation support
 - **Flexible Configuration**: Customisable parsing behaviour to match your needs
 
-### Available Features
-
 This crate provides several feature flags to customise its functionality:
 
 - **default**: Core frontmatter parsing functionality only
@@ -154,8 +152,42 @@ frontmatter-gen extract input.md --format toml
 # Extract frontmatter from 'input.md' and output it in JSON format
 frontmatter-gen extract input.md --format json
 
+# Extract frontmatter from 'input.md' and output it in YAML format to 'output.yaml'
+frontmatter-gen extract input.md --format yaml --output output.yaml
+
+# Extract frontmatter from 'input.md' and output it in TOML format to 'output.toml'
+frontmatter-gen extract input.md --format toml --output output.toml
+
+# Extract frontmatter from 'input.md' and output it in JSON format to 'output.json'
+frontmatter-gen extract input.md --format json --output output.json
+
 # Validate frontmatter from 'input.md' and check for custom required fields
 frontmatter-gen validate input.md --required title,date,author
+```
+
+You can also run the CLI tool directly from the source code:
+
+```bash
+# Extract frontmatter from 'input.md' and output it in YAML format
+cargo run --features="ssg" extract input.md --format yaml
+
+# Extract frontmatter from 'input.md' and output it in TOML format
+cargo run --features="ssg" extract input.md --format toml
+
+# Extract frontmatter from 'input.md' and output it in JSON format
+cargo run --features="ssg" extract input.md --format json
+
+# Extract frontmatter from 'input.md' and output it in YAML format to 'output.yaml'
+cargo run --features="ssg" extract input.md --format yaml --output output.yaml
+
+# Extract frontmatter from 'input.md' and output it in TOML format to 'output.toml'
+cargo run --features="ssg" extract input.md --format toml --output output.toml
+
+# Extract frontmatter from 'input.md' and output it in JSON format to 'output.json'
+cargo run --features="ssg" extract input.md --format json --output output.json
+
+# Validate frontmatter from 'input.md' and check for custom required fields
+cargo run --features="ssg" validate input.md --required title,date
 ```
 
 ## Error Handling

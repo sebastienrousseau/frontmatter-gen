@@ -159,7 +159,12 @@ async fn main() -> Result<()> {
             let file = sub_matches.get_one::<String>("file").unwrap();
             let required_fields = sub_matches
                 .get_many::<String>("required")
-                .map(|vals| vals.cloned().collect::<Vec<_>>())
+                .map(|vals| {
+                    vals.flat_map(|val| {
+                        val.split(',').map(String::from)
+                    })
+                    .collect::<Vec<_>>()
+                })
                 .or_else(|| {
                     config.validate.as_ref()?.required_fields.clone()
                 })
@@ -171,7 +176,12 @@ async fn main() -> Result<()> {
                     ]
                 });
 
-            validate_command(Path::new(file), required_fields).await?;
+            // Convert Vec<String> to Vec<&str>
+            let required_fields: Vec<&str> =
+                required_fields.iter().map(String::as_str).collect();
+
+            // Pass slice to validate_command
+            validate_command(Path::new(file), &required_fields).await?;
         }
         Some(("extract", sub_matches)) => {
             let file = sub_matches.get_one::<String>("file").unwrap();
@@ -183,6 +193,7 @@ async fn main() -> Result<()> {
                     .as_ref()
                     .and_then(|c| c.default_format.as_deref()))
                 .unwrap_or("yaml");
+
             let output = sub_matches
                 .get_one::<String>("output")
                 .map(String::as_str)
@@ -246,16 +257,26 @@ async fn main() -> Result<()> {
 /// Validates front matter in a file.
 async fn validate_command(
     file: &Path,
-    required_fields: Vec<String>,
+    required_fields: &[&str],
 ) -> Result<()> {
+    // Read the file content
     let content = tokio::fs::read_to_string(file)
         .await
         .context("Failed to read input file")?;
 
-    let (frontmatter, _) = frontmatter_gen::extract(&content)?;
+    // Debugging log for content
+    // eprintln!("Content: {:?}", content);
 
-    for field in required_fields {
-        if !frontmatter.contains_key(&field) {
+    // Extract front matter using frontmatter_gen
+    let (frontmatter, _) = frontmatter_gen::extract(&content)
+        .context("Failed to extract front matter")?;
+
+    // Debugging log for extracted front matter
+    // eprintln!("Extracted Frontmatter: {:?}", frontmatter);
+
+    // Validate each required field
+    for &field in required_fields {
+        if !frontmatter.contains_key(field) {
             return Err(anyhow::anyhow!(
                 "Validation failed: Missing required field '{}'",
                 field
@@ -267,37 +288,88 @@ async fn validate_command(
     Ok(())
 }
 
-/// Extracts front matter from a file.
+/// Extracts front matter from a file and outputs it in the specified format.
+///
+/// This function reads the input file, extracts the front matter,
+/// formats it according to the specified format, and optionally writes
+/// it to an output file. If no output file is specified, the formatted
+/// front matter is printed to the console.
+///
+/// # Arguments
+///
+/// * `input` - The path to the input file.
+/// * `format` - The format to output the front matter (e.g., "yaml", "toml", "json").
+/// * `output` - An optional path to the output file where the front matter will be saved.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The input file cannot be read.
+/// - The front matter cannot be extracted or formatted.
+/// - Writing to the output file fails.
+///
+/// # Examples
+///
+/// ```
+/// extract_command(
+///     Path::new("content.md"),
+///     "yaml",
+///     Some(PathBuf::from("frontmatter.yaml"))
+/// ).await?;
+/// ```
 async fn extract_command(
     input: &Path,
     format: &str,
     output: Option<PathBuf>,
 ) -> Result<()> {
-    let content = tokio::fs::read_to_string(input)
-        .await
-        .context("Failed to read input file")?;
+    // Read the content of the input file
+    let content =
+        tokio::fs::read_to_string(input).await.with_context(|| {
+            format!("Failed to read input file: {:?}", input)
+        })?;
 
-    let (frontmatter, content) = frontmatter_gen::extract(&content)?;
+    // Extract the front matter and the remaining content
+    let (frontmatter, remaining_content) =
+        frontmatter_gen::extract(&content)
+            .context("Failed to extract front matter from the file")?;
 
-    let formatted = to_format(
-        &frontmatter,
-        match format {
-            "yaml" => Format::Yaml,
-            "toml" => Format::Toml,
-            "json" => Format::Json,
-            _ => Format::Yaml,
-        },
-    )?;
+    // Determine the desired format and convert the front matter
+    let output_format = match format {
+        "yaml" => Format::Yaml,
+        "toml" => Format::Toml,
+        "json" => Format::Json,
+        other => {
+            return Err(anyhow::anyhow!(
+                "Unsupported format specified: '{}'. Supported formats are: yaml, toml, json.",
+                other
+            ));
+        }
+    };
 
+    let formatted_frontmatter = to_format(&frontmatter, output_format)
+        .context("Failed to format the extracted front matter")?;
+
+    // Write the front matter to the specified output file or print to console
     if let Some(output_path) = output {
-        fs::write(output_path, formatted)?;
-        println!("Front matter written to output file.");
+        fs::write(&output_path, &formatted_frontmatter).with_context(
+            || {
+                format!(
+                    "Failed to write to output file: {:?}",
+                    output_path
+                )
+            },
+        )?;
+        println!(
+            "Front matter successfully written to output file: {:?}",
+            output_path
+        );
     } else {
-        println!("Front matter ({:?}):", format);
-        println!("{}", formatted);
+        println!("Extracted Front Matter (format: {}):", format);
+        println!("{}", formatted_frontmatter);
     }
 
-    println!("\nContent:\n{}", content);
+    // Print the remaining content to the console
+    println!("\nRemaining Content:\n{}", remaining_content);
 
     Ok(())
 }
@@ -355,14 +427,13 @@ author: "Jane Doe"
         );
         println!("Content of test file:\n{}", read_content.unwrap());
 
+        // Convert Vec<String> to Vec<&str>
+        let required_fields = vec!["title", "date", "author"];
+
         // Run the validate_command function
         let result = validate_command(
             Path::new(test_file_path),
-            vec![
-                "title".to_string(),
-                "date".to_string(),
-                "author".to_string(),
-            ],
+            &required_fields,
         )
         .await;
 
@@ -388,14 +459,97 @@ author: "Jane Doe"
     }
 
     #[tokio::test]
-    async fn test_build_command_missing_dirs() {
-        let result = build_command(
-            Path::new("missing_content"),
-            Path::new("missing_public"),
-            Path::new("missing_templates"),
-        )
-        .await;
+    async fn test_extract_command_to_stdout() {
+        let test_file_path = "test.md";
+        let content = r#"---
+title: "My Title"
+date: "2025-09-09"
+author: "Jane Doe"
+---"#;
 
-        assert!(result.is_err());
+        // Write the test file
+        let write_result =
+            tokio::fs::write(test_file_path, content).await;
+        assert!(
+            write_result.is_ok(),
+            "Failed to write test file: {:?}",
+            write_result
+        );
+
+        // Ensure the file exists
+        assert!(
+            Path::new(test_file_path).exists(),
+            "The test file does not exist after creation."
+        );
+
+        // Run the extract_command function
+        let result =
+            extract_command(Path::new(test_file_path), "yaml", None)
+                .await;
+        assert!(
+            result.is_ok(),
+            "Extraction failed with error: {:?}",
+            result
+        );
+
+        // Cleanup: Ensure the file is removed after the test
+        if Path::new(test_file_path).exists() {
+            let remove_result =
+                tokio::fs::remove_file(test_file_path).await;
+            assert!(
+                remove_result.is_ok(),
+                "Failed to remove test file: {:?}",
+                remove_result
+            );
+        } else {
+            // Log a message instead of panicking if the file doesn't exist
+            eprintln!(
+            "Test file '{}' was already removed or not found during cleanup.",
+            test_file_path
+        );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_build_command_missing_dirs() {
+        let content_dir = Path::new("missing_content");
+        let output_dir = Path::new("missing_public");
+        let template_dir = Path::new("missing_templates");
+
+        // Run the build command, which is expected to fail
+        let result =
+            build_command(content_dir, output_dir, template_dir).await;
+        assert!(result.is_err(), "Expected an error but got success");
+
+        // Cleanup: Ensure the directories are removed after the test
+        if content_dir.exists() {
+            let remove_result =
+                tokio::fs::remove_dir_all(content_dir).await;
+            assert!(
+                remove_result.is_ok(),
+                "Failed to remove content directory: {:?}",
+                remove_result
+            );
+        }
+
+        if output_dir.exists() {
+            let remove_result =
+                tokio::fs::remove_dir_all(output_dir).await;
+            assert!(
+                remove_result.is_ok(),
+                "Failed to remove output directory: {:?}",
+                remove_result
+            );
+        }
+
+        if template_dir.exists() {
+            let remove_result =
+                tokio::fs::remove_dir_all(template_dir).await;
+            assert!(
+                remove_result.is_ok(),
+                "Failed to remove template directory: {:?}",
+                remove_result
+            );
+        }
     }
 }

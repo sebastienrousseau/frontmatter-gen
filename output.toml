@@ -1,7 +1,0 @@
-template = "post"
-slug = "first-post"
-date = "2025-09-09"
-tags = ["rust", "programming"]
-title = "My First Post"
-
-[custom]

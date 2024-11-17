@@ -121,23 +121,59 @@ pub fn parse_with_options(
     options: Option<ParseOptions>,
 ) -> Result<Frontmatter, FrontmatterError> {
     let options = options.unwrap_or_default();
+
+    // Validate format assumptions against the raw input
+    if format == Format::Yaml && raw_frontmatter.starts_with("---") {
+        eprintln!("Warning: Format set to YAML but input does not start with '---'");
+    }
+    if format == Format::Toml && !raw_frontmatter.contains('=') {
+        return Err(FrontmatterError::ConversionError(
+            "Format set to TOML but input does not contain '=' signs."
+                .to_string(),
+        ));
+    }
+    if format == Format::Json && !raw_frontmatter.starts_with('{') {
+        return Err(FrontmatterError::ConversionError(
+            "Format set to JSON but input does not start with '{'."
+                .to_string(),
+        ));
+    }
+
     let frontmatter = match format {
-        Format::Yaml => parse_yaml(raw_frontmatter)?,
-        Format::Toml => parse_toml(raw_frontmatter)?,
-        Format::Json => parse_json(raw_frontmatter)?,
+        Format::Yaml => parse_yaml(raw_frontmatter).map_err(|e| {
+            eprintln!("YAML parsing failed: {}", e);
+            e
+        })?,
+        Format::Toml => parse_toml(raw_frontmatter).map_err(|e| {
+            eprintln!("TOML parsing failed: {}", e);
+            e
+        })?,
+        Format::Json => parse_json(raw_frontmatter).map_err(|e| {
+            eprintln!("JSON parsing failed: {}", e);
+            e
+        })?,
         Format::Unsupported => {
-            return Err(FrontmatterError::ConversionError(
-                "Unsupported format".to_string(),
-            ))
+            let err_msg = "Unsupported format provided".to_string();
+            eprintln!("{}", err_msg);
+            return Err(FrontmatterError::ConversionError(err_msg));
         }
     };
 
+    // Perform validation if the options specify it
     if options.validate {
+        println!(
+            "Validating frontmatter with max_depth={} and max_keys={}",
+            options.max_depth, options.max_keys
+        );
         validate_frontmatter(
             &frontmatter,
             options.max_depth,
             options.max_keys,
-        )?;
+        )
+        .map_err(|e| {
+            eprintln!("Validation failed: {}", e);
+            e
+        })?;
     }
 
     Ok(frontmatter)
@@ -189,20 +225,32 @@ pub fn to_string(
 
 // YAML Implementation
 // -----------------
-
 fn parse_yaml(raw: &str) -> Result<Frontmatter, FrontmatterError> {
+    // Log the raw input for debugging
+    // eprintln!("Debug: Raw input received by parse_yaml: {}", raw);
+
+    // Parse the YAML content into a serde_yaml::Value
     let yml_value: YmlValue = serde_yml::from_str(raw)
         .map_err(|e| FrontmatterError::YamlParseError { source: e })?;
 
+    // Prepare the frontmatter container
     let capacity = yml_value.as_mapping().map_or(0, |m| m.len());
     let mut frontmatter = Frontmatter(HashMap::with_capacity(capacity));
 
+    // Convert the YAML mapping into the frontmatter structure
     if let YmlValue::Mapping(mapping) = yml_value {
         for (key, value) in mapping {
             if let YmlValue::String(k) = key {
-                let _ = frontmatter.0.insert(k, yml_to_value(&value));
+                let _ = frontmatter.insert(k, yml_to_value(&value));
+            } else {
+                // Log a warning for non-string keys
+                eprintln!("Warning: Non-string key ignored in YAML frontmatter");
             }
         }
+    } else {
+        return Err(FrontmatterError::ParseError(
+            "YAML frontmatter is not a valid mapping".to_string(),
+        ));
     }
 
     Ok(frontmatter)
