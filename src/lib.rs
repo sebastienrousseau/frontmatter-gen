@@ -1095,4 +1095,34 @@ Content"#;
         );
         assert!(parsed.get("boolean").unwrap().as_bool().unwrap());
     }
+
+    #[test]
+    fn test_thread_safety() {
+        let content = r#"---
+title: Thread Safe Test
+---
+Content"#;
+
+        let handles: Vec<_> = (0..10)
+            .map(|_| {
+                std::thread::spawn(move || {
+                    let (frontmatter, content) =
+                        extract(content).unwrap();
+                    assert_eq!(
+                        frontmatter
+                            .get("title")
+                            .unwrap()
+                            .as_str()
+                            .unwrap(),
+                        "Thread Safe Test"
+                    );
+                    assert_eq!(content.trim(), "Content");
+                })
+            })
+            .collect();
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
+    }
 }
