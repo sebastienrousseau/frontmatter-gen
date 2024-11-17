@@ -1,105 +1,237 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `frontmatter_gen` crate."><title>frontmatter_gen - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="frontmatter_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0-nightly (90ab8eaed 2024-11-14)" data-channel="nightly" data-search-js="search-6851d9ab.js" data-settings-js="settings-0f613d39.js" ><script src="../static.files/storage-59e33391.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-893ab5e7.css"></noscript><link rel="icon" href="https://kura.pro/frontmatter-gen/images/favicon.ico"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button><a class="logo-container" href="../frontmatter_gen/index.html"><img src="https://kura.pro/frontmatter-gen/images/logos/frontmatter-gen.svg" alt=""></a></nav><nav class="sidebar"><div class="sidebar-crate"><a class="logo-container" href="../frontmatter_gen/index.html"><img src="https://kura.pro/frontmatter-gen/images/logos/frontmatter-gen.svg" alt="logo"></a><h2><a href="../frontmatter_gen/index.html">frontmatter_<wbr>gen</a><span class="version">0.0.2</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#frontmatter-gen-frontmatter-gen" title="Frontmatter Gen (frontmatter-gen)">Frontmatter Gen (frontmatter-gen)</a><ul><li><a href="#overview" title="Overview">Overview</a></li><li><a href="#installation" title="Installation">Installation</a></li><li><a href="#usage" title="Usage">Usage</a></li><li><a href="#error-handling" title="Error Handling">Error Handling</a></li><li><a href="#documentation" title="Documentation">Documentation</a></li><li><a href="#examples" title="Examples">Examples</a></li><li><a href="#contributing" title="Contributing">Contributing</a></li><li><a href="#license" title="License">License</a></li><li><a href="#acknowledgements" title="Acknowledgements">Acknowledgements</a></li></ul></li></ul><h3><a href="#reexports">Crate Items</a></h3><ul class="block"><li><a href="#reexports" title="Re-exports">Re-exports</a></li><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>frontmatter_gen</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/frontmatter_gen/lib.rs.html#3-96">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><!-- markdownlint-disable MD033 MD041 -->
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Frontmatter Gen (frontmatter-gen)"><title>frontmatter_gen - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="frontmatter_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0-nightly (f2a35426b 2024-11-16)" data-channel="nightly" data-search-js="search-b6b1fcd2.js" data-settings-js="settings-0f613d39.js" ><script src="../static.files/storage-59e33391.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-893ab5e7.css"></noscript><link rel="icon" href="https://kura.pro/frontmatter-gen/images/favicon.ico"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button><a class="logo-container" href="../frontmatter_gen/index.html"><img src="https://kura.pro/frontmatter-gen/images/logos/frontmatter-gen.svg" alt=""></a></nav><nav class="sidebar"><div class="sidebar-crate"><a class="logo-container" href="../frontmatter_gen/index.html"><img src="https://kura.pro/frontmatter-gen/images/logos/frontmatter-gen.svg" alt="logo"></a><h2><a href="../frontmatter_gen/index.html">frontmatter_<wbr>gen</a><span class="version">0.0.3</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#frontmatter-gen-frontmatter-gen" title="Frontmatter Gen (frontmatter-gen)">Frontmatter Gen (frontmatter-gen)</a><ul><li><a href="#overview-" title="Overview 🚀">Overview 🚀</a></li><li><a href="#getting-started-" title="Getting Started 📦">Getting Started 📦</a></li><li><a href="#documentation-" title="Documentation 📚">Documentation 📚</a></li><li><a href="#cli-tool-" title="CLI Tool 🛠️">CLI Tool 🛠️</a></li><li><a href="#error-handling-" title="Error Handling 🚨">Error Handling 🚨</a></li><li><a href="#contributing-" title="Contributing 🤝">Contributing 🤝</a></li><li><a href="#licence-" title="Licence 📝">Licence 📝</a></li><li><a href="#acknowledgements-" title="Acknowledgements 🙏">Acknowledgements 🙏</a></li></ul></li><li><a href="#frontmatter-gen" title="Frontmatter Gen">Frontmatter Gen</a><ul><li><a href="#overview" title="Overview">Overview</a></li><li><a href="#quick-start" title="Quick Start">Quick Start</a></li></ul></li></ul><h3><a href="#reexports">Crate Items</a></h3><ul class="block"><li><a href="#reexports" title="Re-exports">Re-exports</a></li><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#functions" title="Functions">Functions</a></li><li><a href="#types" title="Type Aliases">Type Aliases</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>frontmatter_gen</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/frontmatter_gen/lib.rs.html#1-499">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="frontmatter-gen-frontmatter-gen"><a class="doc-anchor" href="#frontmatter-gen-frontmatter-gen">§</a>Frontmatter Gen (frontmatter-gen)</h2><!-- markdownlint-disable MD033 MD041 -->
 <p><img src="https://kura.pro/frontmatter-gen/images/logos/frontmatter-gen.svg"
 alt="FrontMatter Gen logo" height="66" align="right" /></p>
 <!-- markdownlint-enable MD033 MD041 -->
-<h2 id="frontmatter-gen-frontmatter-gen"><a class="doc-anchor" href="#frontmatter-gen-frontmatter-gen">§</a>Frontmatter Gen (frontmatter-gen)</h2>
-<p>A robust Rust library for parsing and serializing frontmatter in various formats, including YAML, TOML, and JSON.</p>
+<p>A high-performance Rust library for parsing and serialising frontmatter in YAML, TOML, and JSON formats. Built for safety, efficiency, and ease of use.</p>
 <!-- markdownlint-disable MD033 MD041 -->
 <center>
 <!-- markdownlint-enable MD033 MD041 -->
-<p><a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/rust-f04041?style=for-the-badge&amp;labelColor=c0282d&amp;logo=rust" alt="Made With Love" /></a> <a href="https://crates.io/crates/frontmatter-gen"><img src="https://img.shields.io/crates/v/frontmatter-gen.svg?style=for-the-badge&amp;color=fc8d62&amp;logo=rust" alt="Crates.io" /></a> <a href="https://lib.rs/crates/frontmatter-gen"><img src="https://img.shields.io/badge/lib.rs-v0.0.2-orange.svg?style=for-the-badge" alt="lib.rs" /></a> <a href="https://docs.rs/frontmatter-gen"><img src="https://img.shields.io/badge/docs.rs-frontmatter--gen-66c2a5?style=for-the-badge&amp;labelColor=555555&amp;logo=docs.rs" alt="Docs.rs" /></a> <a href="https://codecov.io/gh/sebastienrousseau/frontmatter-gen"><img src="https://img.shields.io/codecov/c/github/sebastienrousseau/frontmatter-gen?style=for-the-badge&amp;token=Q9KJ6XXL67&amp;logo=codecov" alt="Codecov" /></a> <a href="https://github.com/sebastienrousseau/frontmatter-gen/actions?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/sebastienrousseau/frontmatter--gen/release.yml?branch=main&amp;style=for-the-badge&amp;logo=github" alt="Build Status" /></a> <a href="https://github.com/sebastienrousseau/frontmatter-gen/issues"><img src="https://img.shields.io/badge/github-sebastienrousseau/frontmatter--gen-8da0cb?style=for-the-badge&amp;labelColor=555555&amp;logo=github" alt="GitHub" /></a></p>
+<p><a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/rust-f04041?style=for-the-badge&amp;labelColor=c0282d&amp;logo=rust" alt="Made With Love" /></a> <a href="https://crates.io/crates/frontmatter-gen"><img src="https://img.shields.io/crates/v/frontmatter-gen.svg?style=for-the-badge&amp;color=fc8d62&amp;logo=rust" alt="Crates.io" /></a> <a href="https://lib.rs/crates/frontmatter-gen"><img src="https://img.shields.io/badge/lib.rs-v0.0.3-orange.svg?style=for-the-badge" alt="lib.rs" /></a> <a href="https://docs.rs/frontmatter-gen"><img src="https://img.shields.io/badge/docs.rs-frontmatter--gen-66c2a5?style=for-the-badge&amp;labelColor=555555&amp;logo=docs.rs" alt="Docs.rs" /></a> <a href="https://codecov.io/gh/sebastienrousseau/frontmatter-gen"><img src="https://img.shields.io/codecov/c/github/sebastienrousseau/frontmatter-gen?style=for-the-badge&amp;token=Q9KJ6XXL67&amp;logo=codecov" alt="Codecov" /></a> <a href="https://github.com/sebastienrousseau/frontmatter-gen/actions?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/sebastienrousseau/frontmatter--gen/release.yml?branch=main&amp;style=for-the-badge&amp;logo=github" alt="Build Status" /></a> <a href="https://github.com/sebastienrousseau/frontmatter-gen/issues"><img src="https://img.shields.io/badge/github-sebastienrousseau/frontmatter--gen-8da0cb?style=for-the-badge&amp;labelColor=555555&amp;logo=github" alt="GitHub" /></a></p>
 <p>• <a href="https://frontmatter-gen.com">Website</a> • <a href="https://docs.rs/frontmatter-gen">Documentation</a> • <a href="https://github.com/sebastienrousseau/frontmatter-gen/issues">Report Bug</a> • <a href="https://github.com/sebastienrousseau/frontmatter-gen/issues">Request Feature</a> • <a href="https://github.com/sebastienrousseau/frontmatter-gen/blob/main/CONTRIBUTING.md">Contributing Guidelines</a></p>
 <!-- markdownlint-disable MD033 MD041 -->
 </center>
 <!-- markdownlint-enable MD033 MD041 -->
-<h3 id="overview"><a class="doc-anchor" href="#overview">§</a>Overview</h3>
-<p><code>frontmatter-gen</code> is a flexible Rust library that provides functionality for extracting, parsing, and serializing frontmatter in various formats. It’s designed for use in static site generators, content management systems, and any application that needs to handle metadata at the beginning of content files.</p>
-<h4 id="key-features"><a class="doc-anchor" href="#key-features">§</a>Key Features</h4>
+<h3 id="overview-"><a class="doc-anchor" href="#overview-">§</a>Overview 🚀</h3>
+<p><code>frontmatter-gen</code> is a comprehensive Rust library that provides robust handling of frontmatter in content files. It delivers a type-safe, efficient solution for extracting, parsing, and serialising frontmatter in multiple formats. Whether you’re building a static site generator, content management system, or any application requiring structured metadata, <code>frontmatter-gen</code> offers the tools you need.</p>
+<h4 id="key-features-"><a class="doc-anchor" href="#key-features-">§</a>Key Features 🎯</h4>
 <ul>
-<li><strong>Multiple Format Support</strong>: Parse and serialize frontmatter in YAML, TOML, and JSON formats.</li>
-<li><strong>Flexible Extraction</strong>: Extract frontmatter from content, supporting different delimiters.</li>
-<li><strong>Robust Error Handling</strong>: Comprehensive error types for detailed problem reporting.</li>
-<li><strong>Customizable Parsing</strong>: Configure parsing options to suit your needs.</li>
-<li><strong>Efficient Conversions</strong>: Convert between different frontmatter formats seamlessly.</li>
-<li><strong>Type-Safe Value Handling</strong>: Utilize the <code>Value</code> enum for type-safe frontmatter data manipulation.</li>
+<li><strong>Zero-Copy Parsing</strong>: Parse YAML, TOML, and JSON frontmatter efficiently with zero memory copying</li>
+<li><strong>Safe Extraction</strong>: Extract frontmatter using standard delimiters (<code>---</code> for YAML, <code>+++</code> for TOML) with comprehensive error handling</li>
+<li><strong>Type Safety</strong>: Leverage Rust’s type system with the <code>Value</code> enum for safe frontmatter manipulation</li>
+<li><strong>High Performance</strong>: Optimised for speed with minimal allocations and efficient algorithms</li>
+<li><strong>Memory Safety</strong>: Guaranteed memory safety through Rust’s ownership system</li>
+<li><strong>Rich Error Handling</strong>: Detailed error types with context for effective debugging</li>
+<li><strong>Async Support</strong>: First-class asynchronous operation support</li>
+<li><strong>Flexible Configuration</strong>: Customisable parsing behaviour to match your needs</li>
 </ul>
-<h3 id="installation"><a class="doc-anchor" href="#installation">§</a>Installation</h3>
+<h4 id="available-features-"><a class="doc-anchor" href="#available-features-">§</a>Available Features 🛠️</h4>
+<p>This crate provides several feature flags to customise its functionality:</p>
+<ul>
+<li><strong>default</strong>: Core frontmatter parsing functionality only</li>
+<li><strong>cli</strong>: Command-line interface tools for quick operations</li>
+<li><strong>ssg</strong>: Static Site Generator functionality (includes CLI features)</li>
+<li><strong>logging</strong>: Debug logging capabilities</li>
+</ul>
+<h3 id="getting-started-"><a class="doc-anchor" href="#getting-started-">§</a>Getting Started 📦</h3>
 <p>Add this to your <code>Cargo.toml</code>:</p>
 <div class="example-wrap"><pre class="language-toml"><code>[dependencies]
-frontmatter-gen = &quot;0.0.2&quot;</code></pre></div><h3 id="usage"><a class="doc-anchor" href="#usage">§</a>Usage</h3>
-<p>Here are some examples of how to use the library:</p>
-<h4 id="extracting-frontmatter"><a class="doc-anchor" href="#extracting-frontmatter">§</a>Extracting Frontmatter</h4>
+# Basic frontmatter parsing only
+frontmatter-gen = &quot;0.0.3&quot;
+
+# With Static Site Generator functionality
+frontmatter-gen = { version = &quot;0.0.3&quot;, features = [&quot;ssg&quot;] }</code></pre></div><h4 id="basic-usage-"><a class="doc-anchor" href="#basic-usage-">§</a>Basic Usage 🔨</h4><h5 id="extract-and-parse-frontmatter"><a class="doc-anchor" href="#extract-and-parse-frontmatter">§</a>Extract and Parse Frontmatter</h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>frontmatter_gen::extract;
 
-<span class="kw">let </span>content = <span class="string">r#"---
-title: My Post
-date: 2023-05-20
+<span class="kw">fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>std::error::Error&gt;&gt; {
+    <span class="comment">// Example content with YAML frontmatter
+    </span><span class="kw">let </span>content = <span class="string">r#"---
+title: My Document
+date: 2025-09-09
+tags:
+  - documentation
+  - rust
 ---
-Content here"#</span>;
 
-<span class="kw">let </span>(frontmatter, remaining_content) = extract(content).unwrap();
-<span class="macro">assert_eq!</span>(frontmatter.get(<span class="string">"title"</span>).unwrap().as_str().unwrap(), <span class="string">"My Post"</span>);
-<span class="macro">assert_eq!</span>(remaining_content, <span class="string">"Content here"</span>);</code></pre></div>
-<h4 id="converting-formats"><a class="doc-anchor" href="#converting-formats">§</a>Converting Formats</h4>
+    // Extract frontmatter and content
+    let (frontmatter, content) = extract(content)?;
+    
+    // Access frontmatter fields safely
+    println!("Title: {}", frontmatter.get("title")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Untitled"));
+    println!("Content: {}", content);
+    
+    Ok(())
+}</span></code></pre></div>
+<h5 id="format-conversion"><a class="doc-anchor" href="#format-conversion">§</a>Format Conversion</h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>frontmatter_gen::{Frontmatter, Format, Value, to_format};
 
-<span class="kw">let </span><span class="kw-2">mut </span>frontmatter = Frontmatter::new();
-frontmatter.insert(<span class="string">"title"</span>.to_string(), Value::String(<span class="string">"My Post"</span>.to_string()));
-frontmatter.insert(<span class="string">"date"</span>.to_string(), Value::String(<span class="string">"2023-05-20"</span>.to_string()));
+<span class="kw">fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>std::error::Error&gt;&gt; {
+    <span class="comment">// Create frontmatter with some data
+    </span><span class="kw">let </span><span class="kw-2">mut </span>frontmatter = Frontmatter::new();
+    frontmatter.insert(<span class="string">"title"</span>.to_string(), Value::String(<span class="string">"My Document"</span>.into()));
+    frontmatter.insert(<span class="string">"draft"</span>.to_string(), Value::Boolean(<span class="bool-val">false</span>));
+    frontmatter.insert(<span class="string">"views"</span>.to_string(), Value::Number(<span class="number">42.0</span>));
 
-<span class="kw">let </span>yaml = to_format(<span class="kw-2">&amp;</span>frontmatter, Format::Yaml).unwrap();
-<span class="macro">assert!</span>(yaml.contains(<span class="string">"title: My Post"</span>));
-<span class="macro">assert!</span>(yaml.contains(<span class="string">"date: '2023-05-20'"</span>));</code></pre></div>
-<h4 id="parsing-different-formats"><a class="doc-anchor" href="#parsing-different-formats">§</a>Parsing Different Formats</h4>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>frontmatter_gen::{parser, Format};
+    <span class="comment">// Convert to different formats
+    </span><span class="kw">let </span>yaml = to_format(<span class="kw-2">&amp;</span>frontmatter, Format::Yaml)<span class="question-mark">?</span>;
+    <span class="kw">let </span>toml = to_format(<span class="kw-2">&amp;</span>frontmatter, Format::Toml)<span class="question-mark">?</span>;
+    <span class="kw">let </span>json = to_format(<span class="kw-2">&amp;</span>frontmatter, Format::Json)<span class="question-mark">?</span>;
 
-<span class="kw">let </span>yaml = <span class="string">"title: My Post\ndate: 2023-05-20\n"</span>;
-<span class="kw">let </span>frontmatter = parser::parse(yaml, Format::Yaml).unwrap();
+    <span class="macro">println!</span>(<span class="string">"YAML:\n{}\n"</span>, yaml);
+    <span class="macro">println!</span>(<span class="string">"TOML:\n{}\n"</span>, toml);
+    <span class="macro">println!</span>(<span class="string">"JSON:\n{}\n"</span>, json);
 
-<span class="kw">let </span>toml = <span class="string">"title = \"My Post\"\ndate = 2023-05-20\n"</span>;
-<span class="kw">let </span>frontmatter = parser::parse(toml, Format::Toml).unwrap();
-
-<span class="kw">let </span>json = <span class="string">r#"{"title": "My Post", "date": "2023-05-20"}"#</span>;
-<span class="kw">let </span>frontmatter = parser::parse(json, Format::Json).unwrap();</code></pre></div>
-<h3 id="error-handling"><a class="doc-anchor" href="#error-handling">§</a>Error Handling</h3>
-<p>The library provides comprehensive error handling through the <code>FrontmatterError</code> enum:</p>
-
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>frontmatter_gen::error::FrontmatterError;
-
-<span class="kw">fn </span>example_usage() -&gt; <span class="prelude-ty">Result</span>&lt;(), FrontmatterError&gt; {
-    <span class="kw">let </span>invalid_toml = <span class="string">"invalid toml content"</span>;
-    <span class="kw">match </span>toml::from_str::&lt;toml::Value&gt;(invalid_toml) {
-        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(()),
-        <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(FrontmatterError::TomlParseError(e)),
-    }
+    <span class="prelude-val">Ok</span>(())
 }</code></pre></div>
-<h3 id="documentation"><a class="doc-anchor" href="#documentation">§</a>Documentation</h3>
-<p>For full API documentation, please visit <a href="https://docs.rs/frontmatter-gen">docs.rs/frontmatter-gen</a>.</p>
-<h3 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h3>
-<p>To run the examples, clone the repository and use the following command:</p>
-<div class="example-wrap"><pre class="language-shell"><code>cargo run --example example_name</code></pre></div>
-<p>Available examples:</p>
+<h4 id="advanced-features-"><a class="doc-anchor" href="#advanced-features-">§</a>Advanced Features 🚀</h4><h5 id="handle-complex-nested-structures"><a class="doc-anchor" href="#handle-complex-nested-structures">§</a>Handle Complex Nested Structures</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>frontmatter_gen::{parser, Format, Value};
+
+<span class="kw">fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>std::error::Error&gt;&gt; {
+    <span class="comment">// Complex nested YAML frontmatter
+    </span><span class="kw">let </span>yaml = <span class="string">r#"
+title: My Document
+metadata:
+  author:
+    name: Jane Smith
+    email: jane@example.com
+  categories:
+    - technology
+    - rust
+settings:
+  template: article
+  published: true
+  stats:
+    views: 1000
+    likes: 50
+"#</span>;
+
+    <span class="kw">let </span>frontmatter = parser::parse(yaml, Format::Yaml)<span class="question-mark">?</span>;
+    
+    <span class="comment">// Access nested values safely using pattern matching
+    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(Value::Object(metadata)) = frontmatter.get(<span class="string">"metadata"</span>) {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(Value::Object(author)) = metadata.get(<span class="string">"author"</span>) {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(Value::String(name)) = author.get(<span class="string">"name"</span>) {
+                <span class="macro">println!</span>(<span class="string">"Author: {}"</span>, name);
+            }
+        }
+    }
+
+    <span class="prelude-val">Ok</span>(())
+}</code></pre></div>
+<h3 id="documentation-"><a class="doc-anchor" href="#documentation-">§</a>Documentation 📚</h3>
+<p>For comprehensive API documentation and examples, visit:</p>
 <ul>
-<li>error</li>
-<li>extractor</li>
-<li>lib</li>
-<li>parser</li>
-<li>types</li>
+<li><a href="https://docs.rs/frontmatter-gen">API Documentation on docs.rs</a></li>
+<li><a href="https://frontmatter-gen.com">User Guide and Tutorials</a></li>
+<li><a href="https://github.com/sebastienrousseau/frontmatter-gen/issues">Example Code Repository</a></li>
 </ul>
-<h3 id="contributing"><a class="doc-anchor" href="#contributing">§</a>Contributing</h3>
-<p>Contributions are welcome! Please feel free to submit a Pull Request.</p>
-<h3 id="license"><a class="doc-anchor" href="#license">§</a>License</h3>
-<p>This project is licensed under either of</p>
+<h3 id="cli-tool-"><a class="doc-anchor" href="#cli-tool-">§</a>CLI Tool 🛠️</h3>
+<p>The library includes a powerful command-line interface for quick frontmatter operations:</p>
+<div class="example-wrap"><pre class="language-bash"><code># Generate a static site
+frontmatter-gen build \
+    --content-dir examples/content \
+    --output-dir examples/public \
+    --template-dir examples/templates
+
+# Extract frontmatter in various formats
+frontmatter-gen extract input.md --format yaml
+frontmatter-gen extract input.md --format toml
+frontmatter-gen extract input.md --format json
+
+# Save extracted frontmatter to files
+frontmatter-gen extract input.md --format yaml --output output.yaml
+frontmatter-gen extract input.md --format toml --output output.toml
+frontmatter-gen extract input.md --format json --output output.json
+
+# Validate frontmatter with required fields
+frontmatter-gen validate input.md --required title,date,author</code></pre></div><h4 id="running-from-source"><a class="doc-anchor" href="#running-from-source">§</a>Running from Source</h4>
+<p>You can also run the CLI tool directly from the source code:</p>
+<div class="example-wrap"><pre class="language-bash"><code># Generate a static site
+cargo run --features=&quot;ssg&quot; build \
+    --content-dir examples/content \
+    --output-dir examples/public \
+    --template-dir examples/templates
+
+# Extract and validate frontmatter
+cargo run --features=&quot;ssg&quot; extract input.md --format yaml
+cargo run --features=&quot;ssg&quot; validate input.md --required title,date</code></pre></div><h3 id="error-handling-"><a class="doc-anchor" href="#error-handling-">§</a>Error Handling 🚨</h3>
+<p>The library provides detailed error handling with context:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>frontmatter_gen::{extract, error::FrontmatterError};
+
+<span class="kw">fn </span>process_content(content: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;(), FrontmatterError&gt; {
+    <span class="comment">// Extract frontmatter and content
+    </span><span class="kw">let </span>(frontmatter, <span class="kw">_</span>) = extract(content)<span class="question-mark">?</span>;
+    
+    <span class="comment">// Validate required fields
+    </span><span class="kw">for </span>field <span class="kw">in </span>[<span class="string">"title"</span>, <span class="string">"date"</span>, <span class="string">"author"</span>].iter() {
+        <span class="kw">if </span>!frontmatter.contains_key(<span class="kw-2">*</span>field) {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(FrontmatterError::ValidationError(
+                <span class="macro">format!</span>(<span class="string">"Missing required field: {}"</span>, field)
+            ));
+        }
+    }
+    
+    <span class="comment">// Validate field types
+    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(date) = frontmatter.get(<span class="string">"date"</span>) {
+        <span class="kw">if </span>!date.is_string() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(FrontmatterError::ValidationError(
+                <span class="string">"Date field must be a string"</span>.to_string()
+            ));
+        }
+    }
+    
+    <span class="prelude-val">Ok</span>(())
+}</code></pre></div>
+<h3 id="contributing-"><a class="doc-anchor" href="#contributing-">§</a>Contributing 🤝</h3>
+<p>We welcome contributions! Please see our <a href="https://github.com/sebastienrousseau/frontmatter-gen/blob/main/CONTRIBUTING.md">Contributing Guidelines</a> for details on:</p>
 <ul>
-<li>Apache License, Version 2.0, (<a href="LICENSE-APACHE">LICENSE-APACHE</a> or <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a>)</li>
-<li>MIT license (<a href="LICENSE-MIT">LICENSE-MIT</a> or <a href="http://opensource.org/licenses/MIT">http://opensource.org/licenses/MIT</a>)</li>
+<li>Code of Conduct</li>
+<li>Development Process</li>
+<li>Submitting Pull Requests</li>
+<li>Reporting Issues</li>
+</ul>
+<h3 id="licence-"><a class="doc-anchor" href="#licence-">§</a>Licence 📝</h3>
+<p>This project is dual-licensed under either:</p>
+<ul>
+<li>Apache License, Version 2.0 (<a href="LICENSE-APACHE">LICENSE-APACHE</a> or <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a>)</li>
+<li>MIT licence (<a href="LICENSE-MIT">LICENSE-MIT</a> or <a href="http://opensource.org/licenses/MIT">http://opensource.org/licenses/MIT</a>)</li>
 </ul>
 <p>at your option.</p>
-<h3 id="acknowledgements"><a class="doc-anchor" href="#acknowledgements">§</a>Acknowledgements</h3>
-<p>Special thanks to all contributors who have helped build the <code>frontmatter-gen</code> library.</p>
-</div></details><h2 id="reexports" class="section-header">Re-exports<a href="#reexports" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name" id="reexport.Format"><code>pub use types::<a class="enum" href="types/enum.Format.html" title="enum frontmatter_gen::types::Format">Format</a>;</code></div></li><li><div class="item-name" id="reexport.Frontmatter"><code>pub use types::<a class="struct" href="types/struct.Frontmatter.html" title="struct frontmatter_gen::types::Frontmatter">Frontmatter</a>;</code></div></li><li><div class="item-name" id="reexport.Value"><code>pub use types::<a class="enum" href="types/enum.Value.html" title="enum frontmatter_gen::types::Value">Value</a>;</code></div></li></ul><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="error/index.html" title="mod frontmatter_gen::error">error</a></div><div class="desc docblock-short">The <code>error</code> module contains error types related to the frontmatter parsing process.
-This module defines the error types used throughout the frontmatter-gen crate.</div></li><li><div class="item-name"><a class="mod" href="extractor/index.html" title="mod frontmatter_gen::extractor">extractor</a></div><div class="desc docblock-short">The <code>extractor</code> module contains functions for extracting raw frontmatter from content.
-This module provides functionality for extracting frontmatter from content.</div></li><li><div class="item-name"><a class="mod" href="parser/index.html" title="mod frontmatter_gen::parser">parser</a></div><div class="desc docblock-short">The <code>parser</code> module contains functions for parsing frontmatter into a structured format.
-This module provides functionality for parsing and serializing frontmatter in various formats.</div></li><li><div class="item-name"><a class="mod" href="types/index.html" title="mod frontmatter_gen::types">types</a></div><div class="desc docblock-short">The <code>types</code> module contains types related to the frontmatter parsing process.
-This module defines the core types used throughout the frontmatter-gen crate.
-It includes the <code>Format</code> enum for representing different frontmatter formats, the <code>Value</code> enum for representing various data types that can be stored in frontmatter, and the <code>Frontmatter</code> struct which is the main container for frontmatter data.</div></li></ul><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="fn" href="fn.extract.html" title="fn frontmatter_gen::extract">extract</a></div><div class="desc docblock-short">Extracts frontmatter from a string of content.</div></li><li><div class="item-name"><a class="fn" href="fn.to_format.html" title="fn frontmatter_gen::to_format">to_<wbr>format</a></div><div class="desc docblock-short">Converts frontmatter to a specific format.</div></li></ul></section></div></main></body></html>
+<h3 id="acknowledgements-"><a class="doc-anchor" href="#acknowledgements-">§</a>Acknowledgements 🙏</h3>
+<p>Special thanks to all contributors and the Rust community for their invaluable support and feedback.</p>
+<h2 id="frontmatter-gen"><a class="doc-anchor" href="#frontmatter-gen">§</a>Frontmatter Gen</h2>
+<p><code>frontmatter-gen</code> is a fast, secure, and memory-efficient library for working with
+frontmatter in multiple formats (YAML, TOML, and JSON).</p>
+<h3 id="overview"><a class="doc-anchor" href="#overview">§</a>Overview</h3>
+<p>Frontmatter is metadata prepended to content files, commonly used in static site
+generators and content management systems. This library provides:</p>
+<ul>
+<li><strong>Zero-copy parsing</strong> for optimal performance</li>
+<li><strong>Format auto-detection</strong> between YAML, TOML, and JSON</li>
+<li><strong>Memory safety</strong> with no unsafe code</li>
+<li><strong>Comprehensive validation</strong> of all inputs</li>
+<li><strong>Rich error handling</strong> with detailed diagnostics</li>
+<li><strong>Async support</strong> for non-blocking operations</li>
+</ul>
+<h3 id="quick-start"><a class="doc-anchor" href="#quick-start">§</a>Quick Start</h3>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>frontmatter_gen::{extract, Format, <span class="prelude-ty">Result</span>};
+
+<span class="kw">fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>content = <span class="string">r#"---
+title: My Post
+date: 2025-09-09
+draft: false
+---
+"#</span>;
+
+    <span class="kw">let </span>(frontmatter, content) = extract(content)<span class="question-mark">?</span>;
+    <span class="macro">println!</span>(<span class="string">"Title: {}"</span>, frontmatter.get(<span class="string">"title"</span>)
+        .and_then(|v| v.as_str())
+        .unwrap_or(<span class="string">"Untitled"</span>));
+
+    <span class="prelude-val">Ok</span>(())
+}</code></pre></div>
+</div></details><h2 id="reexports" class="section-header">Re-exports<a href="#reexports" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name" id="reexport.Config"><code>pub use crate::config::<a class="struct" href="config/struct.Config.html" title="struct frontmatter_gen::config::Config">Config</a>;</code></div></li><li><div class="item-name" id="reexport.FrontmatterError"><code>pub use crate::error::<a class="enum" href="error/enum.FrontmatterError.html" title="enum frontmatter_gen::error::FrontmatterError">FrontmatterError</a>;</code></div></li><li><div class="item-name" id="reexport.detect_format"><code>pub use crate::extractor::<a class="fn" href="extractor/fn.detect_format.html" title="fn frontmatter_gen::extractor::detect_format">detect_format</a>;</code></div></li><li><div class="item-name" id="reexport.extract_raw_frontmatter"><code>pub use crate::extractor::<a class="fn" href="extractor/fn.extract_raw_frontmatter.html" title="fn frontmatter_gen::extractor::extract_raw_frontmatter">extract_raw_frontmatter</a>;</code></div></li><li><div class="item-name" id="reexport.parse"><code>pub use crate::parser::<a class="fn" href="parser/fn.parse.html" title="fn frontmatter_gen::parser::parse">parse</a>;</code></div></li><li><div class="item-name" id="reexport.to_string"><code>pub use crate::parser::<a class="fn" href="parser/fn.to_string.html" title="fn frontmatter_gen::parser::to_string">to_string</a>;</code></div></li><li><div class="item-name" id="reexport.Format"><code>pub use crate::types::<a class="enum" href="types/enum.Format.html" title="enum frontmatter_gen::types::Format">Format</a>;</code></div></li><li><div class="item-name" id="reexport.Frontmatter"><code>pub use crate::types::<a class="struct" href="types/struct.Frontmatter.html" title="struct frontmatter_gen::types::Frontmatter">Frontmatter</a>;</code></div></li><li><div class="item-name" id="reexport.Value"><code>pub use crate::types::<a class="enum" href="types/enum.Value.html" title="enum frontmatter_gen::types::Value">Value</a>;</code></div></li></ul><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="config/index.html" title="mod frontmatter_gen::config">config</a></div><div class="desc docblock-short">Configuration Module</div></li><li><div class="item-name"><a class="mod" href="engine/index.html" title="mod frontmatter_gen::engine">engine</a></div><div class="desc docblock-short">Site Generation Engine</div></li><li><div class="item-name"><a class="mod" href="error/index.html" title="mod frontmatter_gen::error">error</a></div><div class="desc docblock-short">Error handling for the frontmatter-gen crate.</div></li><li><div class="item-name"><a class="mod" href="extractor/index.html" title="mod frontmatter_gen::extractor">extractor</a></div><div class="desc docblock-short">This module provides functionality for extracting frontmatter from content.</div></li><li><div class="item-name"><a class="mod" href="parser/index.html" title="mod frontmatter_gen::parser">parser</a></div><div class="desc docblock-short">Frontmatter Parser and Serialiser Module</div></li><li><div class="item-name"><a class="mod" href="prelude/index.html" title="mod frontmatter_gen::prelude">prelude</a></div><div class="desc docblock-short">Prelude module for convenient imports.</div></li><li><div class="item-name"><a class="mod" href="types/index.html" title="mod frontmatter_gen::types">types</a></div><div class="desc docblock-short">This module defines the core types used throughout the frontmatter-gen crate.
+It includes the <code>Format</code> enum for representing different frontmatter formats, the <code>Value</code> enum for representing various data types that can be stored in frontmatter, and the <code>Frontmatter</code> struct which is the main container for frontmatter data.</div></li><li><div class="item-name"><a class="mod" href="utils/index.html" title="mod frontmatter_gen::utils">utils</a></div><div class="desc docblock-short">Utility Module</div></li></ul><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="fn" href="fn.extract.html" title="fn frontmatter_gen::extract">extract</a></div><div class="desc docblock-short">Extracts and parses frontmatter from content with format auto-detection.</div></li><li><div class="item-name"><a class="fn" href="fn.to_format.html" title="fn frontmatter_gen::to_format">to_<wbr>format</a></div><div class="desc docblock-short">Converts frontmatter to a specific format.</div></li></ul><h2 id="types" class="section-header">Type Aliases<a href="#types" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="type" href="type.Result.html" title="type frontmatter_gen::Result">Result</a></div><div class="desc docblock-short">A specialized Result type for frontmatter operations.</div></li></ul></section></div></main></body></html>

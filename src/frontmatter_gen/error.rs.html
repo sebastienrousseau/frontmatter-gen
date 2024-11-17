@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/error.rs`."><title>error.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frontmatter_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0-nightly (90ab8eaed 2024-11-14)" data-channel="nightly" data-search-js="search-6851d9ab.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="icon" href="https://kura.pro/frontmatter-gen/images/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">frontmatter_gen/</div>error.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/error.rs`."><title>error.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frontmatter_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0-nightly (f2a35426b 2024-11-16)" data-channel="nightly" data-search-js="search-b6b1fcd2.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="icon" href="https://kura.pro/frontmatter-gen/images/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">frontmatter_gen/</div>error.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -500,120 +500,266 @@
 <a href="#499" id="499">499</a>
 <a href="#500" id="500">500</a>
 <a href="#501" id="501">501</a>
-<a href="#502" id="502">502</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module defines the error types used throughout the frontmatter-gen crate.
+<a href="#502" id="502">502</a>
+<a href="#503" id="503">503</a>
+<a href="#504" id="504">504</a>
+<a href="#505" id="505">505</a>
+<a href="#506" id="506">506</a>
+<a href="#507" id="507">507</a>
+<a href="#508" id="508">508</a>
+<a href="#509" id="509">509</a>
+<a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
+<a href="#519" id="519">519</a>
+<a href="#520" id="520">520</a>
+<a href="#521" id="521">521</a>
+<a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
+<a href="#524" id="524">524</a>
+<a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a>
+<a href="#527" id="527">527</a>
+<a href="#528" id="528">528</a>
+<a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
+<a href="#540" id="540">540</a>
+<a href="#541" id="541">541</a>
+<a href="#542" id="542">542</a>
+<a href="#543" id="543">543</a>
+<a href="#544" id="544">544</a>
+<a href="#545" id="545">545</a>
+<a href="#546" id="546">546</a>
+<a href="#547" id="547">547</a>
+<a href="#548" id="548">548</a>
+<a href="#549" id="549">549</a>
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a>
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a>
+<a href="#559" id="559">559</a>
+<a href="#560" id="560">560</a>
+<a href="#561" id="561">561</a>
+<a href="#562" id="562">562</a>
+<a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
+<a href="#566" id="566">566</a>
+<a href="#567" id="567">567</a>
+<a href="#568" id="568">568</a>
+<a href="#569" id="569">569</a>
+<a href="#570" id="570">570</a>
+<a href="#571" id="571">571</a>
+<a href="#572" id="572">572</a>
+<a href="#573" id="573">573</a>
+<a href="#574" id="574">574</a>
+<a href="#575" id="575">575</a>
+<a href="#576" id="576">576</a>
+<a href="#577" id="577">577</a>
+<a href="#578" id="578">578</a>
+<a href="#579" id="579">579</a>
+<a href="#580" id="580">580</a>
+<a href="#581" id="581">581</a>
+<a href="#582" id="582">582</a>
+<a href="#583" id="583">583</a>
+<a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a>
+<a href="#591" id="591">591</a>
+<a href="#592" id="592">592</a>
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a></pre></div><pre class="rust"><code><span class="doccomment">//! Error handling for the frontmatter-gen crate.
 //!
-//! It provides a comprehensive set of error variants to cover various failure scenarios that may occur during frontmatter parsing, conversion, and extraction.
+//! This module provides a comprehensive set of error types to handle various
+//! failure scenarios that may occur during frontmatter parsing, conversion,
+//! and extraction. Each variant includes detailed error messages to aid in
+//! debugging and improve error handling.
+//!
+//! # Examples
+//!
+//! ```
+//! use frontmatter_gen::error::FrontmatterError;
+//!
+//! fn example() -&gt; Result&lt;(), FrontmatterError&gt; {
+//!     let invalid_yaml = "invalid: : yaml";
+//!     match serde_yml::from_str::&lt;serde_yml::Value&gt;(invalid_yaml) {
+//!         Ok(_) =&gt; Ok(()),
+//!         Err(e) =&gt; Err(FrontmatterError::YamlParseError { source: e }),
+//!     }
+//! }
+//! ```
 
 </span><span class="kw">use </span>serde_json::Error <span class="kw">as </span>JsonError;
 <span class="kw">use </span>serde_yml::Error <span class="kw">as </span>YamlError;
 <span class="kw">use </span>thiserror::Error;
 
-<span class="doccomment">/// Represents errors that can occur during frontmatter parsing, conversion, and extraction.
+<span class="doccomment">/// Represents errors that can occur during frontmatter operations.
 ///
-/// This enum uses the `thiserror` crate to provide clear and structured error messages, making it easier to debug and handle issues that arise when processing frontmatter.
+/// This enum uses the `thiserror` crate to provide structured error messages,
+/// improving the ease of debugging and handling errors encountered in
+/// frontmatter processing.
 </span><span class="attr">#[derive(Error, Debug)]
 </span><span class="kw">pub enum </span>FrontmatterError {
-    <span class="doccomment">/// Error occurred while parsing YAML.
+    <span class="doccomment">/// Content exceeds the maximum allowed size
+    </span><span class="attr">#[error(<span class="string">"Content size {size} exceeds maximum allowed size of {max} bytes"</span>)]
+    </span>ContentTooLarge {
+        <span class="doccomment">/// The actual size of the content
+        </span>size: usize,
+        <span class="doccomment">/// The maximum allowed size
+        </span>max: usize,
+    },
+
+    <span class="doccomment">/// Nesting depth exceeds the maximum allowed
+    </span><span class="attr">#[error(
+        <span class="string">"Nesting depth {depth} exceeds maximum allowed depth of {max}"
+    </span>)]
+    </span>NestingTooDeep {
+        <span class="doccomment">/// The actual nesting depth
+        </span>depth: usize,
+        <span class="doccomment">/// The maximum allowed depth
+        </span>max: usize,
+    },
+
+    <span class="doccomment">/// Error occurred while parsing YAML content
     </span><span class="attr">#[error(<span class="string">"Failed to parse YAML: {source}"</span>)]
     </span>YamlParseError {
-        <span class="doccomment">/// The source error from the YAML parser.
+        <span class="doccomment">/// The original error from the YAML parser
         </span>source: YamlError,
     },
 
-    <span class="doccomment">/// Error occurred while parsing TOML.
+    <span class="doccomment">/// Error occurred while parsing TOML content
     </span><span class="attr">#[error(<span class="string">"Failed to parse TOML: {0}"</span>)]
     </span>TomlParseError(<span class="attr">#[from] </span>toml::de::Error),
 
-    <span class="doccomment">/// Error occurred while parsing JSON.
+    <span class="doccomment">/// Error occurred while parsing JSON content
     </span><span class="attr">#[error(<span class="string">"Failed to parse JSON: {0}"</span>)]
     </span>JsonParseError(<span class="attr">#[from] </span>JsonError),
 
-    <span class="doccomment">/// The frontmatter format is invalid or unsupported.
+    <span class="doccomment">/// The frontmatter format is invalid or unsupported
     </span><span class="attr">#[error(<span class="string">"Invalid frontmatter format"</span>)]
     </span>InvalidFormat,
 
-    <span class="doccomment">/// Error occurred during conversion between formats.
+    <span class="doccomment">/// Error occurred during conversion between formats
     </span><span class="attr">#[error(<span class="string">"Failed to convert frontmatter: {0}"</span>)]
     </span>ConversionError(String),
 
-    <span class="doccomment">/// Generic parse error.
+    <span class="doccomment">/// Generic error during parsing
     </span><span class="attr">#[error(<span class="string">"Failed to parse frontmatter: {0}"</span>)]
     </span>ParseError(String),
 
-    <span class="doccomment">/// Error for unsupported or unknown frontmatter format.
+    <span class="doccomment">/// Unsupported or unknown frontmatter format was detected
     </span><span class="attr">#[error(<span class="string">"Unsupported frontmatter format detected at line {line}"</span>)]
     </span>UnsupportedFormat {
-        <span class="doccomment">/// The line number where the unsupported format was detected.
+        <span class="doccomment">/// The line number where the unsupported format was encountered
         </span>line: usize,
     },
 
-    <span class="doccomment">/// No frontmatter found in the content.
+    <span class="doccomment">/// No frontmatter content was found
     </span><span class="attr">#[error(<span class="string">"No frontmatter found in the content"</span>)]
     </span>NoFrontmatterFound,
 
-    <span class="doccomment">/// Invalid JSON frontmatter.
+    <span class="doccomment">/// Invalid JSON frontmatter
     </span><span class="attr">#[error(<span class="string">"Invalid JSON frontmatter"</span>)]
     </span>InvalidJson,
 
-    <span class="doccomment">/// Invalid TOML frontmatter.
+    <span class="doccomment">/// Invalid TOML frontmatter
     </span><span class="attr">#[error(<span class="string">"Invalid TOML frontmatter"</span>)]
     </span>InvalidToml,
 
-    <span class="doccomment">/// Invalid YAML frontmatter.
+    <span class="doccomment">/// Invalid YAML frontmatter
     </span><span class="attr">#[error(<span class="string">"Invalid YAML frontmatter"</span>)]
     </span>InvalidYaml,
 
-    <span class="doccomment">/// JSON frontmatter exceeds maximum nesting depth.
+    <span class="doccomment">/// Invalid URL format
+    </span><span class="attr">#[error(<span class="string">"Invalid URL: {0}"</span>)]
+    </span>InvalidUrl(String),
+
+    <span class="doccomment">/// Invalid language code
+    </span><span class="attr">#[error(<span class="string">"Invalid language code: {0}"</span>)]
+    </span>InvalidLanguage(String),
+
+    <span class="doccomment">/// JSON frontmatter exceeds maximum nesting depth
     </span><span class="attr">#[error(<span class="string">"JSON frontmatter exceeds maximum nesting depth"</span>)]
     </span>JsonDepthLimitExceeded,
 
-    <span class="doccomment">/// Error occurred during frontmatter extraction.
+    <span class="doccomment">/// Error during frontmatter extraction
     </span><span class="attr">#[error(<span class="string">"Extraction error: {0}"</span>)]
     </span>ExtractionError(String),
+
+    <span class="doccomment">/// Input validation error
+    </span><span class="attr">#[error(<span class="string">"Input validation error: {0}"</span>)]
+    </span>ValidationError(String),
 }
 
 <span class="kw">impl </span>Clone <span class="kw">for </span>FrontmatterError {
     <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         <span class="kw">match </span><span class="self">self </span>{
-            <span class="comment">// For non-clonable errors, we fallback to a custom or default error.
-            </span>FrontmatterError::YamlParseError { .. } =&gt; {
-                FrontmatterError::InvalidFormat
+            <span class="self">Self</span>::ContentTooLarge { size, max } =&gt; {
+                <span class="self">Self</span>::ContentTooLarge {
+                    size: <span class="kw-2">*</span>size,
+                    max: <span class="kw-2">*</span>max,
+                }
             }
-            FrontmatterError::TomlParseError(e) =&gt; {
-                FrontmatterError::TomlParseError(e.clone())
+            <span class="self">Self</span>::NestingTooDeep { depth, max } =&gt; {
+                <span class="self">Self</span>::NestingTooDeep {
+                    depth: <span class="kw-2">*</span>depth,
+                    max: <span class="kw-2">*</span>max,
+                }
             }
-            FrontmatterError::JsonParseError { .. } =&gt; {
-                FrontmatterError::InvalidFormat
+            <span class="self">Self</span>::YamlParseError { .. } =&gt; <span class="self">Self</span>::InvalidFormat,
+            <span class="self">Self</span>::TomlParseError(e) =&gt; <span class="self">Self</span>::TomlParseError(e.clone()),
+            <span class="self">Self</span>::JsonParseError(<span class="kw">_</span>) =&gt; <span class="self">Self</span>::InvalidFormat,
+            <span class="self">Self</span>::InvalidFormat =&gt; <span class="self">Self</span>::InvalidFormat,
+            <span class="self">Self</span>::ConversionError(msg) =&gt; {
+                <span class="self">Self</span>::ConversionError(msg.clone())
             }
-            FrontmatterError::InvalidFormat =&gt; {
-                FrontmatterError::InvalidFormat
+            <span class="self">Self</span>::ParseError(msg) =&gt; <span class="self">Self</span>::ParseError(msg.clone()),
+            <span class="self">Self</span>::UnsupportedFormat { line } =&gt; {
+                <span class="self">Self</span>::UnsupportedFormat { line: <span class="kw-2">*</span>line }
             }
-            FrontmatterError::ConversionError(msg) =&gt; {
-                FrontmatterError::ConversionError(msg.clone())
+            <span class="self">Self</span>::NoFrontmatterFound =&gt; <span class="self">Self</span>::NoFrontmatterFound,
+            <span class="self">Self</span>::InvalidJson =&gt; <span class="self">Self</span>::InvalidJson,
+            <span class="self">Self</span>::InvalidToml =&gt; <span class="self">Self</span>::InvalidToml,
+            <span class="self">Self</span>::InvalidYaml =&gt; <span class="self">Self</span>::InvalidYaml,
+            <span class="self">Self</span>::JsonDepthLimitExceeded =&gt; {
+                <span class="self">Self</span>::JsonDepthLimitExceeded
             }
-            FrontmatterError::ExtractionError(msg) =&gt; {
-                FrontmatterError::ExtractionError(msg.clone())
+            <span class="self">Self</span>::ExtractionError(msg) =&gt; {
+                <span class="self">Self</span>::ExtractionError(msg.clone())
             }
-            FrontmatterError::ParseError(msg) =&gt; {
-                FrontmatterError::ParseError(msg.clone())
+            <span class="self">Self</span>::ValidationError(msg) =&gt; {
+                <span class="self">Self</span>::ValidationError(msg.clone())
             }
-            FrontmatterError::UnsupportedFormat { line } =&gt; {
-                FrontmatterError::UnsupportedFormat { line: <span class="kw-2">*</span>line }
-            }
-            FrontmatterError::NoFrontmatterFound =&gt; {
-                FrontmatterError::NoFrontmatterFound
-            }
-            FrontmatterError::InvalidJson =&gt; {
-                FrontmatterError::InvalidJson
-            }
-            FrontmatterError::InvalidToml =&gt; {
-                FrontmatterError::InvalidToml
-            }
-            FrontmatterError::InvalidYaml =&gt; {
-                FrontmatterError::InvalidYaml
-            }
-            FrontmatterError::JsonDepthLimitExceeded =&gt; {
-                FrontmatterError::JsonDepthLimitExceeded
+            <span class="self">Self</span>::InvalidUrl(msg) =&gt; <span class="self">Self</span>::InvalidUrl(msg.clone()),
+            <span class="self">Self</span>::InvalidLanguage(msg) =&gt; {
+                <span class="self">Self</span>::InvalidLanguage(msg.clone())
             }
         }
     }
@@ -624,382 +770,426 @@
     ///
     /// # Arguments
     ///
-    /// * `message` - A string slice containing the error message.
+    /// * `message` - A string slice containing the error message
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```rust
-    /// use frontmatter_gen::error::FrontmatterError;
-    /// let error = FrontmatterError::generic_parse_error("Failed to parse at line 10");
     /// ```
-    </span><span class="kw">pub fn </span>generic_parse_error(message: <span class="kw-2">&amp;</span>str) -&gt; FrontmatterError {
-        FrontmatterError::ParseError(message.to_string())
+    /// use frontmatter_gen::error::FrontmatterError;
+    ///
+    /// let error = FrontmatterError::generic_parse_error("Invalid syntax");
+    /// assert!(matches!(error, FrontmatterError::ParseError(_)));
+    /// ```
+    </span><span class="attr">#[must_use]
+    </span><span class="kw">pub fn </span>generic_parse_error(message: <span class="kw-2">&amp;</span>str) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::ParseError(message.to_string())
     }
 
-    <span class="doccomment">/// Helper function to create an `UnsupportedFormat` error with a given line number.
+    <span class="doccomment">/// Creates an unsupported format error for a specific line.
     ///
     /// # Arguments
     ///
-    /// * `line` - The line number where the unsupported format was detected.
+    /// * `line` - The line number where the unsupported format was detected
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```rust
-    /// use frontmatter_gen::error::FrontmatterError;
-    /// let error = FrontmatterError::unsupported_format(12);
     /// ```
-    </span><span class="kw">pub fn </span>unsupported_format(line: usize) -&gt; FrontmatterError {
-        FrontmatterError::UnsupportedFormat { line }
+    /// use frontmatter_gen::error::FrontmatterError;
+    ///
+    /// let error = FrontmatterError::unsupported_format(42);
+    /// assert!(matches!(error, FrontmatterError::UnsupportedFormat { line: 42 }));
+    /// ```
+    </span><span class="attr">#[must_use]
+    </span><span class="kw">pub fn </span>unsupported_format(line: usize) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::UnsupportedFormat { line }
+    }
+
+    <span class="doccomment">/// Creates a validation error with a custom message.
+    ///
+    /// # Arguments
+    ///
+    /// * `message` - A string slice containing the validation error message
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use frontmatter_gen::error::FrontmatterError;
+    ///
+    /// let error = FrontmatterError::validation_error("Invalid character in title");
+    /// assert!(matches!(error, FrontmatterError::ValidationError(_)));
+    /// ```
+    </span><span class="attr">#[must_use]
+    </span><span class="kw">pub fn </span>validation_error(message: <span class="kw-2">&amp;</span>str) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::ValidationError(message.to_string())
     }
 }
 
-<span class="doccomment">/// Example usage of the `FrontmatterError` enum.
-///
-/// This function demonstrates how you might handle various errors during frontmatter parsing.
-///
-/// # Returns
-///
-/// Returns a `Result` demonstrating a parsing error.
-</span><span class="kw">pub fn </span>example_usage() -&gt; <span class="prelude-ty">Result</span>&lt;(), FrontmatterError&gt; {
-    <span class="kw">let </span>example_toml = <span class="string">"invalid toml content"</span>;
+<span class="doccomment">/// Errors that can occur during site generation
+</span><span class="attr">#[derive(Error, Debug)]
+</span><span class="kw">pub enum </span>EngineError {
+    <span class="doccomment">/// Error occurred during content processing
+    </span><span class="attr">#[error(<span class="string">"Content processing error: {0}"</span>)]
+    </span>ContentError(String),
 
-    <span class="comment">// Attempt to parse TOML and handle errors
-    </span><span class="kw">match </span>toml::from_str::&lt;toml::Value&gt;(example_toml) {
-        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(()),
-        <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(FrontmatterError::TomlParseError(e)),
-    }
+    <span class="doccomment">/// Error occurred during template processing
+    </span><span class="attr">#[error(<span class="string">"Template processing error: {0}"</span>)]
+    </span>TemplateError(String),
+
+    <span class="doccomment">/// Error occurred during asset processing
+    </span><span class="attr">#[error(<span class="string">"Asset processing error: {0}"</span>)]
+    </span>AssetError(String),
+
+    <span class="doccomment">/// Error occurred during file system operations
+    </span><span class="attr">#[error(<span class="string">"File system error: {source}"</span>)]
+    </span>FileSystemError {
+        <span class="attr">#[from]
+        </span><span class="doccomment">/// The underlying IO error
+        </span>source: std::io::Error,
+    },
+
+    <span class="doccomment">/// Error occurred during metadata processing
+    </span><span class="attr">#[error(<span class="string">"Metadata error: {0}"</span>)]
+    </span>MetadataError(String),
 }
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span>serde::de::Error;
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_json_parse_error() {
-        <span class="kw">let </span>json_data = <span class="string">"{ invalid json }"</span>;
-        <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;serde_json::Value, <span class="kw">_</span>&gt; =
-            serde_json::from_str(json_data);
-        <span class="macro">assert!</span>(result.is_err());
-        <span class="kw">let </span>error =
-            FrontmatterError::JsonParseError(result.unwrap_err());
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, FrontmatterError::JsonParseError(<span class="kw">_</span>)));
-    }
+    <span class="doccomment">/// Tests for FrontmatterError
+    </span><span class="kw">mod </span>frontmatter_error {
+        <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_toml_parse_error() {
-        <span class="kw">let </span>toml_data = <span class="string">"invalid toml data"</span>;
-        <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;toml::Value, <span class="kw">_</span>&gt; = toml::from_str(toml_data);
-        <span class="macro">assert!</span>(result.is_err());
-        <span class="kw">let </span>error =
-            FrontmatterError::TomlParseError(result.unwrap_err());
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, FrontmatterError::TomlParseError(<span class="kw">_</span>)));
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_yaml_parse_error() {
-        <span class="kw">let </span>yaml_data = <span class="string">"invalid: yaml: data"</span>;
-        <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;serde_yml::Value, <span class="kw">_</span>&gt; =
-            serde_yml::from_str(yaml_data);
-        <span class="macro">assert!</span>(result.is_err());
-        <span class="kw">let </span>error = FrontmatterError::YamlParseError {
-            source: result.unwrap_err(),
-        };
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-            error,
-            FrontmatterError::YamlParseError { .. }
-        ));
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_conversion_error_message() {
-        <span class="kw">let </span>error_message = <span class="string">"Conversion failed"</span>;
-        <span class="kw">let </span>error = FrontmatterError::ConversionError(
-            error_message.to_string(),
-        );
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, FrontmatterError::ConversionError(<span class="kw">_</span>)));
-        <span class="macro">assert_eq!</span>(
-            error.to_string(),
-            <span class="string">"Failed to convert frontmatter: Conversion failed"
-        </span>);
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_parse_error_message() {
-        <span class="kw">let </span>error_message = <span class="string">"Failed to parse frontmatter"</span>;
-        <span class="kw">let </span>error =
-            FrontmatterError::ParseError(error_message.to_string());
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, FrontmatterError::ParseError(<span class="kw">_</span>)));
-        <span class="macro">assert_eq!</span>(
-            error.to_string(),
-            <span class="string">"Failed to parse frontmatter: Failed to parse frontmatter"
-        </span>);
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_generic_parse_error() {
-        <span class="kw">let </span>error =
-            FrontmatterError::generic_parse_error(<span class="string">"Parsing failed"</span>);
-        <span class="kw">match </span>error {
-            FrontmatterError::ParseError(msg) =&gt; {
-                <span class="macro">assert_eq!</span>(msg, <span class="string">"Parsing failed"</span>)
-            }
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Expected ParseError"</span>),
-        }
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_unsupported_format_error() {
-        <span class="kw">let </span>error = FrontmatterError::unsupported_format(<span class="number">10</span>);
-        <span class="kw">match </span>error {
-            FrontmatterError::UnsupportedFormat { line } =&gt; {
-                <span class="macro">assert_eq!</span>(line, <span class="number">10</span>)
-            }
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Expected UnsupportedFormat"</span>),
-        }
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_clone_implementation() {
-        <span class="kw">let </span>original =
-            FrontmatterError::ConversionError(<span class="string">"Test error"</span>.to_string());
-        <span class="kw">let </span>cloned = original.clone();
-        <span class="kw">if let </span>FrontmatterError::ConversionError(msg) = cloned {
-            <span class="macro">assert_eq!</span>(msg, <span class="string">"Test error"</span>);
-        } <span class="kw">else </span>{
-            <span class="macro">panic!</span>(<span class="string">"Expected ConversionError"</span>);
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_content_too_large_error() {
+            <span class="kw">let </span>error = FrontmatterError::ContentTooLarge {
+                size: <span class="number">1000</span>,
+                max: <span class="number">500</span>,
+            };
+            <span class="macro">assert!</span>(error
+                .to_string()
+                .contains(<span class="string">"Content size 1000 exceeds maximum"</span>));
         }
 
-        <span class="kw">let </span>original = FrontmatterError::UnsupportedFormat { line: <span class="number">42 </span>};
-        <span class="kw">let </span>cloned = original.clone();
-        <span class="kw">if let </span>FrontmatterError::UnsupportedFormat { line } = cloned {
-            <span class="macro">assert_eq!</span>(line, <span class="number">42</span>);
-        } <span class="kw">else </span>{
-            <span class="macro">panic!</span>(<span class="string">"Expected UnsupportedFormat"</span>);
-        }
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_invalid_format_error() {
-        <span class="kw">let </span>error = FrontmatterError::InvalidFormat;
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, FrontmatterError::InvalidFormat));
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_conversion_error() {
-        <span class="kw">let </span>error = FrontmatterError::ConversionError(
-            <span class="string">"Test conversion error"</span>.to_string(),
-        );
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, FrontmatterError::ConversionError(<span class="kw">_</span>)));
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_no_frontmatter_found_error() {
-        <span class="kw">let </span>error = FrontmatterError::NoFrontmatterFound;
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, FrontmatterError::NoFrontmatterFound));
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_invalid_json_error() {
-        <span class="kw">let </span>error = FrontmatterError::InvalidJson;
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, FrontmatterError::InvalidJson));
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_invalid_toml_error() {
-        <span class="kw">let </span>error = FrontmatterError::InvalidToml;
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, FrontmatterError::InvalidToml));
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_invalid_yaml_error() {
-        <span class="kw">let </span>error = FrontmatterError::InvalidYaml;
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, FrontmatterError::InvalidYaml));
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_json_depth_limit_exceeded_error() {
-        <span class="kw">let </span>error = FrontmatterError::JsonDepthLimitExceeded;
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-            error,
-            FrontmatterError::JsonDepthLimitExceeded
-        ));
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_extraction_error() {
-        <span class="kw">let </span>error = FrontmatterError::ExtractionError(
-            <span class="string">"Test extraction error"</span>.to_string(),
-        );
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, FrontmatterError::ExtractionError(<span class="kw">_</span>)));
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_error_messages() {
-        <span class="macro">assert_eq!</span>(
-            FrontmatterError::InvalidFormat.to_string(),
-            <span class="string">"Invalid frontmatter format"
-        </span>);
-        <span class="macro">assert_eq!</span>(
-            FrontmatterError::NoFrontmatterFound.to_string(),
-            <span class="string">"No frontmatter found in the content"
-        </span>);
-        <span class="macro">assert_eq!</span>(
-            FrontmatterError::JsonDepthLimitExceeded.to_string(),
-            <span class="string">"JSON frontmatter exceeds maximum nesting depth"
-        </span>);
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_example_usage() {
-        <span class="kw">let </span>result = example_usage();
-        <span class="macro">assert!</span>(result.is_err());
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-            result.unwrap_err(),
-            FrontmatterError::TomlParseError(<span class="kw">_</span>)
-        ));
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_clone_fallback_yaml_parse_error() {
-        <span class="kw">let </span>original = FrontmatterError::YamlParseError {
-            source: YamlError::custom(<span class="string">"invalid yaml"</span>),
-        };
-        <span class="kw">let </span>cloned = original.clone();
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(cloned, FrontmatterError::InvalidFormat));
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_clone_fallback_json_parse_error() {
-        <span class="kw">let </span>original = FrontmatterError::JsonParseError(
-            serde_json::from_str::&lt;serde_json::Value&gt;(<span class="string">"invalid json"</span>)
-                .unwrap_err(),
-        );
-        <span class="kw">let </span>cloned = original.clone();
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(cloned, FrontmatterError::InvalidFormat));
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_unsupported_format_with_edge_cases() {
-        <span class="kw">let </span>error = FrontmatterError::unsupported_format(<span class="number">0</span>);
-        <span class="kw">if let </span>FrontmatterError::UnsupportedFormat { line } = error {
-            <span class="macro">assert_eq!</span>(line, <span class="number">0</span>);
-        } <span class="kw">else </span>{
-            <span class="macro">panic!</span>(<span class="string">"Expected UnsupportedFormat with line 0"</span>);
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_nesting_too_deep_error() {
+            <span class="kw">let </span>error =
+                FrontmatterError::NestingTooDeep { depth: <span class="number">10</span>, max: <span class="number">5 </span>};
+            <span class="macro">assert!</span>(error
+                .to_string()
+                .contains(<span class="string">"Nesting depth 10 exceeds maximum"</span>));
         }
 
-        <span class="kw">let </span>error = FrontmatterError::unsupported_format(usize::MAX);
-        <span class="kw">if let </span>FrontmatterError::UnsupportedFormat { line } = error {
-            <span class="macro">assert_eq!</span>(line, usize::MAX);
-        } <span class="kw">else </span>{
-            <span class="macro">panic!</span>(
-                <span class="string">"Expected UnsupportedFormat with maximum line number"
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_json_parse_error() {
+            <span class="kw">let </span>json_data = <span class="string">"{ invalid json }"</span>;
+            <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;serde_json::Value, <span class="kw">_</span>&gt; =
+                serde_json::from_str(json_data);
+            <span class="macro">assert!</span>(result.is_err());
+            <span class="kw">let </span>error =
+                FrontmatterError::JsonParseError(result.unwrap_err());
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                error,
+                FrontmatterError::JsonParseError(<span class="kw">_</span>)
+            ));
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_yaml_parse_error() {
+            <span class="kw">let </span>yaml_data = <span class="string">"invalid: : yaml"</span>;
+            <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;serde_yml::Value, <span class="kw">_</span>&gt; =
+                serde_yml::from_str(yaml_data);
+            <span class="macro">assert!</span>(result.is_err());
+            <span class="kw">let </span>error = FrontmatterError::YamlParseError {
+                source: result.unwrap_err(),
+            };
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                error,
+                FrontmatterError::YamlParseError { .. }
+            ));
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_validation_error() {
+            <span class="kw">let </span>error = FrontmatterError::validation_error(
+                <span class="string">"Test validation error"</span>,
+            );
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                error,
+                FrontmatterError::ValidationError(<span class="kw">_</span>)
+            ));
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Input validation error: Test validation error"
+            </span>);
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_generic_parse_error() {
+            <span class="kw">let </span>error = FrontmatterError::generic_parse_error(
+                <span class="string">"Test parse error"</span>,
+            );
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, FrontmatterError::ParseError(<span class="kw">_</span>)));
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Failed to parse frontmatter: Test parse error"
+            </span>);
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_unsupported_format_error() {
+            <span class="kw">let </span>error = FrontmatterError::unsupported_format(<span class="number">42</span>);
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                error,
+                FrontmatterError::UnsupportedFormat { line: <span class="number">42 </span>}
+            ));
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Unsupported frontmatter format detected at line 42"
+            </span>);
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_clone_implementation() {
+            <span class="kw">let </span>original = FrontmatterError::ContentTooLarge {
+                size: <span class="number">1000</span>,
+                max: <span class="number">500</span>,
+            };
+            <span class="kw">let </span>cloned = original.clone();
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                cloned,
+                FrontmatterError::ContentTooLarge {
+                    size: <span class="number">1000</span>,
+                    max: <span class="number">500
+                </span>}
+            ));
+
+            <span class="kw">let </span>original =
+                FrontmatterError::NestingTooDeep { depth: <span class="number">10</span>, max: <span class="number">5 </span>};
+            <span class="kw">let </span>cloned = original.clone();
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                cloned,
+                FrontmatterError::NestingTooDeep { depth: <span class="number">10</span>, max: <span class="number">5 </span>}
+            ));
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_error_display() {
+            <span class="kw">let </span>error = FrontmatterError::ContentTooLarge {
+                size: <span class="number">1000</span>,
+                max: <span class="number">500</span>,
+            };
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Content size 1000 exceeds maximum allowed size of 500 bytes"
+            </span>);
+
+            <span class="kw">let </span>error = FrontmatterError::ValidationError(
+                <span class="string">"Invalid input"</span>.to_string(),
+            );
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Input validation error: Invalid input"
             </span>);
         }
     }
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_no_frontmatter_fallback() {
-        <span class="comment">// Simulate a case where no frontmatter is found
-        </span><span class="kw">let </span>_content = <span class="string">"Some content without frontmatter"</span>;
-        <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;(), FrontmatterError&gt; =
-            <span class="prelude-val">Err</span>(FrontmatterError::NoFrontmatterFound);
+    <span class="doccomment">/// Tests for EngineError
+    </span><span class="kw">mod </span>engine_error {
+        <span class="kw">use super</span>::<span class="kw-2">*</span>;
+        <span class="kw">use </span>std::io;
 
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-            result,
-            <span class="prelude-val">Err</span>(FrontmatterError::NoFrontmatterFound)
-        ));
-    }
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_content_error() {
+            <span class="kw">let </span>error =
+                EngineError::ContentError(<span class="string">"Content issue"</span>.to_string());
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, EngineError::ContentError(<span class="kw">_</span>)));
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Content processing error: Content issue"
+            </span>);
+        }
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_json_depth_limit_exceeded() {
-        <span class="kw">let </span>error = FrontmatterError::JsonDepthLimitExceeded;
-        <span class="macro">assert_eq!</span>(
-            error.to_string(),
-            <span class="string">"JSON frontmatter exceeds maximum nesting depth"
-        </span>);
-    }
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_template_error() {
+            <span class="kw">let </span>error = EngineError::TemplateError(
+                <span class="string">"Template issue"</span>.to_string(),
+            );
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, EngineError::TemplateError(<span class="kw">_</span>)));
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Template processing error: Template issue"
+            </span>);
+        }
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_invalid_json_error_message() {
-        <span class="kw">let </span>error = FrontmatterError::InvalidJson;
-        <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Invalid JSON frontmatter"</span>);
-    }
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_asset_error() {
+            <span class="kw">let </span>error =
+                EngineError::AssetError(<span class="string">"Asset issue"</span>.to_string());
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, EngineError::AssetError(<span class="kw">_</span>)));
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Asset processing error: Asset issue"
+            </span>);
+        }
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_invalid_toml_error_message() {
-        <span class="kw">let </span>error = FrontmatterError::InvalidToml;
-        <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Invalid TOML frontmatter"</span>);
-    }
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_filesystem_error() {
+            <span class="kw">let </span>io_error =
+                io::Error::new(io::ErrorKind::Other, <span class="string">"IO failure"</span>);
+            <span class="kw">let </span>error =
+                EngineError::FileSystemError { source: io_error };
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                error,
+                EngineError::FileSystemError { .. }
+            ));
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"File system error: IO failure"
+            </span>);
+        }
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_invalid_yaml_error_message() {
-        <span class="kw">let </span>error = FrontmatterError::InvalidYaml;
-        <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Invalid YAML frontmatter"</span>);
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_parse_error_custom_message() {
-        <span class="kw">let </span>error_message = <span class="string">"Unexpected character at line 5"</span>;
-        <span class="kw">let </span>error =
-            FrontmatterError::ParseError(error_message.to_string());
-        <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Failed to parse frontmatter: Unexpected character at line 5"</span>);
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_parse_error_empty_message() {
-        <span class="kw">let </span>error_message = <span class="string">""</span>;
-        <span class="kw">let </span>error =
-            FrontmatterError::ParseError(error_message.to_string());
-        <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Failed to parse frontmatter: "</span>);
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_no_frontmatter_found_in_content() {
-        <span class="kw">let </span>_content = <span class="string">"Regular content without any frontmatter"</span>;
-        <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;(), FrontmatterError&gt; =
-            <span class="prelude-val">Err</span>(FrontmatterError::NoFrontmatterFound);
-
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-            result,
-            <span class="prelude-val">Err</span>(FrontmatterError::NoFrontmatterFound)
-        ));
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_extraction_error_custom_message() {
-        <span class="kw">let </span>error_message =
-            <span class="string">"Failed to extract frontmatter from line 10"</span>;
-        <span class="kw">let </span>error = FrontmatterError::ExtractionError(
-            error_message.to_string(),
-        );
-        <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Extraction error: Failed to extract frontmatter from line 10"</span>);
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_extraction_error_empty_message() {
-        <span class="kw">let </span>error = FrontmatterError::ExtractionError(<span class="string">""</span>.to_string());
-        <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Extraction error: "</span>);
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_clone_extraction_error() {
-        <span class="kw">let </span>original = FrontmatterError::ExtractionError(
-            <span class="string">"Test extraction error"</span>.to_string(),
-        );
-        <span class="kw">let </span>cloned = original.clone();
-        <span class="kw">if let </span>FrontmatterError::ExtractionError(msg) = cloned {
-            <span class="macro">assert_eq!</span>(msg, <span class="string">"Test extraction error"</span>);
-        } <span class="kw">else </span>{
-            <span class="macro">panic!</span>(<span class="string">"Expected ExtractionError"</span>);
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_metadata_error() {
+            <span class="kw">let </span>error = EngineError::MetadataError(
+                <span class="string">"Metadata issue"</span>.to_string(),
+            );
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, EngineError::MetadataError(<span class="kw">_</span>)));
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Metadata error: Metadata issue"
+            </span>);
         }
     }
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_clone_no_frontmatter_found() {
-        <span class="kw">let </span>original = FrontmatterError::NoFrontmatterFound;
-        <span class="kw">let </span>cloned = original.clone();
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(cloned, FrontmatterError::NoFrontmatterFound));
+    <span class="doccomment">/// Tests for the Clone implementation of `FrontmatterError`.
+    </span><span class="kw">mod </span>clone_tests {
+        <span class="kw">use </span><span class="kw">crate</span>::error::FrontmatterError;
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_clone_content_too_large() {
+            <span class="kw">let </span>original = FrontmatterError::ContentTooLarge {
+                size: <span class="number">1000</span>,
+                max: <span class="number">500</span>,
+            };
+            <span class="kw">let </span>cloned = original.clone();
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                cloned,
+                FrontmatterError::ContentTooLarge { size, max }
+                <span class="kw">if </span>size == <span class="number">1000 </span>&amp;&amp; max == <span class="number">500
+            </span>));
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_clone_nesting_too_deep() {
+            <span class="kw">let </span>original =
+                FrontmatterError::NestingTooDeep { depth: <span class="number">10</span>, max: <span class="number">5 </span>};
+            <span class="kw">let </span>cloned = original.clone();
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                cloned,
+                FrontmatterError::NestingTooDeep { depth, max }
+                <span class="kw">if </span>depth == <span class="number">10 </span>&amp;&amp; max == <span class="number">5
+            </span>));
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_clone_conversion_error() {
+            <span class="kw">let </span>original = FrontmatterError::ConversionError(
+                <span class="string">"conversion issue"</span>.to_string(),
+            );
+            <span class="kw">let </span>cloned = original.clone();
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                cloned,
+                FrontmatterError::ConversionError(msg) <span class="kw">if </span>msg == <span class="string">"conversion issue"
+            </span>));
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_clone_parse_error() {
+            <span class="kw">let </span>original =
+                FrontmatterError::ParseError(<span class="string">"parse issue"</span>.to_string());
+            <span class="kw">let </span>cloned = original.clone();
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                cloned,
+                FrontmatterError::ParseError(msg) <span class="kw">if </span>msg == <span class="string">"parse issue"
+            </span>));
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_clone_unsupported_format() {
+            <span class="kw">let </span>original =
+                FrontmatterError::UnsupportedFormat { line: <span class="number">42 </span>};
+            <span class="kw">let </span>cloned = original.clone();
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                cloned,
+                FrontmatterError::UnsupportedFormat { line } <span class="kw">if </span>line == <span class="number">42
+            </span>));
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_clone_no_frontmatter_found() {
+            <span class="kw">let </span>original = FrontmatterError::NoFrontmatterFound;
+            <span class="kw">let </span>cloned = original.clone();
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                cloned,
+                FrontmatterError::NoFrontmatterFound
+            ));
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_clone_invalid_json() {
+            <span class="kw">let </span>original = FrontmatterError::InvalidJson;
+            <span class="kw">let </span>cloned = original.clone();
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(cloned, FrontmatterError::InvalidJson));
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_clone_invalid_toml() {
+            <span class="kw">let </span>original = FrontmatterError::InvalidToml;
+            <span class="kw">let </span>cloned = original.clone();
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(cloned, FrontmatterError::InvalidToml));
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_clone_invalid_yaml() {
+            <span class="kw">let </span>original = FrontmatterError::InvalidYaml;
+            <span class="kw">let </span>cloned = original.clone();
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(cloned, FrontmatterError::InvalidYaml));
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_clone_json_depth_limit_exceeded() {
+            <span class="kw">let </span>original = FrontmatterError::JsonDepthLimitExceeded;
+            <span class="kw">let </span>cloned = original.clone();
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                cloned,
+                FrontmatterError::JsonDepthLimitExceeded
+            ));
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_clone_extraction_error() {
+            <span class="kw">let </span>original = FrontmatterError::ExtractionError(
+                <span class="string">"extraction issue"</span>.to_string(),
+            );
+            <span class="kw">let </span>cloned = original.clone();
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                cloned,
+                FrontmatterError::ExtractionError(msg) <span class="kw">if </span>msg == <span class="string">"extraction issue"
+            </span>));
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_clone_validation_error() {
+            <span class="kw">let </span>original = FrontmatterError::ValidationError(
+                <span class="string">"validation issue"</span>.to_string(),
+            );
+            <span class="kw">let </span>cloned = original.clone();
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                cloned,
+                FrontmatterError::ValidationError(msg) <span class="kw">if </span>msg == <span class="string">"validation issue"
+            </span>));
+        }
     }
 }
 </code></pre></div></section></main></body></html>

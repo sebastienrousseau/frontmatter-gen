@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["copy_file","create_directory","create_temp_file","validate_path_safety"],"struct":["TempFileTracker"]};

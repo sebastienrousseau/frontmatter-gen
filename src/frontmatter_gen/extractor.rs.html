@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/extractor.rs`."><title>extractor.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frontmatter_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0-nightly (90ab8eaed 2024-11-14)" data-channel="nightly" data-search-js="search-6851d9ab.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="icon" href="https://kura.pro/frontmatter-gen/images/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">frontmatter_gen/</div>extractor.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/extractor.rs`."><title>extractor.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frontmatter_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0-nightly (f2a35426b 2024-11-16)" data-channel="nightly" data-search-js="search-b6b1fcd2.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="icon" href="https://kura.pro/frontmatter-gen/images/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">frontmatter_gen/</div>extractor.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -359,7 +359,111 @@
 <a href="#358" id="358">358</a>
 <a href="#359" id="359">359</a>
 <a href="#360" id="360">360</a>
-<a href="#361" id="361">361</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module provides functionality for extracting frontmatter from content.
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
+<a href="#439" id="439">439</a>
+<a href="#440" id="440">440</a>
+<a href="#441" id="441">441</a>
+<a href="#442" id="442">442</a>
+<a href="#443" id="443">443</a>
+<a href="#444" id="444">444</a>
+<a href="#445" id="445">445</a>
+<a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
+<a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
+<a href="#455" id="455">455</a>
+<a href="#456" id="456">456</a>
+<a href="#457" id="457">457</a>
+<a href="#458" id="458">458</a>
+<a href="#459" id="459">459</a>
+<a href="#460" id="460">460</a>
+<a href="#461" id="461">461</a>
+<a href="#462" id="462">462</a>
+<a href="#463" id="463">463</a>
+<a href="#464" id="464">464</a>
+<a href="#465" id="465">465</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module provides functionality for extracting frontmatter from content.
 //!
 //! It includes functions to extract frontmatter in various formats (YAML, TOML, JSON) from a given string content, as well as utilities to detect the format of the frontmatter.
 
@@ -398,7 +502,7 @@
 </span><span class="kw">pub fn </span>extract_raw_frontmatter(
     content: <span class="kw-2">&amp;</span>str,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="kw-2">&amp;</span>str, <span class="kw-2">&amp;</span>str), FrontmatterError&gt; {
-    <span class="comment">// Try to extract YAML frontmatter with flexible delimiters for Windows and Linux.
+    <span class="comment">// Extract YAML frontmatter
     </span><span class="kw">if let </span><span class="prelude-val">Some</span>(yaml) =
         extract_delimited_frontmatter(content, <span class="string">"---\n"</span>, <span class="string">"\n---"</span>)
             .or_else(|| {
@@ -411,10 +515,10 @@
             .find(<span class="string">"\n---\n"</span>)
             .or_else(|| content.find(<span class="string">"\r\n---\r\n"</span>))
             .map_or(content.len(), |i| i + <span class="number">5</span>)..];
-        <span class="kw">return </span><span class="prelude-val">Ok</span>((yaml, remaining));
+        <span class="kw">return </span><span class="prelude-val">Ok</span>((yaml, remaining.trim_start()));
     }
 
-    <span class="comment">// Try to extract TOML frontmatter.
+    <span class="comment">// Extract TOML frontmatter
     </span><span class="kw">if let </span><span class="prelude-val">Some</span>(toml) =
         extract_delimited_frontmatter(content, <span class="string">"+++\n"</span>, <span class="string">"\n+++"</span>)
             .or_else(|| {
@@ -427,17 +531,23 @@
             .find(<span class="string">"\n+++\n"</span>)
             .or_else(|| content.find(<span class="string">"\r\n+++\r\n"</span>))
             .map_or(content.len(), |i| i + <span class="number">5</span>)..];
-        <span class="kw">return </span><span class="prelude-val">Ok</span>((toml, remaining));
+        <span class="kw">return </span><span class="prelude-val">Ok</span>((toml, remaining.trim_start()));
     }
 
-    <span class="comment">// Try to extract JSON frontmatter.
+    <span class="comment">// Extract JSON frontmatter
     </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(json) = extract_json_frontmatter(content) {
         <span class="kw">let </span>remaining = <span class="kw-2">&amp;</span>content[json.len()..];
         <span class="kw">return </span><span class="prelude-val">Ok</span>((json, remaining.trim_start()));
     }
 
-    <span class="comment">// Return an error if no valid frontmatter format is found.
-    </span><span class="prelude-val">Err</span>(FrontmatterError::InvalidFormat)
+    <span class="comment">// Handle cases where frontmatter delimiters exist but are empty
+    </span><span class="kw">if </span>content.starts_with(<span class="string">"---\n---"</span>)
+        || content.starts_with(<span class="string">"+++\n+++"</span>)
+    {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(FrontmatterError::InvalidFormat);
+    }
+
+    <span class="prelude-val">Err</span>(FrontmatterError::InvalidFormat)
 }
 
 <span class="doccomment">/// Extracts JSON frontmatter from the content by detecting balanced curly braces (`{}`).
@@ -550,18 +660,28 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;Format, FrontmatterError&gt; {
     <span class="kw">let </span>trimmed = raw_frontmatter.trim_start();
 
-    <span class="comment">// Detect JSON format by checking for a leading '{' character.
+    <span class="comment">// Check for YAML front matter marker
+    </span><span class="kw">if </span>trimmed.starts_with(<span class="string">"---"</span>) {
+        <span class="kw">return </span><span class="prelude-val">Ok</span>(Format::Yaml);
+    }
+
+    <span class="comment">// Check for JSON structure
     </span><span class="kw">if </span>trimmed.starts_with(<span class="string">'{'</span>) {
-        <span class="prelude-val">Ok</span>(Format::Json)
+        <span class="kw">return </span><span class="prelude-val">Ok</span>(Format::Json);
     }
-    <span class="comment">// Detect TOML format by checking if the frontmatter contains '=' (key-value pairs).
-    </span><span class="kw">else if </span>trimmed.contains(<span class="string">'='</span>) {
-        <span class="prelude-val">Ok</span>(Format::Toml)
+
+    <span class="comment">// Check for YAML-like structure
+    </span><span class="kw">if </span>trimmed.contains(<span class="string">':'</span>) &amp;&amp; !trimmed.contains(<span class="string">'{'</span>) {
+        <span class="kw">return </span><span class="prelude-val">Ok</span>(Format::Yaml);
     }
-    <span class="comment">// Default to YAML if no other format matches.
-    </span><span class="kw">else </span>{
-        <span class="prelude-val">Ok</span>(Format::Yaml)
+
+    <span class="comment">// Check for TOML-like structure
+    </span><span class="kw">if </span>trimmed.contains(<span class="string">'='</span>) {
+        <span class="kw">return </span><span class="prelude-val">Ok</span>(Format::Toml);
     }
+
+    <span class="comment">// Default to an error if none of the formats match
+    </span><span class="prelude-val">Err</span>(FrontmatterError::InvalidFormat)
 }
 
 <span class="doccomment">/// Extracts frontmatter enclosed by the given start and end delimiters.
@@ -593,131 +713,219 @@
     start_delim: <span class="kw-2">&amp;</span>str,
     end_delim: <span class="kw-2">&amp;</span>str,
 ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>str&gt; {
-    content.strip_prefix(start_delim)<span class="question-mark">?</span>.split(end_delim).next()
+    <span class="kw">let </span>start_index = content.find(start_delim)<span class="question-mark">? </span>+ start_delim.len();
+    <span class="kw">let </span>end_index = content.find(end_delim)<span class="question-mark">?</span>;
+
+    <span class="kw">if </span>start_index &lt;= end_index {
+        <span class="prelude-val">Some</span>(content[start_index..end_index].trim())
+    } <span class="kw">else </span>{
+        <span class="prelude-val">None
+    </span>}
 }
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_extract_raw_frontmatter_yaml() {
-        <span class="kw">let </span>content = <span class="string">r#"---
+    <span class="doccomment">/// Tests for extracting raw frontmatter
+    </span><span class="kw">mod </span>extract_raw_frontmatter {
+        <span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_extract_yaml() {
+            <span class="kw">let </span>content = <span class="string">r#"---
 title: Example
 ---
 Content here"#</span>;
-        <span class="kw">let </span>result = extract_raw_frontmatter(content).unwrap();
-        <span class="macro">assert_eq!</span>(result.<span class="number">0</span>, <span class="string">"title: Example"</span>);
-        <span class="macro">assert_eq!</span>(result.<span class="number">1</span>, <span class="string">"Content here"</span>);
-    }
+            <span class="kw">let </span>result = extract_raw_frontmatter(content).unwrap();
+            <span class="macro">assert_eq!</span>(result.<span class="number">0</span>, <span class="string">"title: Example"</span>);
+            <span class="macro">assert_eq!</span>(result.<span class="number">1</span>, <span class="string">"Content here"</span>);
+        }
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_extract_raw_frontmatter_toml() {
-        <span class="kw">let </span>content = <span class="string">r#"+++
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_extract_toml() {
+            <span class="kw">let </span>content = <span class="string">r#"+++
 title = "Example"
 +++
 Content here"#</span>;
-        <span class="kw">let </span>result = extract_raw_frontmatter(content).unwrap();
-        <span class="macro">assert_eq!</span>(result.<span class="number">0</span>, <span class="string">r#"title = "Example""#</span>);
-        <span class="macro">assert_eq!</span>(result.<span class="number">1</span>, <span class="string">"Content here"</span>);
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_extract_raw_frontmatter_json() {
-        <span class="kw">let </span>content = <span class="string">r#"{ "title": "Example" }
-Content here"#</span>;
-        <span class="kw">let </span>result = extract_raw_frontmatter(content).unwrap();
-        <span class="macro">assert_eq!</span>(result.<span class="number">0</span>, <span class="string">r#"{ "title": "Example" }"#</span>);
-        <span class="macro">assert_eq!</span>(result.<span class="number">1</span>, <span class="string">"Content here"</span>);
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_extract_json_frontmatter() {
-        <span class="kw">let </span>content = <span class="string">r#"{ "title": "Example" }
-Content here"#</span>;
-        <span class="kw">let </span>result = extract_json_frontmatter(content).unwrap();
-        <span class="macro">assert_eq!</span>(result, <span class="string">r#"{ "title": "Example" }"#</span>);
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_extract_json_frontmatter_deeply_nested() {
-        <span class="kw">let </span>content = <span class="string">r#"{ "a": { "b": { "c": { "d": { "e": {} }}}}}
-Content here"#</span>;
-        <span class="kw">let </span>result = extract_json_frontmatter(content);
-        <span class="macro">assert!</span>(result.is_ok());
-        <span class="macro">assert_eq!</span>(
-            result.unwrap(),
-            <span class="string">r#"{ "a": { "b": { "c": { "d": { "e": {} }}}}}"#
-        </span>);
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_extract_json_frontmatter_too_deep() {
-        <span class="kw">let </span><span class="kw-2">mut </span>content = String::from(<span class="string">"{ "</span>);
-        <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">101 </span>{
-            content.push_str(<span class="string">r#""a": { "#</span>);
+            <span class="kw">let </span>result = extract_raw_frontmatter(content).unwrap();
+            <span class="macro">assert_eq!</span>(result.<span class="number">0</span>, <span class="string">r#"title = "Example""#</span>);
+            <span class="macro">assert_eq!</span>(result.<span class="number">1</span>, <span class="string">"Content here"</span>);
         }
-        content.push_str(<span class="kw-2">&amp;</span><span class="string">"}"</span>.repeat(<span class="number">101</span>));
-        content.push_str(<span class="string">"\nContent here"</span>);
 
-        <span class="kw">let </span>result = extract_json_frontmatter(<span class="kw-2">&amp;</span>content);
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-            result,
-            <span class="prelude-val">Err</span>(FrontmatterError::JsonDepthLimitExceeded)
-        ));
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_extract_json() {
+            <span class="kw">let </span>content = <span class="string">r#"{ "title": "Example" }
+Content here"#</span>;
+            <span class="kw">let </span>result = extract_raw_frontmatter(content).unwrap();
+            <span class="macro">assert_eq!</span>(result.<span class="number">0</span>, <span class="string">r#"{ "title": "Example" }"#</span>);
+            <span class="macro">assert_eq!</span>(result.<span class="number">1</span>, <span class="string">"Content here"</span>);
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_invalid_format() {
+            <span class="kw">let </span>content = <span class="string">"Invalid frontmatter"</span>;
+            <span class="kw">let </span>result = detect_format(content);
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(FrontmatterError::InvalidFormat) = result {
+                <span class="comment">// Test passed
+            </span>} <span class="kw">else </span>{
+                <span class="macro">panic!</span>(<span class="string">"Expected Err(InvalidFormat), got {:?}"</span>, result);
+            }
+        }
     }
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_extract_raw_frontmatter_invalid() {
-        <span class="kw">let </span>content = <span class="string">"Invalid frontmatter"</span>;
-        <span class="kw">let </span>result = extract_raw_frontmatter(content);
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(result, <span class="prelude-val">Err</span>(FrontmatterError::InvalidFormat)));
-    }
+    <span class="doccomment">/// Tests for JSON frontmatter extraction
+    </span><span class="kw">mod </span>extract_json_frontmatter {
+        <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_detect_format() {
-        <span class="kw">let </span>yaml = <span class="string">"title: Example"</span>;
-        <span class="kw">let </span>toml = <span class="string">"title = \"Example\""</span>;
-        <span class="kw">let </span>json = <span class="string">"{ \"title\": \"Example\" }"</span>;
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_valid_json() {
+            <span class="kw">let </span>content = <span class="string">r#"{ "title": "Example" }
+Content here"#</span>;
+            <span class="kw">let </span>result = extract_json_frontmatter(content).unwrap();
+            <span class="macro">assert_eq!</span>(result, <span class="string">r#"{ "title": "Example" }"#</span>);
+        }
 
-        <span class="macro">assert_eq!</span>(detect_format(yaml).unwrap(), Format::Yaml);
-        <span class="macro">assert_eq!</span>(detect_format(toml).unwrap(), Format::Toml);
-        <span class="macro">assert_eq!</span>(detect_format(json).unwrap(), Format::Json);
-    }
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_nested_json() {
+            <span class="kw">let </span>content = <span class="string">r#"{ "a": { "b": { "c": { "d": { "e": {} }}}}}
+Content here"#</span>;
+            <span class="kw">let </span>result = extract_json_frontmatter(content);
+            <span class="macro">assert!</span>(result.is_ok());
+            <span class="macro">assert_eq!</span>(
+                result.unwrap(),
+                <span class="string">r#"{ "a": { "b": { "c": { "d": { "e": {} }}}}}"#
+            </span>);
+        }
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_extract_delimited_frontmatter() {
-        <span class="kw">let </span>content = <span class="string">"---\\ntitle: Example\\n---\\nContent here"</span>;
-        <span class="kw">let </span>result = extract_delimited_frontmatter(
-            content,
-            <span class="string">"---\\n"</span>,
-            <span class="string">"\\n---\\n"</span>,
-        )
-        .unwrap();
-        <span class="macro">assert_eq!</span>(result, <span class="string">"title: Example"</span>);
-    }
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_too_deep_json() {
+            <span class="kw">let </span><span class="kw-2">mut </span>content = String::from(<span class="string">"{ "</span>);
+            <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">101 </span>{
+                content.push_str(<span class="string">r#""a": { "#</span>);
+            }
+            content.push_str(<span class="kw-2">&amp;</span><span class="string">"}"</span>.repeat(<span class="number">101</span>));
+            content.push_str(<span class="string">"\nContent here"</span>);
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_extract_delimited_frontmatter_windows() {
-        <span class="kw">let </span>content = <span class="string">"---\r\ntitle: Example\r\n---\r\nContent here"</span>;
-        <span class="kw">let </span>result = extract_delimited_frontmatter(
-            content,
-            <span class="string">"---\r\n"</span>,
-            <span class="string">"\r\n---\r\n"</span>,
-        )
-        .unwrap();
-        <span class="macro">assert_eq!</span>(result, <span class="string">"title: Example"</span>);
-    }
+            <span class="kw">let </span>result = extract_json_frontmatter(<span class="kw-2">&amp;</span>content);
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                result,
+                <span class="prelude-val">Err</span>(FrontmatterError::JsonDepthLimitExceeded)
+            ));
+        }
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_extract_json_frontmatter_with_escaped_characters() {
-        <span class="kw">let </span>content = <span class="string">r#"{ "title": "Example with \"quotes\" and {braces}", "content": "Some text with \\ backslash" }
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_escaped_characters() {
+            <span class="kw">let </span>content = <span class="string">r#"{ "title": "Example with \"quotes\" and {braces}", "content": "Some text with \\ backslash" }
 Actual content starts here"#</span>;
-        <span class="kw">let </span>result = extract_json_frontmatter(content).unwrap();
-        <span class="macro">assert_eq!</span>(
-            result,
-            <span class="string">r#"{ "title": "Example with \"quotes\" and {braces}", "content": "Some text with \\ backslash" }"#
-        </span>);
+            <span class="kw">let </span>result = extract_json_frontmatter(content).unwrap();
+            <span class="macro">assert_eq!</span>(
+                result,
+                <span class="string">r#"{ "title": "Example with \"quotes\" and {braces}", "content": "Some text with \\ backslash" }"#
+            </span>);
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_invalid_json() {
+            <span class="kw">let </span>content = <span class="string">"Not a JSON frontmatter"</span>;
+            <span class="kw">let </span>result = extract_json_frontmatter(content);
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                result,
+                <span class="prelude-val">Err</span>(FrontmatterError::InvalidJson)
+            ));
+        }
+    }
+
+    <span class="doccomment">/// Tests for format detection
+    </span><span class="kw">mod </span>detect_format {
+        <span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_yaml_format() {
+            <span class="kw">let </span>content = <span class="string">"title: Example"</span>;
+            <span class="kw">let </span>result = detect_format(content).unwrap();
+            <span class="macro">assert_eq!</span>(result, Format::Yaml);
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_toml_format() {
+            <span class="kw">let </span>content = <span class="string">"title = \"Example\""</span>;
+            <span class="kw">let </span>result = detect_format(content).unwrap();
+            <span class="macro">assert_eq!</span>(result, Format::Toml);
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_json_format() {
+            <span class="kw">let </span>content = <span class="string">r#"{ "title": "Example" }"#</span>;
+            <span class="kw">let </span>result = detect_format(content).unwrap();
+            <span class="macro">assert_eq!</span>(result, Format::Json);
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_invalid_format() {
+            <span class="kw">let </span>content = <span class="string">"Invalid content"</span>;
+            <span class="kw">let </span>result = detect_format(content);
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                result,
+                <span class="prelude-val">Err</span>(FrontmatterError::InvalidFormat)
+            ));
+        }
+    }
+
+    <span class="doccomment">/// Tests for delimited frontmatter extraction
+    </span><span class="kw">mod </span>extract_delimited_frontmatter {
+        <span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_valid_yaml() {
+            <span class="kw">let </span>content = <span class="string">"---\ntitle: Example\n---\nContent here"</span>;
+            <span class="kw">let </span>result = extract_delimited_frontmatter(
+                content, <span class="string">"---\n"</span>, <span class="string">"\n---\n"</span>,
+            )
+            .unwrap();
+            <span class="macro">assert_eq!</span>(result, <span class="string">"title: Example"</span>);
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_valid_toml() {
+            <span class="kw">let </span>content = <span class="string">"+++\ntitle = \"Example\"\n+++\nContent here"</span>;
+            <span class="kw">let </span>result = extract_delimited_frontmatter(
+                content, <span class="string">"+++\n"</span>, <span class="string">"\n+++\n"</span>,
+            )
+            .unwrap();
+            <span class="macro">assert_eq!</span>(result, <span class="string">r#"title = "Example""#</span>);
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_valid_windows_format() {
+            <span class="kw">let </span>content =
+                <span class="string">"---\r\ntitle: Example\r\n---\r\nContent here"</span>;
+            <span class="kw">let </span>result = extract_delimited_frontmatter(
+                content,
+                <span class="string">"---\r\n"</span>,
+                <span class="string">"\r\n---\r\n"</span>,
+            )
+            .unwrap();
+            <span class="macro">assert_eq!</span>(result, <span class="string">"title: Example"</span>);
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_missing_start_delimiter() {
+            <span class="kw">let </span>content = <span class="string">"title: Example\n---\nContent here"</span>;
+            <span class="kw">let </span>result = extract_delimited_frontmatter(
+                content, <span class="string">"---\n"</span>, <span class="string">"\n---\n"</span>,
+            );
+            <span class="macro">assert!</span>(result.is_none());
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>test_missing_end_delimiter() {
+            <span class="kw">let </span>content = <span class="string">"---\ntitle: Example\nContent here"</span>;
+            <span class="kw">let </span>result = extract_delimited_frontmatter(
+                content, <span class="string">"---\n"</span>, <span class="string">"\n---\n"</span>,
+            );
+            <span class="macro">assert!</span>(result.is_none());
+        }
     }
 }
 </code></pre></div></section></main></body></html>

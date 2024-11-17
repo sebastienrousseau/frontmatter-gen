@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["FrontmatterError"],"fn":["example_usage"]};
+window.SIDEBAR_ITEMS = {"enum":["EngineError","FrontmatterError"]};
