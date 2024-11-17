@@ -4,7 +4,7 @@
 
 [package]
 name = "frontmatter-gen"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2021"
 rust-version = "1.56.0"
 license = "MIT OR Apache-2.0"
@@ -63,7 +63,7 @@ path = "src/lib.rs"
 
 # The main file that contains the entry point for the binary.
 [[bin]]
-name = "frontmatter_gen"
+name = "fmg"
 path = "src/main.rs"
 required-features = ["cli"]
 

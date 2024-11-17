@@ -41,20 +41,57 @@ This crate provides several feature flags to customise its functionality:
 - **default**: Core frontmatter parsing functionality only
 - **cli**: Command-line interface tools for quick operations
 - **ssg**: Static Site Generator functionality (includes CLI features)
-- **logging**: Debug logging capabilities
+- **logging**: Enables debug logging via the `log` crate (can be combined with other features)
+
+You can combine multiple features as needed:
+
+```toml
+[dependencies]
+# Enable logging with CLI support
+frontmatter-gen = { version = "0.0.4", features = ["cli", "logging"] }
+
+# Enable all features
+frontmatter-gen = { version = "0.0.4", features = ["ssg", "logging"] }
+```
+
+When installing via cargo install:
+
+```bash
+# Install with CLI and logging support
+cargo install frontmatter-gen --features="cli,logging"
+
+# Install with SSG and logging support
+cargo install frontmatter-gen --features="ssg,logging"
+```
 
 ## Getting Started 📦
+
+### Library Usage
 
 Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
 # Basic frontmatter parsing only
-frontmatter-gen = "0.0.3"
+frontmatter-gen = "0.0.4"
 
 # With Static Site Generator functionality
-frontmatter-gen = { version = "0.0.3", features = ["ssg"] }
+frontmatter-gen = { version = "0.0.4", features = ["ssg"] }
 ```
+
+### CLI Installation
+
+To install the CLI tool, use:
+
+```bash
+# Install with CLI support
+cargo install frontmatter-gen --features="cli"
+
+# Install with SSG support (includes CLI)
+cargo install frontmatter-gen --features="ssg"
+```
+
+This will install the `fmg` command-line tool. Note: Make sure you have Rust and Cargo installed on your system.
 
 ### Basic Usage 🔨
 
@@ -163,32 +200,56 @@ For comprehensive API documentation and examples, visit:
 
 ## CLI Tool 🛠️
 
-The library includes a powerful command-line interface for quick frontmatter operations:
+The library includes a powerful command-line interface for quick frontmatter operations.
+
+### Prerequisites
+
+Before using the CLI, ensure you have installed it with the required features:
+
+```bash
+# Install CLI with SSG support
+cargo install frontmatter-gen --features="ssg"
+```
+
+### CLI Commands
+
+### CLI Commands
+
+The `fmg` command provides several operations for working with frontmatter:
 
 ```bash
 # Generate a static site
-frontmatter-gen build \
+fmg build \
     --content-dir examples/content \
     --output-dir examples/public \
     --template-dir examples/templates
 
 # Extract frontmatter in various formats
-frontmatter-gen extract input.md --format yaml
-frontmatter-gen extract input.md --format toml
-frontmatter-gen extract input.md --format json
+fmg extract input.md --format yaml
+fmg extract input.md --format toml
+fmg extract input.md --format json
 
 # Save extracted frontmatter to files
-frontmatter-gen extract input.md --format yaml --output output.yaml
-frontmatter-gen extract input.md --format toml --output output.toml
-frontmatter-gen extract input.md --format json --output output.json
+fmg extract input.md --format yaml --output output.yaml
+fmg extract input.md --format toml --output output.toml
+fmg extract input.md --format json --output output.json
 
 # Validate frontmatter with required fields
-frontmatter-gen validate input.md --required title,date,author
+fmg validate input.md --required title,date,author
 ```
 
 ### Running from Source
 
-You can also run the CLI tool directly from the source code:
+If you prefer to run the CLI tool directly from the source code without installation:
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/sebastienrousseau/frontmatter-gen.git
+cd frontmatter-gen
+```
+
+2. Run the CLI commands using cargo:
 
 ```bash
 # Generate a static site
@@ -202,7 +263,82 @@ cargo run --features="ssg" extract input.md --format yaml
 cargo run --features="ssg" validate input.md --required title,date
 ```
 
-## Error Handling 🚨
+### Logging Support 📝
+
+When the `logging` feature is enabled, the library integrates with Rust's `log` crate for detailed debug output. You can use any compatible logger implementation (e.g., `env_logger`, `simple_logger`).
+
+#### Basic Logging Setup
+
+```rust
+use frontmatter_gen::extract;
+use env_logger::Builder;
+use log::LevelFilter;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize logging with debug level
+    Builder::new()
+        .filter_level(LevelFilter::Debug)
+        .init();
+
+    let content = r#"---
+title: My Document
+date: 2025-09-09
+---
+# Content"#;
+
+    // Logging will now show detailed debug information
+    let (frontmatter, content) = extract(content)?;
+    
+    Ok(())
+}
+```
+
+#### Advanced Logging Configuration
+
+For more control over logging:
+
+```rust
+use frontmatter_gen::{parser, Format};
+use env_logger::Builder;
+use log::{LevelFilter, debug, info, warn};
+use std::io::Write;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Configure logging with timestamps and module paths
+    Builder::new()
+        .format(|buf, record| {
+            writeln!(buf,
+                "{} [{}] - {}",
+                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+                record.level(),
+                record.args()
+            )
+        })
+        .filter_module("frontmatter_gen", LevelFilter::Debug)
+        .filter_module("your_app", LevelFilter::Info)
+        .init();
+
+    // Your frontmatter operations will now log detailed information
+    info!("Starting frontmatter processing");
+    let yaml = r#"title: Test Document"#;
+    let frontmatter = parser::parse(yaml, Format::Yaml)?;
+    debug!("Parsed frontmatter: {:?}", frontmatter);
+    
+    Ok(())
+}
+```
+
+#### CLI Logging
+
+When using the CLI with logging enabled:
+
+```bash
+# Set log level via environment variable
+RUST_LOG=debug frontmatter_gen extract input.md --format yaml
+
+# Or for more specific control
+RUST_LOG=frontmatter_gen=debug,cli=info frontmatter_gen validate input.md
+```
 
 The library provides detailed error handling with context:
 
@@ -267,10 +403,10 @@ Special thanks to all contributors and the Rust community for their invaluable s
 [07]: https://github.com/sebastienrousseau/frontmatter-gen/actions?query=branch%3Amain
 [08]: https://www.rust-lang.org/
 
-[build-badge]: https://img.shields.io/github/actions/workflow/status/sebastienrousseau/frontmatter--gen/release.yml?branch=main&style=for-the-badge&logo=github
+[build-badge]: https://img.shields.io/github/actions/workflow/status/sebastienrousseau/frontmatter-gen/release.yml?branch=main&style=for-the-badge&logo=github
 [codecov-badge]: https://img.shields.io/codecov/c/github/sebastienrousseau/frontmatter-gen?style=for-the-badge&token=Q9KJ6XXL67&logo=codecov
 [crates-badge]: https://img.shields.io/crates/v/frontmatter-gen.svg?style=for-the-badge&color=fc8d62&logo=rust
 [docs-badge]: https://img.shields.io/badge/docs.rs-frontmatter--gen-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs
 [github-badge]: https://img.shields.io/badge/github-sebastienrousseau/frontmatter--gen-8da0cb?style=for-the-badge&labelColor=555555&logo=github
-[libs-badge]: https://img.shields.io/badge/lib.rs-v0.0.3-orange.svg?style=for-the-badge
+[libs-badge]: https://img.shields.io/badge/lib.rs-v0.0.4-orange.svg?style=for-the-badge
 [made-with-rust]: https://img.shields.io/badge/rust-f04041?style=for-the-badge&labelColor=c0282d&logo=rust
