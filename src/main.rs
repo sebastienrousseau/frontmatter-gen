@@ -32,8 +32,10 @@ use anyhow::{Context, Result};
 use clap::{Arg, Command};
 use frontmatter_gen::{engine::Engine, to_format, Config, Format};
 use serde::Deserialize;
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 use thiserror::Error;
 
 /// Custom error types for front matter validation.
@@ -397,6 +399,20 @@ async fn build_command(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Write;
+
+    /// Helper function to test `validate_command` with direct content.
+    async fn validate_with_content(
+        content: &str,
+        required_fields: &[&str],
+    ) -> Result<()> {
+        // Create a temporary file
+        let mut temp_file = tempfile::NamedTempFile::new()?;
+        temp_file.write_all(content.as_bytes())?;
+
+        // Call the validate_command function with the path of the temporary file
+        validate_command(temp_file.path(), required_fields).await
+    }
 
     #[tokio::test]
     async fn test_validate_command_all_fields_present() {
@@ -409,8 +425,9 @@ author: "Jane Doe"
         // Convert Vec<String> to Vec<&str>
         let required_fields = vec!["title", "date", "author"];
 
-        // Run the validate_command function
-        let result = validate_command(content, &required_fields).await;
+        // Run the helper function with content
+        let result =
+            validate_with_content(content, &required_fields).await;
 
         // Debugging: Check the result of the validation
         if let Err(e) = &result {
