@@ -40,7 +40,7 @@ fn extract_example() -> Result<(), FrontmatterError> {
 
     let yaml_content = r#"---
 title: My Post
-date: 2023-05-20
+date: 2024-11-16
 ---
 Content here"#;
 
@@ -64,7 +64,7 @@ fn to_format_example() -> Result<(), FrontmatterError> {
 
     let mut frontmatter = Frontmatter::new();
     frontmatter.insert("title".to_string(), "My Post".into());
-    frontmatter.insert("date".to_string(), "2023-05-20".into());
+    frontmatter.insert("date".to_string(), "2024-11-16".into());
 
     let yaml = to_format(&frontmatter, Format::Yaml)?;
     println!("    ✅  Converted frontmatter to YAML:\n{}", yaml);
@@ -73,9 +73,9 @@ fn to_format_example() -> Result<(), FrontmatterError> {
     println!("    ✅  Converted frontmatter to JSON:\n{}", json);
 
     assert!(yaml.contains("title: My Post"));
-    assert!(yaml.contains("date: '2023-05-20'"));
+    assert!(yaml.contains("date: '2024-11-16'"));
     assert!(json.contains("\"title\": \"My Post\""));
-    assert!(json.contains("\"date\": \"2023-05-20\""));
+    assert!(json.contains("\"date\": \"2024-11-16\""));
 
     Ok(())
 }

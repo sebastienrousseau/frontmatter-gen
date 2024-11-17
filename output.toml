@@ -1,0 +1,7 @@
+template = "post"
+slug = "first-post"
+date = "2024-11-15"
+tags = ["rust", "programming"]
+title = "My First Post"
+
+[custom]

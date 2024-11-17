@@ -44,7 +44,7 @@ fn parse_yaml_example() -> Result<(), FrontmatterError> {
     println!("🦀 YAML Parsing Example");
     println!("---------------------------------------------");
 
-    let yaml_content = "title: My Post\ndate: 2023-05-20\n";
+    let yaml_content = "title: My Post\ndate: 2024-11-16\n";
     let frontmatter = parse(yaml_content, Format::Yaml)?;
 
     println!("    ✅  Parsed frontmatter: {:?}", frontmatter);
@@ -57,7 +57,7 @@ fn parse_toml_example() -> Result<(), FrontmatterError> {
     println!("\n🦀 TOML Parsing Example");
     println!("---------------------------------------------");
 
-    let toml_content = "title = \"My Post\"\ndate = 2023-05-20\n";
+    let toml_content = "title = \"My Post\"\ndate = 2024-11-16\n";
     let frontmatter = parse(toml_content, Format::Toml)?;
 
     println!("    ✅  Parsed frontmatter: {:?}", frontmatter);
@@ -70,7 +70,7 @@ fn parse_json_example() -> Result<(), FrontmatterError> {
     println!("\n🦀 JSON Parsing Example");
     println!("---------------------------------------------");
 
-    let json_content = r#"{"title": "My Post", "date": "2023-05-20"}"#;
+    let json_content = r#"{"title": "My Post", "date": "2024-11-16"}"#;
     let frontmatter = parse(json_content, Format::Json)?;
 
     println!("    ✅  Parsed frontmatter: {:?}", frontmatter);
@@ -90,7 +90,7 @@ fn serialize_to_yaml_example() -> Result<(), FrontmatterError> {
     );
     frontmatter.insert(
         "date".to_string(),
-        Value::String("2023-05-20".to_string()),
+        Value::String("2024-11-16".to_string()),
     );
 
     let yaml = to_string(&frontmatter, Format::Yaml)?;
@@ -112,7 +112,7 @@ fn serialize_to_toml_example() -> Result<(), FrontmatterError> {
     );
     frontmatter.insert(
         "date".to_string(),
-        Value::String("2023-05-20".to_string()),
+        Value::String("2024-11-16".to_string()),
     );
 
     let toml = to_string(&frontmatter, Format::Toml)?;
@@ -134,7 +134,7 @@ fn serialize_to_json_example() -> Result<(), FrontmatterError> {
     );
     frontmatter.insert(
         "date".to_string(),
-        Value::String("2023-05-20".to_string()),
+        Value::String("2024-11-16".to_string()),
     );
 
     let json = to_string(&frontmatter, Format::Json)?;

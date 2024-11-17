@@ -38,7 +38,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-frontmatter-gen = "0.0.2"
+frontmatter-gen = "0.0.3"
 ```
 
 ## Usage
@@ -52,7 +52,7 @@ use frontmatter_gen::extract;
 
 let content = r#"---
 title: My Post
-date: 2023-05-20
+date: 2024-11-16
 ---
 Content here"#;
 
@@ -68,11 +68,11 @@ use frontmatter_gen::{Frontmatter, Format, Value, to_format};
 
 let mut frontmatter = Frontmatter::new();
 frontmatter.insert("title".to_string(), Value::String("My Post".to_string()));
-frontmatter.insert("date".to_string(), Value::String("2023-05-20".to_string()));
+frontmatter.insert("date".to_string(), Value::String("2024-11-16".to_string()));
 
 let yaml = to_format(&frontmatter, Format::Yaml).unwrap();
 assert!(yaml.contains("title: My Post"));
-assert!(yaml.contains("date: '2023-05-20'"));
+assert!(yaml.contains("date: '2024-11-16'"));
 ```
 
 ### Parsing Different Formats
@@ -80,13 +80,13 @@ assert!(yaml.contains("date: '2023-05-20'"));
 ```rust
 use frontmatter_gen::{parser, Format};
 
-let yaml = "title: My Post\ndate: 2023-05-20\n";
+let yaml = "title: My Post\ndate: 2024-11-16\n";
 let frontmatter = parser::parse(yaml, Format::Yaml).unwrap();
 
-let toml = "title = \"My Post\"\ndate = 2023-05-20\n";
+let toml = "title = \"My Post\"\ndate = 2024-11-16\n";
 let frontmatter = parser::parse(toml, Format::Toml).unwrap();
 
-let json = r#"{"title": "My Post", "date": "2023-05-20"}"#;
+let json = r#"{"title": "My Post", "date": "2024-11-16"}"#;
 let frontmatter = parser::parse(json, Format::Json).unwrap();
 ```
 
@@ -125,6 +125,32 @@ Available examples:
 - lib
 - parser
 - types
+- first-post.md (Sample markdown file with frontmatter)
+
+```markdown
+---
+title: My First Post
+date: 2024-11-16
+tags:
+  - rust
+  - programming
+template: post
+draft: false
+---
+
+# My First Post
+
+This is the content of my first post.
+```
+
+To extract frontmatter from this example file:
+
+```shell
+# Try different formats
+cargo run -- extract examples/first-post.md yaml
+cargo run -- extract examples/first-post.md toml
+cargo run -- extract examples/first-post.md json
+```
 
 ## Contributing
 
@@ -158,5 +184,5 @@ Special thanks to all contributors who have helped build the `frontmatter-gen` l
 [crates-badge]: https://img.shields.io/crates/v/frontmatter-gen.svg?style=for-the-badge&color=fc8d62&logo=rust
 [docs-badge]: https://img.shields.io/badge/docs.rs-frontmatter--gen-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs
 [github-badge]: https://img.shields.io/badge/github-sebastienrousseau/frontmatter--gen-8da0cb?style=for-the-badge&labelColor=555555&logo=github
-[libs-badge]: https://img.shields.io/badge/lib.rs-v0.0.2-orange.svg?style=for-the-badge
+[libs-badge]: https://img.shields.io/badge/lib.rs-v0.0.3-orange.svg?style=for-the-badge
 [made-with-rust]: https://img.shields.io/badge/rust-f04041?style=for-the-badge&labelColor=c0282d&logo=rust

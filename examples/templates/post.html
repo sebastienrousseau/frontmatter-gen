@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="{{language}}">
+
+<head>
+    <meta charset="{{charset}}" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+    <!-- # Start Accessibility Meta Tags -->
+    <meta name="accessibility" content="ARIA" />
+    <meta name="accessibility" content="fullKeyboardControl" />
+    <meta name="accessibility" content="noFlashingHazard" />
+    <!-- # End Accessibility Meta Tags -->
+
+    <!-- # Start SEO Meta Tags -->
+    <meta name="description" content="{{description}}" />
+    <meta name="keywords" content="{{keywords}}" />
+    <meta name="author" content="{{author}}" />
+    <meta name="robots" content="{{robots}}" />
+    <!-- # End SEO Meta Tags -->
+
+    <!-- Favicon and Icons -->
+    <link rel="icon" type="image/x-icon" href="{{cdn}}/{{short_name}}/images/favicon.ico" />
+    <link rel="apple-touch-icon" href="{{cdn}}/{{short_name}}/images/icons/{{apple_touch_icon_sizes}}.png"
+        sizes="{{apple_touch_icon_sizes}}" />
+    <link rel="icon" type="image/png" href="{{cdn}}/{{short_name}}/images/icons/16x16.png" sizes="16x16" />
+    <link rel="icon" type="image/png" href="{{cdn}}/{{short_name}}/images/icons/32x32.png" sizes="32x32" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <title>{{title}}</title>
+
+    <!-- Custom Styles -->
+    <style>
+        :root {
+            --theme-color: rgb({
+                    {
+                    theme-color
+                }
+            });
+        }
+
+        body {
+            font-family: "Arial", sans-serif;
+            background-color: rgb(0, 0, 0);
+        }
+
+        .post-header {
+            background-color: var(--theme-color);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .post-content {
+            color: white;
+            margin: 20px auto;
+            max-width: 800px;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .post-footer {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        a {
+            color: var(--theme-color);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body id="page-top" itemscope itemtype="http://schema.org/WebPage"
+    class="text-center bg-black text-white text-start fs-6">
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-black text-white sticky-top shadow-sm">
+        <div class="container-xxl">
+            <a class="navbar-brand" href="/" aria-label="logo">
+                <img src="{{logo}}" alt="{{logo_alt}}" width="{{logo_width}}" height="{{logo_height}}" />
+                <span>{{name}}</span>
+            </a>
+        </div>
+    </nav>
+
+
+    <!-- Header -->
+    <header class="post-header">
+        <h1>{{title}}</h1>
+        <p><em>{{subtitle}}</em></p>
+        <p>By {{author}} on {{pub_date}}</p>
+    </header>
+
+    <!-- Post Content -->
+    <main class="post-content">
+        {{content}}
+    </main>
+
+    <!-- Post Footer -->
+    <footer class="post-footer">
+        <p>&copy; {{copyright}}</p>
+        <p><a href="/">Return to Home</a></p>
+    </footer>
+
+</body>
+
+</html>

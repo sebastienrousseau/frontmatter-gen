@@ -1,10 +1,12 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{
+    black_box, criterion_group, criterion_main, Criterion,
+};
 use frontmatter_gen::{extract, parser, Format, Frontmatter, Value};
 
 fn benchmark_extract(c: &mut Criterion) {
     let content = r#"---
 title: My Post
-date: 2023-05-20
+date: 2024-11-16
 tags:
   - rust
   - benchmarking
@@ -19,7 +21,7 @@ This is the content of the post."#;
 fn benchmark_parse_yaml(c: &mut Criterion) {
     let yaml = r#"
 title: My Post
-date: 2023-05-20
+date: 2024-11-16
 tags:
   - rust
   - benchmarking
@@ -33,7 +35,7 @@ tags:
 fn benchmark_parse_toml(c: &mut Criterion) {
     let toml = r#"
 title = "My Post"
-date = 2023-05-20
+date = 2024-11-16
 tags = ["rust", "benchmarking"]
 "#;
 
@@ -46,7 +48,7 @@ fn benchmark_parse_json(c: &mut Criterion) {
     let json = r#"
 {
     "title": "My Post",
-    "date": "2023-05-20",
+    "date": "2024-11-16",
     "tags": ["rust", "benchmarking"]
 }
 "#;
@@ -58,23 +60,47 @@ fn benchmark_parse_json(c: &mut Criterion) {
 
 fn benchmark_to_format(c: &mut Criterion) {
     let mut frontmatter = Frontmatter::new();
-    frontmatter.insert("title".to_string(), Value::String("My Post".to_string()));
-    frontmatter.insert("date".to_string(), Value::String("2023-05-20".to_string()));
-    frontmatter.insert("tags".to_string(), Value::Array(vec![
-        Value::String("rust".to_string()),
-        Value::String("benchmarking".to_string()),
-    ]));
+    frontmatter.insert(
+        "title".to_string(),
+        Value::String("My Post".to_string()),
+    );
+    frontmatter.insert(
+        "date".to_string(),
+        Value::String("2024-11-16".to_string()),
+    );
+    frontmatter.insert(
+        "tags".to_string(),
+        Value::Array(vec![
+            Value::String("rust".to_string()),
+            Value::String("benchmarking".to_string()),
+        ]),
+    );
 
     c.bench_function("convert to YAML", |b| {
-        b.iter(|| frontmatter_gen::to_format(black_box(&frontmatter), Format::Yaml))
+        b.iter(|| {
+            frontmatter_gen::to_format(
+                black_box(&frontmatter),
+                Format::Yaml,
+            )
+        })
     });
 
     c.bench_function("convert to TOML", |b| {
-        b.iter(|| frontmatter_gen::to_format(black_box(&frontmatter), Format::Toml))
+        b.iter(|| {
+            frontmatter_gen::to_format(
+                black_box(&frontmatter),
+                Format::Toml,
+            )
+        })
     });
 
     c.bench_function("convert to JSON", |b| {
-        b.iter(|| frontmatter_gen::to_format(black_box(&frontmatter), Format::Json))
+        b.iter(|| {
+            frontmatter_gen::to_format(
+                black_box(&frontmatter),
+                Format::Json,
+            )
+        })
     });
 }
 

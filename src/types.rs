@@ -885,11 +885,26 @@ impl Frontmatter {
     pub fn is_null(&self, key: &str) -> bool {
         matches!(self.get(key), Some(Value::Null))
     }
+
+    /// Clears the frontmatter while preserving allocated capacity
+    pub fn clear(&mut self) {
+        self.0.clear();
+    }
+
+    /// Returns the current capacity of the underlying HashMap
+    pub fn capacity(&self) -> usize {
+        self.0.capacity()
+    }
+
+    /// Reserves capacity for at least `additional` more elements
+    pub fn reserve(&mut self, additional: usize) {
+        self.0.reserve(additional);
+    }
 }
 
 impl Default for Frontmatter {
     fn default() -> Self {
-        Self::new()
+        Self(HashMap::with_capacity(8))
     }
 }
 

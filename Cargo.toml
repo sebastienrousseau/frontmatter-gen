@@ -4,7 +4,7 @@
 
 [package]
 name = "frontmatter-gen"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 rust-version = "1.56.0"
 license = "MIT OR Apache-2.0"
@@ -30,37 +30,52 @@ categories = [
 
 keywords = ["frontmatter", "yaml", "toml", "json", "frontmatter-gen"]
 
+# The library file that contains the main logic for the binary.
 [lib]
 name = "frontmatter_gen"
 path = "src/lib.rs"
+
+# The main file that contains the entry point for the binary.
+[[bin]]
+name = "frontmatter_gen"
+path = "src/main.rs"
 
 # -----------------------------------------------------------------------------
 # Dependencies
 # -----------------------------------------------------------------------------
 
 [dependencies]
-
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+anyhow = "1.0.93"
+clap = { version = "4.5.21", features = ["derive", "color", "help", "suggestions"] }
+dtt = "0.0.8"
+log = "0.4.22"
+pretty_assertions = "1.4.1"
+pulldown-cmark = "0.12.2"
+serde = { version = "1.0.215", features = ["derive"] }
+serde_json = "1.0.132"
 serde_yml = "0.0.12"
-thiserror = "2.0"
-toml = "0.8"
-tokio = { version = "1.0", features = ["full"] }
+tera = "1.20.0"
+thiserror = "2.0.3"
+tokio = { version = "1.41.1", features = ["full"] }
+toml = "0.8.19"
+url = "2.5.3"
+uuid = { version = "1.11.0", features = ["v4", "serde"] }
 
 # -----------------------------------------------------------------------------
 # Build Dependencies
 # -----------------------------------------------------------------------------
 
 [build-dependencies]
-version_check = "0.9"
+version_check = "0.9.5"
 
 # -----------------------------------------------------------------------------
 # Development Dependencies
 # -----------------------------------------------------------------------------
 
 [dev-dependencies]
-criterion = "0.5"
-serde = { version = "1.0", features = ["derive"] }
+criterion = "0.5.1"
+serde = { version = "1.0.215", features = ["derive"] }
+tempfile = "3.14.0"
 
 # -----------------------------------------------------------------------------
 # Examples
