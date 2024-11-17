@@ -418,8 +418,8 @@ Content"#;
     }
 
     #[test]
-fn test_numeric_values() {
-    let content = r#"---
+    fn test_numeric_values() {
+        let content = r#"---
 integer: 42
 float: 3.14
 scientific: 1.23e-4
@@ -428,17 +428,41 @@ zero: 0
 ---
 Content"#;
 
-    let (frontmatter, _) = extract(content).unwrap();
+        let (frontmatter, _) = extract(content).unwrap();
 
-    // Define a small margin of error for floating-point comparisons
-    let epsilon = 1e-6;
+        // Define a small margin of error for floating-point comparisons
+        let epsilon = 1e-6;
 
-    assert!((frontmatter.get("integer").unwrap().as_f64().unwrap() - 42.0).abs() < epsilon);
-    assert!((frontmatter.get("float").unwrap().as_f64().unwrap() - 3.14).abs() < epsilon); // Use 3.14 directly
-    assert!((frontmatter.get("scientific").unwrap().as_f64().unwrap() - 0.000123).abs() < epsilon);
-    assert!((frontmatter.get("negative").unwrap().as_f64().unwrap() - (-17.0)).abs() < epsilon);
-    assert!((frontmatter.get("zero").unwrap().as_f64().unwrap() - 0.0).abs() < epsilon);
-}
+        assert!(
+            (frontmatter.get("integer").unwrap().as_f64().unwrap()
+                - 42.0)
+                .abs()
+                < epsilon
+        );
+        assert!(
+            (frontmatter.get("float").unwrap().as_f64().unwrap()
+                - 3.14)
+                .abs()
+                < epsilon
+        ); // Use 3.14 directly
+        assert!(
+            (frontmatter.get("scientific").unwrap().as_f64().unwrap()
+                - 0.000123)
+                .abs()
+                < epsilon
+        );
+        assert!(
+            (frontmatter.get("negative").unwrap().as_f64().unwrap()
+                - (-17.0))
+                .abs()
+                < epsilon
+        );
+        assert!(
+            (frontmatter.get("zero").unwrap().as_f64().unwrap() - 0.0)
+                .abs()
+                < epsilon
+        );
+    }
 
     #[test]
     fn test_boolean_values() {
