@@ -167,7 +167,8 @@ mod extractor_tests {
     #[test]
     fn test_extract_yaml_frontmatter() {
         let content = "---\ntitle: Test Post\n---\nContent here";
-        let (frontmatter, remaining) = extract_raw_frontmatter(content).unwrap();
+        let (frontmatter, remaining) =
+            extract_raw_frontmatter(content).unwrap();
         assert_eq!(frontmatter, "title: Test Post");
         assert_eq!(remaining.trim(), "Content here");
     }
@@ -175,7 +176,8 @@ mod extractor_tests {
     #[test]
     fn test_extract_toml_frontmatter() {
         let content = "+++\ntitle = \"Test Post\"\n+++\nContent here";
-        let (frontmatter, remaining) = extract_raw_frontmatter(content).unwrap();
+        let (frontmatter, remaining) =
+            extract_raw_frontmatter(content).unwrap();
         assert_eq!(frontmatter, "title = \"Test Post\"");
         assert_eq!(remaining.trim(), "Content here");
     }
@@ -198,14 +200,20 @@ mod extractor_tests {
     fn test_extract_no_frontmatter() {
         let content = "Content without frontmatter";
         let result = extract_raw_frontmatter(content);
-        assert!(result.is_err(), "Should fail if no frontmatter delimiters are found");
+        assert!(
+            result.is_err(),
+            "Should fail if no frontmatter delimiters are found"
+        );
     }
 
     #[test]
     fn test_extract_partial_frontmatter() {
         let content = "---\ntitle: Incomplete";
         let result = extract_raw_frontmatter(content);
-        assert!(result.is_err(), "Should fail for incomplete frontmatter");
+        assert!(
+            result.is_err(),
+            "Should fail for incomplete frontmatter"
+        );
     }
 }
 
@@ -218,7 +226,10 @@ mod parser_tests {
         let raw = "title: Test Post\npublished: true";
         let format = Format::Yaml;
         let parsed = parse(raw, format).unwrap();
-        assert_eq!(parsed.get("title").unwrap().as_str().unwrap(), "Test Post");
+        assert_eq!(
+            parsed.get("title").unwrap().as_str().unwrap(),
+            "Test Post"
+        );
         assert!(parsed.get("published").unwrap().as_bool().unwrap());
     }
 
@@ -227,7 +238,10 @@ mod parser_tests {
         let raw = "title = \"Test Post\"\npublished = true";
         let format = Format::Toml;
         let parsed = parse(raw, format).unwrap();
-        assert_eq!(parsed.get("title").unwrap().as_str().unwrap(), "Test Post");
+        assert_eq!(
+            parsed.get("title").unwrap().as_str().unwrap(),
+            "Test Post"
+        );
         assert!(parsed.get("published").unwrap().as_bool().unwrap());
     }
 
@@ -271,7 +285,10 @@ mod format_tests {
     #[test]
     fn test_to_format_yaml() {
         let mut frontmatter = Frontmatter::new();
-        frontmatter.insert("title".to_string(), Value::String("Test Post".to_string()));
+        frontmatter.insert(
+            "title".to_string(),
+            Value::String("Test Post".to_string()),
+        );
         let yaml = to_format(&frontmatter, Format::Yaml).unwrap();
         assert!(yaml.contains("title: Test Post"));
     }
@@ -279,16 +296,23 @@ mod format_tests {
     #[test]
     fn test_format_conversion_roundtrip() {
         let mut frontmatter = Frontmatter::new();
-        frontmatter.insert("key".to_string(), Value::String("value".to_string()));
+        frontmatter.insert(
+            "key".to_string(),
+            Value::String("value".to_string()),
+        );
         let yaml = to_format(&frontmatter, Format::Yaml).unwrap();
         let content = format!("---\n{}\n---\nContent", yaml);
         let (parsed, _) = extract(&content).unwrap();
-        assert_eq!(parsed.get("key").unwrap().as_str().unwrap(), "value");
+        assert_eq!(
+            parsed.get("key").unwrap().as_str().unwrap(),
+            "value"
+        );
     }
 
     #[test]
     fn test_unsupported_format() {
-        let result = to_format(&Frontmatter::new(), Format::Unsupported);
+        let result =
+            to_format(&Frontmatter::new(), Format::Unsupported);
         assert!(result.is_err());
     }
 }
@@ -301,7 +325,10 @@ mod integration_tests {
     fn test_end_to_end_extraction_and_parsing() {
         let content = "---\ntitle: Test Post\n---\nContent here";
         let (frontmatter, content) = extract(content).unwrap();
-        assert_eq!(frontmatter.get("title").unwrap().as_str().unwrap(), "Test Post");
+        assert_eq!(
+            frontmatter.get("title").unwrap().as_str().unwrap(),
+            "Test Post"
+        );
         assert_eq!(content.trim(), "Content here");
     }
 
@@ -320,16 +347,21 @@ mod edge_case_tests {
 
     #[test]
     fn test_special_characters_handling() {
-        let content = "---\ntitle: \"Test: Special Characters!\"\n---\nContent";
+        let content =
+            "---\ntitle: \"Test: Special Characters!\"\n---\nContent";
         let (frontmatter, _) = extract(content).unwrap();
-        assert_eq!(frontmatter.get("title").unwrap().as_str().unwrap(), "Test: Special Characters!");
+        assert_eq!(
+            frontmatter.get("title").unwrap().as_str().unwrap(),
+            "Test: Special Characters!"
+        );
     }
 
     #[test]
     fn test_large_frontmatter() {
         let mut large_content = String::from("---\n");
         for i in 0..1000 {
-            large_content.push_str(&format!("key_{}: value_{}\n", i, i));
+            large_content
+                .push_str(&format!("key_{}: value_{}\n", i, i));
         }
         large_content.push_str("---\nContent");
         let (frontmatter, content) = extract(&large_content).unwrap();
@@ -337,4 +369,3 @@ mod edge_case_tests {
         assert_eq!(content.trim(), "Content");
     }
 }
-
