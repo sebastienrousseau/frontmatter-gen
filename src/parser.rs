@@ -291,7 +291,9 @@ fn toml_to_value(toml: &TomlValue) -> Value {
             let mut result =
                 Frontmatter(HashMap::with_capacity(table.len()));
             for (k, v) in table {
-                let _ = result.0.insert(optimize_string(k), toml_to_value(v));
+                let _ = result
+                    .0
+                    .insert(optimize_string(k), toml_to_value(v));
             }
             Value::Object(Box::new(result))
         }
@@ -352,7 +354,9 @@ fn json_to_value(json: &JsonValue) -> Value {
             let mut result =
                 Frontmatter(HashMap::with_capacity(obj.len()));
             for (k, v) in obj {
-                let _ = result.0.insert(optimize_string(k), json_to_value(v));
+                let _ = result
+                    .0
+                    .insert(optimize_string(k), json_to_value(v));
             }
             Value::Object(Box::new(result))
         }

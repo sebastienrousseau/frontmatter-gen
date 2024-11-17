@@ -90,7 +90,8 @@ fn value_examples() -> Result<(), Box<dyn std::error::Error>> {
 
     // Object value example
     let mut fm = Frontmatter::new();
-    let _ = fm.insert("key".to_string(), Value::String("value".to_string()));
+    let _ = fm
+        .insert("key".to_string(), Value::String("value".to_string()));
     let object_value = Value::Object(Box::new(fm.clone()));
     println!("    ✅  Object value: {:?}", object_value);
     assert!(object_value.is_object());
@@ -110,7 +111,8 @@ fn frontmatter_examples() -> Result<(), Box<dyn std::error::Error>> {
         "title".to_string(),
         Value::String("My Post".to_string()),
     );
-    let _ = frontmatter.insert("views".to_string(), Value::Number(100.0));
+    let _ =
+        frontmatter.insert("views".to_string(), Value::Number(100.0));
     println!("    ✅  Frontmatter with two entries: {:?}", frontmatter);
 
     let title = frontmatter.get("title").unwrap().as_str().unwrap();
@@ -151,7 +153,8 @@ fn ssg_type_examples() -> Result<(), Box<dyn std::error::Error>> {
         "layout".to_string(),
         Value::String("blog".to_string()),
     );
-    let _ = frontmatter.insert("draft".to_string(), Value::Boolean(false));
+    let _ =
+        frontmatter.insert("draft".to_string(), Value::Boolean(false));
     let _ = frontmatter.insert(
         "tags".to_string(),
         Value::Array(vec![

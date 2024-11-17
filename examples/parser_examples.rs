@@ -170,7 +170,8 @@ fn ssg_parser_examples() -> Result<(), FrontmatterError> {
         "layout".to_string(),
         Value::String("blog".to_string()),
     );
-    let _ = frontmatter.insert("draft".to_string(), Value::Boolean(false));
+    let _ =
+        frontmatter.insert("draft".to_string(), Value::Boolean(false));
     let _ = frontmatter.insert(
         "tags".to_string(),
         Value::Array(vec![
