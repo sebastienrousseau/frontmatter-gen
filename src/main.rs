@@ -334,17 +334,30 @@ date: "2025-09-09"
 author: "Jane Doe"
 ---"#;
 
+        let test_file_path = "test.md";
+
         // Write the test file
-        let write_result = tokio::fs::write("test.md", content).await;
+        let write_result =
+            tokio::fs::write(test_file_path, content).await;
         assert!(
             write_result.is_ok(),
             "Failed to write test file: {:?}",
             write_result
         );
 
+        // Debugging: Print the content of the test file
+        let read_content =
+            tokio::fs::read_to_string(test_file_path).await;
+        assert!(
+            read_content.is_ok(),
+            "Failed to read test file: {:?}",
+            read_content
+        );
+        println!("Content of test file:\n{}", read_content.unwrap());
+
         // Run the validate_command function
         let result = validate_command(
-            Path::new("test.md"),
+            Path::new(test_file_path),
             vec![
                 "title".to_string(),
                 "date".to_string(),
@@ -353,6 +366,11 @@ author: "Jane Doe"
         )
         .await;
 
+        // Debugging: Check the result of the validation
+        if let Err(e) = &result {
+            println!("Validation failed with error: {:?}", e);
+        }
+
         assert!(
             result.is_ok(),
             "Validation failed with error: {:?}",
@@ -360,7 +378,8 @@ author: "Jane Doe"
         );
 
         // Clean up the test file
-        let remove_result = tokio::fs::remove_file("test.md").await;
+        let remove_result =
+            tokio::fs::remove_file(test_file_path).await;
         assert!(
             remove_result.is_ok(),
             "Failed to remove test file: {:?}",
