@@ -1,8 +1,19 @@
+//! Benchmarks for the `frontmatter-gen` crate.
+//!
+//! This file includes benchmarks for extracting, parsing, and formatting frontmatter
+//! in various formats such as YAML, TOML, and JSON. It uses the `criterion` crate
+//! for accurate performance measurements.
+
 use criterion::{
     black_box, criterion_group, criterion_main, Criterion,
 };
 use frontmatter_gen::{extract, parser, Format, Frontmatter, Value};
 
+// Benchmarks the `extract` function for extracting frontmatter from content.
+//
+// This benchmark measures the performance of extracting frontmatter
+// from a Markdown-like file containing a YAML frontmatter block.
+#[allow(dead_code)]
 fn benchmark_extract(c: &mut Criterion) {
     let content = r#"---
 title: My Post
@@ -18,6 +29,10 @@ This is the content of the post."#;
     });
 }
 
+// Benchmarks the `parser::parse` function for parsing YAML frontmatter.
+//
+// This benchmark measures the performance of parsing frontmatter written in YAML format.
+#[allow(dead_code)]
 fn benchmark_parse_yaml(c: &mut Criterion) {
     let yaml = r#"
 title: My Post
@@ -32,6 +47,10 @@ tags:
     });
 }
 
+// Benchmarks the `parser::parse` function for parsing TOML frontmatter.
+//
+// This benchmark measures the performance of parsing frontmatter written in TOML format.
+#[allow(dead_code)]
 fn benchmark_parse_toml(c: &mut Criterion) {
     let toml = r#"
 title = "My Post"
@@ -44,6 +63,10 @@ tags = ["rust", "benchmarking"]
     });
 }
 
+// Benchmarks the `parser::parse` function for parsing JSON frontmatter.
+//
+// This benchmark measures the performance of parsing frontmatter written in JSON format.
+#[allow(dead_code)]
 fn benchmark_parse_json(c: &mut Criterion) {
     let json = r#"
 {
@@ -58,6 +81,11 @@ fn benchmark_parse_json(c: &mut Criterion) {
     });
 }
 
+// Benchmarks the `to_format` function for converting frontmatter into different formats.
+//
+// This benchmark measures the performance of serializing a `Frontmatter` instance
+// into YAML, TOML, and JSON formats.
+#[allow(dead_code)]
 fn benchmark_to_format(c: &mut Criterion) {
     let mut frontmatter = Frontmatter::new();
     frontmatter.insert(
@@ -104,6 +132,12 @@ fn benchmark_to_format(c: &mut Criterion) {
     });
 }
 
+// Defines the Criterion benchmark group for this crate.
+//
+// This group includes benchmarks for:
+// - Extracting frontmatter
+// - Parsing frontmatter in YAML, TOML, and JSON formats
+// - Converting frontmatter to YAML, TOML, and JSON formats
 criterion_group!(
     benches,
     benchmark_extract,
@@ -112,4 +146,9 @@ criterion_group!(
     benchmark_parse_json,
     benchmark_to_format
 );
+
+// Defines the Criterion benchmark entry point.
+//
+// This function is required by the `criterion_main!` macro and acts as
+// the entry point for running all defined benchmarks.
 criterion_main!(benches);
