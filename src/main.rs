@@ -370,6 +370,7 @@ author: "Jane Doe"
 
     #[tokio::test]
     async fn test_extract_command_to_stdout() {
+        let test_file_path = "test.md";
         let content = r#"---
 title: "My Title"
 date: "2025-09-09"
@@ -377,7 +378,8 @@ author: "Jane Doe"
 ---"#;
 
         // Write the test file
-        let write_result = tokio::fs::write("test.md", content).await;
+        let write_result =
+            tokio::fs::write(test_file_path, content).await;
         assert!(
             write_result.is_ok(),
             "Failed to write test file: {:?}",
@@ -386,30 +388,35 @@ author: "Jane Doe"
 
         // Ensure the file exists
         assert!(
-            Path::new("test.md").exists(),
+            Path::new(test_file_path).exists(),
             "The test file does not exist after creation."
         );
 
         // Run the extract_command function
         let result =
-            extract_command(Path::new("test.md"), "yaml", None).await;
-
+            extract_command(Path::new(test_file_path), "yaml", None)
+                .await;
         assert!(
             result.is_ok(),
             "Extraction failed with error: {:?}",
             result
         );
 
-        // Check if the file still exists before attempting to delete
-        if Path::new("test.md").exists() {
-            let remove_result = tokio::fs::remove_file("test.md").await;
+        // Cleanup: Ensure the file is removed after the test
+        if Path::new(test_file_path).exists() {
+            let remove_result =
+                tokio::fs::remove_file(test_file_path).await;
             assert!(
                 remove_result.is_ok(),
                 "Failed to remove test file: {:?}",
                 remove_result
             );
         } else {
-            eprintln!("Test file was already removed or not found.");
+            // Log a message instead of panicking if the file doesn't exist
+            eprintln!(
+            "Test file '{}' was already removed or not found during cleanup.",
+            test_file_path
+        );
         }
     }
 
