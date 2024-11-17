@@ -215,6 +215,49 @@ mod extractor_tests {
             "Should fail for incomplete frontmatter"
         );
     }
+
+    #[test]
+    fn test_extract_yaml_with_valid_frontmatter() {
+        let content = "---\ntitle: Valid Post\n---\nMain content";
+        let (raw, remaining) =
+            extract_raw_frontmatter(content).unwrap();
+        assert_eq!(raw, "title: Valid Post");
+        assert_eq!(remaining.trim(), "Main content");
+    }
+
+    #[test]
+    fn test_extract_no_delimiters() {
+        let content = "No frontmatter delimiters present";
+        let result = extract_raw_frontmatter(content);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_extract_incomplete_frontmatter() {
+        let content = "---\ntitle: Missing closing delimiter";
+        let result = extract_raw_frontmatter(content);
+        assert!(
+            result.is_err(),
+            "Should fail for incomplete frontmatter"
+        );
+    }
+
+    #[test]
+    fn test_extract_with_nested_content() {
+        let content =
+            "---\ntitle: Nested\nmeta:\n  key: value\n---\nContent";
+        let (raw, remaining) =
+            extract_raw_frontmatter(content).unwrap();
+        assert!(raw.contains("meta:\n  key: value"));
+        assert_eq!(remaining.trim(), "Content");
+    }
+
+    #[test]
+    fn test_extract_with_only_content_no_frontmatter() {
+        let content = "Just the content without frontmatter";
+        let result = extract_raw_frontmatter(content);
+        assert!(result.is_err());
+    }
 }
 
 #[cfg(test)]
@@ -276,6 +319,42 @@ mod parser_tests {
         let result = parse(raw, format);
         assert!(result.is_err(), "Should fail for unsupported formats");
     }
+
+    #[test]
+    fn test_parse_valid_yaml() {
+        let raw = "title: Valid Post\npublished: true";
+        let format = Format::Yaml;
+        let frontmatter = parse(raw, format).unwrap();
+        assert_eq!(
+            frontmatter.get("title").unwrap().as_str().unwrap(),
+            "Valid Post"
+        );
+        assert!(frontmatter
+            .get("published")
+            .unwrap()
+            .as_bool()
+            .unwrap());
+    }
+
+    #[test]
+    fn test_parse_malformed_yaml() {
+        let raw = "title: : bad yaml";
+        let format = Format::Yaml;
+        let result = parse(raw, format);
+        assert!(result.is_err(), "Should fail for malformed YAML");
+    }
+
+    #[test]
+    fn test_parse_json() {
+        let raw = r#"{"title": "Valid Post", "draft": false}"#;
+        let format = Format::Json;
+        let frontmatter = parse(raw, format).unwrap();
+        assert_eq!(
+            frontmatter.get("title").unwrap().as_str().unwrap(),
+            "Valid Post"
+        );
+        assert!(!frontmatter.get("draft").unwrap().as_bool().unwrap());
+    }
 }
 
 #[cfg(test)]
@@ -315,6 +394,32 @@ mod format_tests {
             to_format(&Frontmatter::new(), Format::Unsupported);
         assert!(result.is_err());
     }
+
+    #[test]
+    fn test_convert_to_yaml() {
+        let mut frontmatter = Frontmatter::new();
+        frontmatter.insert(
+            "title".to_string(),
+            Value::String("Test Post".into()),
+        );
+        let yaml = to_format(&frontmatter, Format::Yaml).unwrap();
+        assert!(yaml.contains("title: Test Post"));
+    }
+
+    #[test]
+    fn test_roundtrip_conversion() {
+        let content = "---\ntitle: Test Post\n---\nContent";
+        let (parsed, _) = extract(content).unwrap();
+        let yaml = to_format(&parsed, Format::Yaml).unwrap();
+        assert!(yaml.contains("title: Test Post"));
+    }
+
+    #[test]
+    fn test_format_invalid_data() {
+        let frontmatter = Frontmatter::new();
+        let result = to_format(&frontmatter, Format::Unsupported);
+        assert!(result.is_err());
+    }
 }
 
 #[cfg(test)]
@@ -338,6 +443,24 @@ mod integration_tests {
         let (frontmatter, _) = extract(content).unwrap();
         let yaml = to_format(&frontmatter, Format::Yaml).unwrap();
         assert!(yaml.contains("title: Test Post"));
+    }
+
+    #[test]
+    fn test_complete_workflow() {
+        let content = "---\ntitle: Integration Test\n---\nBody content";
+        let (frontmatter, body) = extract(content).unwrap();
+        assert_eq!(
+            frontmatter.get("title").unwrap().as_str().unwrap(),
+            "Integration Test"
+        );
+        assert_eq!(body.trim(), "Body content");
+    }
+
+    #[test]
+    fn test_end_to_end_error_handling() {
+        let content = "Invalid frontmatter";
+        let result = extract(content);
+        assert!(result.is_err());
     }
 }
 
@@ -367,5 +490,16 @@ mod edge_case_tests {
         let (frontmatter, content) = extract(&large_content).unwrap();
         assert_eq!(frontmatter.len(), 1000);
         assert_eq!(content.trim(), "Content");
+    }
+
+    #[test]
+    fn test_special_characters() {
+        let content =
+            "---\ntitle: \"Special & <characters>\"\n---\nContent";
+        let (frontmatter, _) = extract(content).unwrap();
+        assert_eq!(
+            frontmatter.get("title").unwrap().as_str().unwrap(),
+            "Special & <characters>"
+        );
     }
 }
