@@ -1,9 +1,9 @@
+# Frontmatter Gen (frontmatter-gen)
+
 <!-- markdownlint-disable MD033 MD041 -->
 <img src="https://kura.pro/frontmatter-gen/images/logos/frontmatter-gen.svg"
 alt="FrontMatter Gen logo" height="66" align="right" />
 <!-- markdownlint-enable MD033 MD041 -->
-
-# Frontmatter Gen (frontmatter-gen)
 
 A high-performance Rust library for parsing and serialising frontmatter in YAML, TOML, and JSON formats. Built for safety, efficiency, and ease of use.
 
@@ -19,13 +19,13 @@ A high-performance Rust library for parsing and serialising frontmatter in YAML,
 </center>
 <!-- markdownlint-enable MD033 MD041 -->
 
-## Overview
+## Overview 🚀
 
-`frontmatter-gen` is a Rust library that provides robust handling of frontmatter in content files. It offers a type-safe, efficient solution for extracting, parsing and serialising frontmatter in multiple formats. Whether you're building a static site generator, content management system, or any application requiring structured metadata, `frontmatter-gen` delivers the tools you need.
+`frontmatter-gen` is a comprehensive Rust library that provides robust handling of frontmatter in content files. It delivers a type-safe, efficient solution for extracting, parsing, and serialising frontmatter in multiple formats. Whether you're building a static site generator, content management system, or any application requiring structured metadata, `frontmatter-gen` offers the tools you need.
 
-### Key Features
+### Key Features 🎯
 
-- **Zero-Copy Parsing**: Parse YAML, TOML and JSON frontmatter efficiently with zero memory copying
+- **Zero-Copy Parsing**: Parse YAML, TOML, and JSON frontmatter efficiently with zero memory copying
 - **Safe Extraction**: Extract frontmatter using standard delimiters (`---` for YAML, `+++` for TOML) with comprehensive error handling
 - **Type Safety**: Leverage Rust's type system with the `Value` enum for safe frontmatter manipulation
 - **High Performance**: Optimised for speed with minimal allocations and efficient algorithms
@@ -34,6 +34,8 @@ A high-performance Rust library for parsing and serialising frontmatter in YAML,
 - **Async Support**: First-class asynchronous operation support
 - **Flexible Configuration**: Customisable parsing behaviour to match your needs
 
+### Available Features 🛠️
+
 This crate provides several feature flags to customise its functionality:
 
 - **default**: Core frontmatter parsing functionality only
@@ -41,7 +43,7 @@ This crate provides several feature flags to customise its functionality:
 - **ssg**: Static Site Generator functionality (includes CLI features)
 - **logging**: Debug logging capabilities
 
-## Getting Started
+## Getting Started 📦
 
 Add this to your `Cargo.toml`:
 
@@ -54,16 +56,16 @@ frontmatter-gen = "0.0.3"
 frontmatter-gen = { version = "0.0.3", features = ["ssg"] }
 ```
 
-### Basic Usage
+### Basic Usage 🔨
 
-#### Extract and parse frontmatter from content
+#### Extract and Parse Frontmatter
 
 ```rust
 use frontmatter_gen::extract;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-
-let content = r#"---
+    // Example content with YAML frontmatter
+    let content = r#"---
 title: My Document
 date: 2025-09-09
 tags:
@@ -72,46 +74,54 @@ tags:
 ---
 # Content begins here"#;
 
-let (frontmatter, content) = extract(content)?;
-println!("Title: {}", frontmatter.get("title").unwrap().as_str().unwrap());
-println!("Content: {}", content);
-Ok(())
+    // Extract frontmatter and content
+    let (frontmatter, content) = extract(content)?;
+    
+    // Access frontmatter fields safely
+    println!("Title: {}", frontmatter.get("title")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Untitled"));
+    println!("Content: {}", content);
+    
+    Ok(())
 }
 ```
 
-#### Convert between formats
+#### Format Conversion
 
 ```rust
 use frontmatter_gen::{Frontmatter, Format, Value, to_format};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Create frontmatter with some data
+    let mut frontmatter = Frontmatter::new();
+    frontmatter.insert("title".to_string(), Value::String("My Document".into()));
+    frontmatter.insert("draft".to_string(), Value::Boolean(false));
+    frontmatter.insert("views".to_string(), Value::Number(42.0));
 
-let mut frontmatter = Frontmatter::new();
-frontmatter.insert("title".to_string(), "My Document".into());
-frontmatter.insert("draft".to_string(), false.into());
+    // Convert to different formats
+    let yaml = to_format(&frontmatter, Format::Yaml)?;
+    let toml = to_format(&frontmatter, Format::Toml)?;
+    let json = to_format(&frontmatter, Format::Json)?;
 
-// Convert to YAML
-let yaml = to_format(&frontmatter, Format::Yaml)?;
+    println!("YAML:\n{}\n", yaml);
+    println!("TOML:\n{}\n", toml);
+    println!("JSON:\n{}\n", json);
 
-// Convert to TOML
-let toml = to_format(&frontmatter, Format::Toml)?;
-
-// Convert to JSON
-let json = to_format(&frontmatter, Format::Json)?;
-
-Ok(())
+    Ok(())
 }
 ```
 
-### Advanced Features
+### Advanced Features 🚀
 
-#### Handle complex nested structures
+#### Handle Complex Nested Structures
 
 ```rust
 use frontmatter_gen::{parser, Format, Value};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-let yaml = r#"
+    // Complex nested YAML frontmatter
+    let yaml = r#"
 title: My Document
 metadata:
   author:
@@ -123,14 +133,27 @@ metadata:
 settings:
   template: article
   published: true
+  stats:
+    views: 1000
+    likes: 50
 "#;
 
-let frontmatter = parser::parse(yaml, Format::Yaml)?;
-Ok(())
+    let frontmatter = parser::parse(yaml, Format::Yaml)?;
+    
+    // Access nested values safely using pattern matching
+    if let Some(Value::Object(metadata)) = frontmatter.get("metadata") {
+        if let Some(Value::Object(author)) = metadata.get("author") {
+            if let Some(Value::String(name)) = author.get("name") {
+                println!("Author: {}", name);
+            }
+        }
+    }
+
+    Ok(())
 }
 ```
 
-## Documentation
+## Documentation 📚
 
 For comprehensive API documentation and examples, visit:
 
@@ -138,81 +161,81 @@ For comprehensive API documentation and examples, visit:
 - [User Guide and Tutorials][00]
 - [Example Code Repository][02]
 
-## CLI Tool
+## CLI Tool 🛠️
 
-The library includes a command-line interface for quick frontmatter operations:
+The library includes a powerful command-line interface for quick frontmatter operations:
 
 ```bash
-# Extract frontmatter from 'input.md' and output it in YAML format
+# Generate a static site
+frontmatter-gen build \
+    --content-dir examples/content \
+    --output-dir examples/public \
+    --template-dir examples/templates
+
+# Extract frontmatter in various formats
 frontmatter-gen extract input.md --format yaml
-
-# Extract frontmatter from 'input.md' and output it in TOML format
 frontmatter-gen extract input.md --format toml
-
-# Extract frontmatter from 'input.md' and output it in JSON format
 frontmatter-gen extract input.md --format json
 
-# Extract frontmatter from 'input.md' and output it in YAML format to 'output.yaml'
+# Save extracted frontmatter to files
 frontmatter-gen extract input.md --format yaml --output output.yaml
-
-# Extract frontmatter from 'input.md' and output it in TOML format to 'output.toml'
 frontmatter-gen extract input.md --format toml --output output.toml
-
-# Extract frontmatter from 'input.md' and output it in JSON format to 'output.json'
 frontmatter-gen extract input.md --format json --output output.json
 
-# Validate frontmatter from 'input.md' and check for custom required fields
+# Validate frontmatter with required fields
 frontmatter-gen validate input.md --required title,date,author
 ```
+
+### Running from Source
 
 You can also run the CLI tool directly from the source code:
 
 ```bash
-# Extract frontmatter from 'input.md' and output it in YAML format
+# Generate a static site
+cargo run --features="ssg" build \
+    --content-dir examples/content \
+    --output-dir examples/public \
+    --template-dir examples/templates
+
+# Extract and validate frontmatter
 cargo run --features="ssg" extract input.md --format yaml
-
-# Extract frontmatter from 'input.md' and output it in TOML format
-cargo run --features="ssg" extract input.md --format toml
-
-# Extract frontmatter from 'input.md' and output it in JSON format
-cargo run --features="ssg" extract input.md --format json
-
-# Extract frontmatter from 'input.md' and output it in YAML format to 'output.yaml'
-cargo run --features="ssg" extract input.md --format yaml --output output.yaml
-
-# Extract frontmatter from 'input.md' and output it in TOML format to 'output.toml'
-cargo run --features="ssg" extract input.md --format toml --output output.toml
-
-# Extract frontmatter from 'input.md' and output it in JSON format to 'output.json'
-cargo run --features="ssg" extract input.md --format json --output output.json
-
-# Validate frontmatter from 'input.md' and check for custom required fields
 cargo run --features="ssg" validate input.md --required title,date
 ```
 
-## Error Handling
+## Error Handling 🚨
 
-The library provides detailed error handling:
+The library provides detailed error handling with context:
 
 ```rust
-use frontmatter_gen::extract;
-use frontmatter_gen::error::FrontmatterError;
+use frontmatter_gen::{extract, error::FrontmatterError};
 
 fn process_content(content: &str) -> Result<(), FrontmatterError> {
+    // Extract frontmatter and content
     let (frontmatter, _) = extract(content)?;
     
     // Validate required fields
-    if !frontmatter.contains_key("title") {
-        return Err(FrontmatterError::ValidationError(
-            "Missing required field: title".to_string()
-        ));
+    for field in ["title", "date", "author"].iter() {
+        if !frontmatter.contains_key(*field) {
+            return Err(FrontmatterError::ValidationError(
+                format!("Missing required field: {}", field)
+            ));
+        }
+    }
+    
+    // Validate field types
+    if let Some(date) = frontmatter.get("date") {
+        if !date.is_string() {
+            return Err(FrontmatterError::ValidationError(
+                "Date field must be a string".to_string()
+            ));
+        }
     }
     
     Ok(())
 }
 ```
 
-## Contributing
+## Contributing 🤝
 
 We welcome contributions! Please see our [Contributing Guidelines][05] for details on:
 
@@ -221,7 +244,7 @@ We welcome contributions! Please see our [Contributing Guidelines][05] for detai
 - Submitting Pull Requests
 - Reporting Issues
 
-## Licence
+## Licence 📝
 
 This project is dual-licensed under either:
 
@@ -230,9 +253,9 @@ This project is dual-licensed under either:
 
 at your option.
 
-## Acknowledgements
+## Acknowledgements 🙏
 
-Special thanks to all contributors and the Rust community for their support and feedback.
+Special thanks to all contributors and the Rust community for their invaluable support and feedback.
 
 [00]: https://frontmatter-gen.com
 [01]: https://lib.rs/crates/frontmatter-gen

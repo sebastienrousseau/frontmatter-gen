@@ -1,9 +1,9 @@
+# Frontmatter Gen (frontmatter-gen)
+
 <!-- markdownlint-disable MD033 MD041 -->
 <img src="https://kura.pro/frontmatter-gen/images/logos/frontmatter-gen.svg"
 alt="FrontMatter Gen logo" height="66" align="right" />
 <!-- markdownlint-enable MD033 MD041 -->
-
-# Frontmatter Gen (frontmatter-gen)
 
 A high-performance Rust library for parsing and serialising frontmatter in YAML, TOML, and JSON formats. Built for safety, efficiency, and ease of use.
 
@@ -19,13 +19,13 @@ A high-performance Rust library for parsing and serialising frontmatter in YAML,
 </center>
 <!-- markdownlint-enable MD033 MD041 -->
 
-## Overview
+## Overview 🚀
 
-`frontmatter-gen` is a Rust library that provides robust handling of frontmatter in content files. It offers a type-safe, efficient solution for extracting, parsing and serialising frontmatter in multiple formats. Whether you're building a static site generator, content management system, or any application requiring structured metadata, `frontmatter-gen` delivers the tools you need.
+`frontmatter-gen` is a comprehensive Rust library that provides robust handling of frontmatter in content files. It delivers a type-safe, efficient solution for extracting, parsing, and serialising frontmatter in multiple formats. Whether you're building a static site generator, content management system, or any application requiring structured metadata, `frontmatter-gen` offers the tools you need.
 
-### Key Features
+### Key Features 🎯
 
-- **Zero-Copy Parsing**: Parse YAML, TOML and JSON frontmatter efficiently with zero memory copying
+- **Zero-Copy Parsing**: Parse YAML, TOML, and JSON frontmatter efficiently with zero memory copying
 - **Safe Extraction**: Extract frontmatter using standard delimiters (`---` for YAML, `+++` for TOML) with comprehensive error handling
 - **Type Safety**: Leverage Rust's type system with the `Value` enum for safe frontmatter manipulation
 - **High Performance**: Optimised for speed with minimal allocations and efficient algorithms
@@ -33,13 +33,6 @@ A high-performance Rust library for parsing and serialising frontmatter in YAML,
 - **Rich Error Handling**: Detailed error types with context for effective debugging
 - **Async Support**: First-class asynchronous operation support
 - **Flexible Configuration**: Customisable parsing behaviour to match your needs
-
-This crate provides several feature flags to customise its functionality:
-
-- **default**: Core frontmatter parsing functionality only
-- **cli**: Command-line interface tools for quick operations
-- **ssg**: Static Site Generator functionality (includes CLI features)
-- **logging**: Debug logging capabilities
 
 [00]: https://frontmatter-gen.com
 [01]: https://lib.rs/crates/frontmatter-gen
