@@ -380,7 +380,7 @@ mod tests {
     ///
     /// This function creates the necessary `content`, `templates`, and `public` directories
     /// within a temporary folder and returns the `TempDir` instance along with a test `Config`.
-    async fn setup_test_directory(
+    pub async fn setup_test_directory(
     ) -> Result<(tempfile::TempDir, Config)> {
         let temp_dir = tempdir()?;
         let base_path = temp_dir.path();
