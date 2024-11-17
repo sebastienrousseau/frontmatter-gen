@@ -247,113 +247,209 @@ pub enum EngineError {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_content_too_large_error() {
-        let error = FrontmatterError::ContentTooLarge {
-            size: 1000,
-            max: 500,
-        };
-        assert!(error
-            .to_string()
-            .contains("Content size 1000 exceeds maximum"));
-    }
+    /// Tests for FrontmatterError
+    mod frontmatter_error {
+        use super::*;
 
-    #[test]
-    fn test_nesting_too_deep_error() {
-        let error =
-            FrontmatterError::NestingTooDeep { depth: 10, max: 5 };
-        assert!(error
-            .to_string()
-            .contains("Nesting depth 10 exceeds maximum"));
-    }
-
-    #[test]
-    fn test_json_parse_error() {
-        let json_data = "{ invalid json }";
-        let result: Result<serde_json::Value, _> =
-            serde_json::from_str(json_data);
-        assert!(result.is_err());
-        let error =
-            FrontmatterError::JsonParseError(result.unwrap_err());
-        assert!(matches!(error, FrontmatterError::JsonParseError(_)));
-    }
-
-    #[test]
-    fn test_validation_error() {
-        let error =
-            FrontmatterError::validation_error("Test validation error");
-        assert!(matches!(error, FrontmatterError::ValidationError(_)));
-        assert_eq!(
-            error.to_string(),
-            "Input validation error: Test validation error"
-        );
-    }
-
-    #[test]
-    fn test_clone_implementation() {
-        let original = FrontmatterError::ContentTooLarge {
-            size: 1000,
-            max: 500,
-        };
-        let cloned = original.clone();
-        assert!(matches!(
-            cloned,
-            FrontmatterError::ContentTooLarge {
+        #[test]
+        fn test_content_too_large_error() {
+            let error = FrontmatterError::ContentTooLarge {
                 size: 1000,
-                max: 500
-            }
-        ));
+                max: 500,
+            };
+            assert!(error
+                .to_string()
+                .contains("Content size 1000 exceeds maximum"));
+        }
 
-        let original =
-            FrontmatterError::NestingTooDeep { depth: 10, max: 5 };
-        let cloned = original.clone();
-        assert!(matches!(
-            cloned,
-            FrontmatterError::NestingTooDeep { depth: 10, max: 5 }
-        ));
+        #[test]
+        fn test_nesting_too_deep_error() {
+            let error =
+                FrontmatterError::NestingTooDeep { depth: 10, max: 5 };
+            assert!(error
+                .to_string()
+                .contains("Nesting depth 10 exceeds maximum"));
+        }
+
+        #[test]
+        fn test_json_parse_error() {
+            let json_data = "{ invalid json }";
+            let result: Result<serde_json::Value, _> =
+                serde_json::from_str(json_data);
+            assert!(result.is_err());
+            let error =
+                FrontmatterError::JsonParseError(result.unwrap_err());
+            assert!(matches!(
+                error,
+                FrontmatterError::JsonParseError(_)
+            ));
+        }
+
+        #[test]
+        fn test_yaml_parse_error() {
+            let yaml_data = "invalid: : yaml";
+            let result: Result<serde_yml::Value, _> =
+                serde_yml::from_str(yaml_data);
+            assert!(result.is_err());
+            let error = FrontmatterError::YamlParseError {
+                source: result.unwrap_err(),
+            };
+            assert!(matches!(
+                error,
+                FrontmatterError::YamlParseError { .. }
+            ));
+        }
+
+        #[test]
+        fn test_validation_error() {
+            let error = FrontmatterError::validation_error(
+                "Test validation error",
+            );
+            assert!(matches!(
+                error,
+                FrontmatterError::ValidationError(_)
+            ));
+            assert_eq!(
+                error.to_string(),
+                "Input validation error: Test validation error"
+            );
+        }
+
+        #[test]
+        fn test_generic_parse_error() {
+            let error = FrontmatterError::generic_parse_error(
+                "Test parse error",
+            );
+            assert!(matches!(error, FrontmatterError::ParseError(_)));
+            assert_eq!(
+                error.to_string(),
+                "Failed to parse frontmatter: Test parse error"
+            );
+        }
+
+        #[test]
+        fn test_unsupported_format_error() {
+            let error = FrontmatterError::unsupported_format(42);
+            assert!(matches!(
+                error,
+                FrontmatterError::UnsupportedFormat { line: 42 }
+            ));
+            assert_eq!(
+                error.to_string(),
+                "Unsupported frontmatter format detected at line 42"
+            );
+        }
+
+        #[test]
+        fn test_clone_implementation() {
+            let original = FrontmatterError::ContentTooLarge {
+                size: 1000,
+                max: 500,
+            };
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::ContentTooLarge {
+                    size: 1000,
+                    max: 500
+                }
+            ));
+
+            let original =
+                FrontmatterError::NestingTooDeep { depth: 10, max: 5 };
+            let cloned = original.clone();
+            assert!(matches!(
+                cloned,
+                FrontmatterError::NestingTooDeep { depth: 10, max: 5 }
+            ));
+        }
+
+        #[test]
+        fn test_error_display() {
+            let error = FrontmatterError::ContentTooLarge {
+                size: 1000,
+                max: 500,
+            };
+            assert_eq!(
+                error.to_string(),
+                "Content size 1000 exceeds maximum allowed size of 500 bytes"
+            );
+
+            let error = FrontmatterError::ValidationError(
+                "Invalid input".to_string(),
+            );
+            assert_eq!(
+                error.to_string(),
+                "Input validation error: Invalid input"
+            );
+        }
     }
 
-    #[test]
-    fn test_error_display() {
-        let error = FrontmatterError::ContentTooLarge {
-            size: 1000,
-            max: 500,
-        };
-        assert_eq!(
-            error.to_string(),
-            "Content size 1000 exceeds maximum allowed size of 500 bytes"
-        );
+    /// Tests for EngineError
+    mod engine_error {
+        use super::*;
+        use std::io;
 
-        let error = FrontmatterError::ValidationError(
-            "Invalid input".to_string(),
-        );
-        assert_eq!(
-            error.to_string(),
-            "Input validation error: Invalid input"
-        );
-    }
+        #[test]
+        fn test_content_error() {
+            let error =
+                EngineError::ContentError("Content issue".to_string());
+            assert!(matches!(error, EngineError::ContentError(_)));
+            assert_eq!(
+                error.to_string(),
+                "Content processing error: Content issue"
+            );
+        }
 
-    #[test]
-    fn test_generic_parse_error() {
-        let error =
-            FrontmatterError::generic_parse_error("Test parse error");
-        assert!(matches!(error, FrontmatterError::ParseError(_)));
-        assert_eq!(
-            error.to_string(),
-            "Failed to parse frontmatter: Test parse error"
-        );
-    }
+        #[test]
+        fn test_template_error() {
+            let error = EngineError::TemplateError(
+                "Template issue".to_string(),
+            );
+            assert!(matches!(error, EngineError::TemplateError(_)));
+            assert_eq!(
+                error.to_string(),
+                "Template processing error: Template issue"
+            );
+        }
 
-    #[test]
-    fn test_unsupported_format_error() {
-        let error = FrontmatterError::unsupported_format(42);
-        assert!(matches!(
-            error,
-            FrontmatterError::UnsupportedFormat { line: 42 }
-        ));
-        assert_eq!(
-            error.to_string(),
-            "Unsupported frontmatter format detected at line 42"
-        );
+        #[test]
+        fn test_asset_error() {
+            let error =
+                EngineError::AssetError("Asset issue".to_string());
+            assert!(matches!(error, EngineError::AssetError(_)));
+            assert_eq!(
+                error.to_string(),
+                "Asset processing error: Asset issue"
+            );
+        }
+
+        #[test]
+        fn test_filesystem_error() {
+            let io_error =
+                io::Error::new(io::ErrorKind::Other, "IO failure");
+            let error =
+                EngineError::FileSystemError { source: io_error };
+            assert!(matches!(
+                error,
+                EngineError::FileSystemError { .. }
+            ));
+            assert_eq!(
+                error.to_string(),
+                "File system error: IO failure"
+            );
+        }
+
+        #[test]
+        fn test_metadata_error() {
+            let error = EngineError::MetadataError(
+                "Metadata issue".to_string(),
+            );
+            assert!(matches!(error, EngineError::MetadataError(_)));
+            assert_eq!(
+                error.to_string(),
+                "Metadata error: Metadata issue"
+            );
+        }
     }
 }
