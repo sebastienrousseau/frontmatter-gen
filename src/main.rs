@@ -321,3 +321,107 @@ async fn build_command(
     println!("Site built successfully!");
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_validate_command_all_fields_present() {
+        let content = r#"---
+title: "My Title"
+date: "2024-01-01"
+author: "Jane Doe"
+---"#;
+
+        // Write the test file
+        let write_result = tokio::fs::write("test.md", content).await;
+        assert!(
+            write_result.is_ok(),
+            "Failed to write test file: {:?}",
+            write_result
+        );
+
+        // Run the validate_command function
+        let result = validate_command(
+            Path::new("test.md"),
+            vec![
+                "title".to_string(),
+                "date".to_string(),
+                "author".to_string(),
+            ],
+        )
+        .await;
+
+        assert!(
+            result.is_ok(),
+            "Validation failed with error: {:?}",
+            result
+        );
+
+        // Clean up the test file
+        let remove_result = tokio::fs::remove_file("test.md").await;
+        assert!(
+            remove_result.is_ok(),
+            "Failed to remove test file: {:?}",
+            remove_result
+        );
+    }
+
+    #[tokio::test]
+    async fn test_extract_command_to_stdout() {
+        let content = r#"---
+title: "My Title"
+date: "2024-01-01"
+author: "Jane Doe"
+---"#;
+
+        // Write the test file
+        let write_result = tokio::fs::write("test.md", content).await;
+        assert!(
+            write_result.is_ok(),
+            "Failed to write test file: {:?}",
+            write_result
+        );
+
+        // Ensure the file exists
+        assert!(
+            Path::new("test.md").exists(),
+            "The test file does not exist after creation."
+        );
+
+        // Run the extract_command function
+        let result =
+            extract_command(Path::new("test.md"), "yaml", None).await;
+
+        assert!(
+            result.is_ok(),
+            "Extraction failed with error: {:?}",
+            result
+        );
+
+        // Check if the file still exists before attempting to delete
+        if Path::new("test.md").exists() {
+            let remove_result = tokio::fs::remove_file("test.md").await;
+            assert!(
+                remove_result.is_ok(),
+                "Failed to remove test file: {:?}",
+                remove_result
+            );
+        } else {
+            eprintln!("Test file was already removed or not found.");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_build_command_missing_dirs() {
+        let result = build_command(
+            Path::new("missing_content"),
+            Path::new("missing_public"),
+            Path::new("missing_templates"),
+        )
+        .await;
+
+        assert!(result.is_err());
+    }
+}
