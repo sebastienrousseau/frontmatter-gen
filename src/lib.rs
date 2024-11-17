@@ -421,7 +421,7 @@ Content"#;
     fn test_numeric_values() {
         let content = r#"---
 integer: 42
-float: 3.14
+float: 2.12
 scientific: 1.23e-4
 negative: -17
 zero: 0
@@ -441,7 +441,7 @@ Content"#;
         );
         assert!(
             (frontmatter.get("float").unwrap().as_f64().unwrap()
-                - 3.14)
+                - 2.12)
                 .abs()
                 < epsilon
         ); // Use 3.14 directly
