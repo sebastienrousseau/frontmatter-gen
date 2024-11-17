@@ -547,7 +547,7 @@ mod tests {
             assert_eq!(builder.output_dir, None);
             assert_eq!(builder.template_dir, None);
             assert_eq!(builder.serve_dir, None);
-            assert_eq!(builder.server_enabled, false);
+            assert!(!builder.server_enabled);
             assert_eq!(builder.server_port, None);
         }
 
@@ -569,7 +569,7 @@ mod tests {
             assert_eq!(config.output_dir, default_output_dir());
             assert_eq!(config.template_dir, default_template_dir());
             assert_eq!(config.server_port, default_port());
-            assert_eq!(config.server_enabled, false);
+            assert!(!config.server_enabled);
             assert!(config.serve_dir.is_none());
         }
 
