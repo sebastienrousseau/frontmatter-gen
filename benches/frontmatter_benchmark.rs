@@ -4,6 +4,7 @@
 //! in various formats such as YAML, TOML, and JSON. It uses the `criterion` crate
 //! for accurate performance measurements.
 
+#![allow(missing_docs)]
 use criterion::{
     black_box, criterion_group, criterion_main, Criterion,
 };
