@@ -448,14 +448,21 @@ author: "Jane Doe"
             result
         );
 
-        // Clean up the test file
-        let remove_result =
-            tokio::fs::remove_file(test_file_path).await;
-        assert!(
-            remove_result.is_ok(),
-            "Failed to remove test file: {:?}",
-            remove_result
-        );
+        // Ensure the test file is removed
+        if Path::new(test_file_path).exists() {
+            let remove_result =
+                tokio::fs::remove_file(test_file_path).await;
+            assert!(
+                remove_result.is_ok(),
+                "Failed to remove test file: {:?}",
+                remove_result
+            );
+        } else {
+            println!(
+                "Test file '{}' does not exist during cleanup.",
+                test_file_path
+            );
+        }
     }
 
     #[tokio::test]
