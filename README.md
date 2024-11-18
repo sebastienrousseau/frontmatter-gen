@@ -41,27 +41,26 @@ This crate provides several feature flags to customise its functionality:
 - **default**: Core frontmatter parsing functionality only
 - **cli**: Command-line interface tools for quick operations
 - **ssg**: Static Site Generator functionality (includes CLI features)
-- **logging**: Enables debug logging via the `log` crate (can be combined with other features)
 
 You can combine multiple features as needed:
 
 ```toml
 [dependencies]
 # Enable logging with CLI support
-frontmatter-gen = { version = "0.0.4", features = ["cli", "logging"] }
+frontmatter-gen = { version = "0.0.4", features = ["cli"] }
 
 # Enable all features
-frontmatter-gen = { version = "0.0.4", features = ["ssg", "logging"] }
+frontmatter-gen = { version = "0.0.4", features = ["ssg"] }
 ```
 
 When installing via cargo install:
 
 ```bash
 # Install with CLI and logging support
-cargo install frontmatter-gen --features="cli,logging"
+cargo install frontmatter-gen --features="cli"
 
 # Install with SSG and logging support
-cargo install frontmatter-gen --features="ssg,logging"
+cargo install frontmatter-gen --features="ssg"
 ```
 
 ## Getting Started 📦
@@ -271,14 +270,42 @@ When the `logging` feature is enabled, the library integrates with Rust's `log` 
 
 ```rust
 use frontmatter_gen::extract;
-use env_logger::Builder;
-use log::LevelFilter;
+use log::{debug, info, Level, Metadata, Record, set_logger, set_max_level};
+
+struct SimpleLogger;
+
+impl log::Log for SimpleLogger {
+    fn enabled(&self, metadata: &Metadata) -> bool {
+        metadata.level() <= Level::Debug
+    }
+
+    fn log(&self, record: &Record) {
+        if self.enabled(record.metadata()) {
+            println!(
+                "{} [{}] - {}",
+                record.target(),
+                record.level(),
+                record.args()
+            );
+        }
+    }
+
+    fn flush(&self) {}
+}
+
+static LOGGER: SimpleLogger = SimpleLogger;
+
+fn init_logger() {
+    // Explicitly handle logger initialization error
+    if let Err(e) = set_logger(&LOGGER).map(|()| set_max_level(Level::Debug.to_level_filter())) {
+        eprintln!("Failed to initialize logger: {}", e);
+    }
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize logging with debug level
-    Builder::new()
-        .filter_level(LevelFilter::Debug)
-        .init();
+    // Initialize the custom logger
+    init_logger();
+    info!("Starting frontmatter extraction");
 
     let content = r#"---
 title: My Document
@@ -286,9 +313,11 @@ date: 2025-09-09
 ---
 # Content"#;
 
-    // Logging will now show detailed debug information
+    // Extract frontmatter and remaining content
     let (frontmatter, content) = extract(content)?;
-    
+    debug!("Extracted frontmatter: {:?}", frontmatter);
+    debug!("Remaining content: {:?}", content);
+
     Ok(())
 }
 ```
@@ -299,31 +328,40 @@ For more control over logging:
 
 ```rust
 use frontmatter_gen::{parser, Format};
-use env_logger::Builder;
-use log::{LevelFilter, debug, info, warn};
-use std::io::Write;
+use log::{debug, info, Level, Metadata, Record, set_logger, set_max_level};
+
+struct SimpleLogger;
+
+impl log::Log for SimpleLogger {
+    fn enabled(&self, metadata: &Metadata) -> bool {
+        metadata.level() <= Level::Debug
+    }
+
+    fn log(&self, record: &Record) {
+        if self.enabled(record.metadata()) {
+            println!("[{}] - {}", record.level(), record.args());
+        }
+    }
+
+    fn flush(&self) {}
+}
+
+static LOGGER: SimpleLogger = SimpleLogger;
+
+fn init_logger() {
+    set_logger(&LOGGER).expect("Failed to set logger");
+    set_max_level(Level::Debug.to_level_filter());
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Configure logging with timestamps and module paths
-    Builder::new()
-        .format(|buf, record| {
-            writeln!(buf,
-                "{} [{}] - {}",
-                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
-                record.level(),
-                record.args()
-            )
-        })
-        .filter_module("frontmatter_gen", LevelFilter::Debug)
-        .filter_module("your_app", LevelFilter::Info)
-        .init();
-
-    // Your frontmatter operations will now log detailed information
+    // Initialize the custom logger
+    init_logger();
     info!("Starting frontmatter processing");
+
     let yaml = r#"title: Test Document"#;
     let frontmatter = parser::parse(yaml, Format::Yaml)?;
     debug!("Parsed frontmatter: {:?}", frontmatter);
-    
+
     Ok(())
 }
 ```

@@ -120,7 +120,6 @@ pub struct Engine {
 impl Engine {
     /// Creates a new `Engine` instance.
     pub fn new() -> Result<Self> {
-        #[cfg(feature = "logging")]
         log::debug!("Initializing SSG Engine");
 
         Ok(Self {
@@ -135,7 +134,6 @@ impl Engine {
 
     /// Orchestrates the complete site generation process.
     pub async fn generate(&self, config: &Config) -> Result<()> {
-        #[cfg(feature = "logging")]
         log::info!("Starting site generation");
 
         fs::create_dir_all(&config.output_dir)
@@ -147,7 +145,6 @@ impl Engine {
         self.generate_pages(config).await?;
         self.copy_assets(config).await?;
 
-        #[cfg(feature = "logging")]
         log::info!("Site generation completed successfully");
 
         Ok(())
@@ -155,7 +152,6 @@ impl Engine {
 
     /// Loads and caches all templates from the template directory.
     pub async fn load_templates(&self, config: &Config) -> Result<()> {
-        #[cfg(feature = "logging")]
         log::debug!(
             "Loading templates from: {}",
             config.template_dir.display()
@@ -184,7 +180,6 @@ impl Engine {
                         content,
                     );
 
-                    #[cfg(feature = "logging")]
                     log::debug!(
                         "Loaded template: {}",
                         name.to_string_lossy()
@@ -201,7 +196,6 @@ impl Engine {
         &self,
         config: &Config,
     ) -> Result<()> {
-        #[cfg(feature = "logging")]
         log::debug!(
             "Processing content files from: {}",
             config.content_dir.display()
@@ -218,7 +212,6 @@ impl Engine {
                     self.process_content_file(&path, config).await?;
                 let _ = content_cache.insert(path.clone(), content);
 
-                #[cfg(feature = "logging")]
                 log::debug!(
                     "Processed content file: {}",
                     path.display()
@@ -280,7 +273,6 @@ impl Engine {
         template: &str,
         content: &ContentFile,
     ) -> Result<String> {
-        #[cfg(feature = "logging")]
         log::debug!(
             "Rendering template for: {}",
             content.dest_path.display()
@@ -308,7 +300,6 @@ impl Engine {
     pub async fn copy_assets(&self, config: &Config) -> Result<()> {
         let assets_dir = config.content_dir.join("assets");
         if assets_dir.exists() {
-            #[cfg(feature = "logging")]
             log::debug!(
                 "Copying assets from: {}",
                 assets_dir.display()
@@ -357,7 +348,6 @@ impl Engine {
 
     /// Generates HTML pages from processed content files.
     pub async fn generate_pages(&self, _config: &Config) -> Result<()> {
-        #[cfg(feature = "logging")]
         log::info!("Generating HTML pages");
 
         let content_cache = self.content_cache.read().await;
@@ -393,7 +383,6 @@ impl Engine {
 
             fs::write(&content_file.dest_path, rendered_html).await?;
 
-            #[cfg(feature = "logging")]
             log::debug!(
                 "Generated page: {}",
                 content_file.dest_path.display()
