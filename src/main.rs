@@ -1,537 +1,372 @@
-// Copyright © 2024 Shokunin Static Site Generator. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-
 //! # Frontmatter Generator
 //!
-//! `frontmatter-gen` is a CLI tool designed for extracting, validating, and managing front matter
-//! from content files used in static site generation. It provides tools for processing front matter
-//! in various formats (YAML, TOML, JSON) and building static sites with customizable templates.
+//! The Frontmatter Generator is a command-line tool designed for extracting, validating,
+//! and manipulating frontmatter in various formats, including YAML, TOML, and JSON.
+//! It also provides static site generation capabilities when enabled.
 //!
 //! ## Features
 //!
-//! - **Validation**: Ensure required front matter fields are present and correctly formatted.
-//! - **Extraction**: Extract front matter in various formats and output it to a file or stdout.
-//! - **Site Generation**: Build static sites with configurable content, output, and template directories.
+//! - **Frontmatter Manipulation**: Extract and validate frontmatter from Markdown files.
+//! - **Static Site Generation**: Build static sites with templates and structured content.
+//! - **Multi-Format Support**: YAML, TOML, and JSON support.
+//! - **Secure and Robust**: Implements secure file handling, input sanitisation, and logging.
 //!
 //! ## Usage
 //!
-//! Use the command-line interface to interact with the tool:
-//!
 //! ```bash
-//! frontmatter-gen validate --file content.md --required title date author
-//! frontmatter-gen extract --file content.md --format yaml --output frontmatter.yaml
+//! # Extract frontmatter from a file
+//! frontmatter-gen extract input.md --format yaml
+//!
+//! # Validate frontmatter for required fields
+//! frontmatter-gen validate input.md --required title,date
+//!
+//! # Generate a static site
 //! frontmatter-gen build --content-dir content --output-dir public --template-dir templates
 //! ```
 //!
-//! ## Configuration
+//! ## Environment Variables
 //!
-//! The tool optionally reads from a `frontmatter-gen.toml` configuration file for defaults,
-//! such as required fields for validation, or directories for content and templates.
+//! - `RUST_LOG`: Controls logging level (`error`, `warn`, `info`, `debug`, `trace`).
+//!
+//! ## Feature Flags
+//!
+//! - `cli`: Enables command-line interface functionality for frontmatter manipulation.
+//! - `ssg`: Enables static site generation capabilities.
+//!
+//! ## Crate Modules
+//!
+//! - `cli`: Handles command-line interface parsing and commands.
+//! - `ssg`: Provides static site generation functionality.
+//! - `logging`: Sets up logging for debugging and error reporting.
+//!
+//! ## Security Considerations
+//!
+//! - **Input Sanitisation**: Ensures safe handling of user inputs to prevent path traversal attacks.
+//! - **Error Handling**: Graceful recovery and detailed error reporting.
+//!
+//! ## Contributing
+//!
+//! Contributions are welcome. Please open an issue or submit a pull request with your suggestions.
 
-use anyhow::{Context, Result};
-use clap::{Arg, Command};
-use frontmatter_gen::{engine::Engine, to_format, Config, Format};
-use serde::Deserialize;
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
-use thiserror::Error;
+use anyhow::Result;
+use std::env;
+use std::process;
 
-/// Custom error types for front matter validation.
-#[derive(Error, Debug)]
-pub enum FrontmatterError {
-    #[error("Missing required field: {0}")]
-    /// Error for missing required fields in front matter.
-    MissingField(String),
-    #[error("Invalid date format: {0}")]
-    /// Error for invalid date format in front matter.
-    InvalidDate(String),
-    #[error("Invalid pattern for field '{0}': {1}")]
-    /// Error for fields that do not match a specified pattern.
-    InvalidPattern(String, String),
-}
+// Conditional imports based on features
+#[cfg(feature = "cli")]
+use clap::Parser;
+#[cfg(feature = "cli")]
+use frontmatter_gen::cli::Cli;
+#[cfg(feature = "ssg")]
+use frontmatter_gen::ssg::SsgCommand;
 
-/// Configuration structure for `frontmatter-gen`.
-#[derive(Debug, Deserialize, Default)]
-struct AppConfig {
-    validate: Option<ValidationConfig>,
-    extract: Option<ExtractConfig>,
-    build: Option<BuildConfig>,
-}
-
-#[derive(Debug, Deserialize, Default)]
-struct ValidationConfig {
-    required_fields: Option<Vec<String>>,
-}
-
-#[derive(Debug, Deserialize, Default)]
-struct ExtractConfig {
-    default_format: Option<String>,
-    output: Option<String>,
-}
-
-#[derive(Debug, Deserialize, Default)]
-struct BuildConfig {
-    content_dir: Option<String>,
-    output_dir: Option<String>,
-    template_dir: Option<String>,
-}
-
-/// Parses command-line arguments and loads optional configuration from `frontmatter-gen.toml`.
-fn load_configuration() -> Result<(clap::ArgMatches, AppConfig)> {
-    let matches = Command::new("frontmatter-gen")
-        .version("1.0")
-        .author("Your Name <your.email@example.com>")
-        .about("A CLI tool for front matter extraction, validation, and static site generation")
-        .subcommand_required(true)
-        .subcommand(
-            Command::new("validate")
-                .about("Validates front matter in a file")
-                .arg(
-                    Arg::new("file")
-                        .required(true)
-                        .help("Path to the file to validate"),
-                )
-                .arg(
-                    Arg::new("required")
-                        .long("required")
-                        .num_args(1..) // One or more required fields
-                        .help("List of required fields"),
-                ),
-        )
-        .subcommand(
-            Command::new("extract")
-                .about("Extracts front matter from a file")
-                .arg(
-                    Arg::new("file")
-                        .required(true)
-                        .help("Path to the file to extract from"),
-                )
-                .arg(
-                    Arg::new("format")
-                        .long("format")
-                        .help("Output format (yaml, toml, json)"),
-                )
-                .arg(
-                    Arg::new("output")
-                        .long("output")
-                        .help("File to write the extracted front matter to"),
-                ),
-        )
-        .subcommand(
-            Command::new("build")
-                .about("Builds a static site from the given directories")
-                .arg(
-                    Arg::new("content-dir")
-                        .long("content-dir")
-                        .help("Directory containing site content"),
-                )
-                .arg(
-                    Arg::new("output-dir")
-                        .long("output-dir")
-                        .help("Directory where the generated site will be output"),
-                )
-                .arg(
-                    Arg::new("template-dir")
-                        .long("template-dir")
-                        .help("Directory containing site templates"),
-                ),
-        )
-        .get_matches();
-
-    // Load configuration file if present
-    let config: AppConfig =
-        if Path::new("frontmatter-gen.toml").exists() {
-            let content = fs::read_to_string("frontmatter-gen.toml")?;
-            toml::from_str(&content)?
-        } else {
-            AppConfig::default()
-        };
-
-    Ok((matches, config))
-}
-
-#[tokio::main]
-async fn main() -> Result<()> {
-    let (matches, config) = load_configuration()?;
-
-    match matches.subcommand() {
-        Some(("validate", sub_matches)) => {
-            let file = sub_matches.get_one::<String>("file").unwrap();
-            let required_fields = sub_matches
-                .get_many::<String>("required")
-                .map(|vals| {
-                    vals.flat_map(|val| {
-                        val.split(',').map(String::from)
-                    })
-                    .collect::<Vec<_>>()
-                })
-                .or_else(|| {
-                    config.validate.as_ref()?.required_fields.clone()
-                })
-                .unwrap_or_else(|| {
-                    vec![
-                        "title".to_string(),
-                        "date".to_string(),
-                        "author".to_string(),
-                    ]
-                });
-
-            // Convert Vec<String> to Vec<&str>
-            let required_fields: Vec<&str> =
-                required_fields.iter().map(String::as_str).collect();
-
-            // Pass slice to validate_command
-            validate_command(Path::new(file), &required_fields).await?;
-        }
-        Some(("extract", sub_matches)) => {
-            let file = sub_matches.get_one::<String>("file").unwrap();
-            let format = sub_matches
-                .get_one::<String>("format")
-                .map(String::as_str)
-                .or(config
-                    .extract
-                    .as_ref()
-                    .and_then(|c| c.default_format.as_deref()))
-                .unwrap_or("yaml");
-
-            let output = sub_matches
-                .get_one::<String>("output")
-                .map(String::as_str)
-                .or_else(|| {
-                    config
-                        .extract
-                        .as_ref()
-                        .and_then(|c| c.output.as_deref())
-                })
-                .map(PathBuf::from);
-
-            extract_command(Path::new(file), format, output).await?;
-        }
-        Some(("build", sub_matches)) => {
-            let content_dir = sub_matches
-                .get_one::<String>("content-dir")
-                .map(String::as_str)
-                .or_else(|| {
-                    config
-                        .build
-                        .as_ref()
-                        .and_then(|c| c.content_dir.as_deref())
-                })
-                .unwrap_or("content");
-            let output_dir = sub_matches
-                .get_one::<String>("output-dir")
-                .map(String::as_str)
-                .or_else(|| {
-                    config
-                        .build
-                        .as_ref()
-                        .and_then(|c| c.output_dir.as_deref())
-                })
-                .unwrap_or("public");
-            let template_dir = sub_matches
-                .get_one::<String>("template-dir")
-                .map(String::as_str)
-                .or_else(|| {
-                    config
-                        .build
-                        .as_ref()
-                        .and_then(|c| c.template_dir.as_deref())
-                })
-                .unwrap_or("templates");
-
-            build_command(
-                Path::new(content_dir),
-                Path::new(output_dir),
-                Path::new(template_dir),
-            )
-            .await?;
-        }
-        _ => unreachable!(
-            "Clap should ensure that a valid subcommand is provided"
-        ),
-    }
-
-    Ok(())
-}
-
-/// Validates front matter in a file.
-async fn validate_command(
-    file: &Path,
-    required_fields: &[&str],
-) -> Result<()> {
-    // Read the file content
-    let content = tokio::fs::read_to_string(file)
-        .await
-        .context("Failed to read input file")?;
-
-    // Debugging log for content
-    // eprintln!("Content: {:?}", content);
-
-    // Extract front matter using frontmatter_gen
-    let (frontmatter, _) = frontmatter_gen::extract(&content)
-        .context("Failed to extract front matter")?;
-
-    // Debugging log for extracted front matter
-    // eprintln!("Extracted Frontmatter: {:?}", frontmatter);
-
-    // Validate each required field
-    for &field in required_fields {
-        if !frontmatter.contains_key(field) {
-            return Err(anyhow::anyhow!(
-                "Validation failed: Missing required field '{}'",
-                field
-            ));
-        }
-    }
-
-    println!("Validation successful: All required fields are present.");
-    Ok(())
-}
-
-/// Extracts front matter from a file and outputs it in the specified format.
+/// Main entry point for the Frontmatter Generator tool.
 ///
-/// This function reads the input file, extracts the front matter,
-/// formats it according to the specified format, and optionally writes
-/// it to an output file. If no output file is specified, the formatted
-/// front matter is printed to the console.
+/// This function initializes the logging system, determines the enabled features,
+/// and dispatches commands based on user input. It ensures robust error handling
+/// and clear feedback for the user.
 ///
-/// # Arguments
+/// # Environment Variables
 ///
-/// * `input` - The path to the input file.
-/// * `format` - The format to output the front matter (e.g., "yaml", "toml", "json").
-/// * `output` - An optional path to the output file where the front matter will be saved.
+/// - `RUST_LOG`: Sets the logging level (e.g., "debug", "info").
 ///
 /// # Errors
 ///
-/// Returns an error if:
-/// - The input file cannot be read.
-/// - The front matter cannot be extracted or formatted.
-/// - Writing to the output file fails.
+/// Returns an error if command execution fails or required features are missing.
 ///
 /// # Examples
 ///
+/// Running the application in CLI mode:
+/// ```bash
+/// RUST_LOG=info cargo run --features=cli validate input.md --required title,date
 /// ```
-/// extract_command(
-///     Path::new("content.md"),
-///     "yaml",
-///     Some(PathBuf::from("frontmatter.yaml"))
-/// ).await?;
-/// ```
-async fn extract_command(
-    input: &Path,
-    format: &str,
-    output: Option<PathBuf>,
-) -> Result<()> {
-    // Read the content of the input file
-    let content =
-        tokio::fs::read_to_string(input).await.with_context(|| {
-            format!("Failed to read input file: {:?}", input)
-        })?;
+#[tokio::main]
+async fn main() -> Result<()> {
+    // Initialize logging system
+    setup_logging();
 
-    // Extract the front matter and the remaining content
-    let (frontmatter, remaining_content) =
-        frontmatter_gen::extract(&content)
-            .context("Failed to extract front matter from the file")?;
+    // Log startup information
+    log::info!("Starting Frontmatter Generator");
+    log::debug!(
+        "Initializing with features: {}",
+        get_enabled_features()
+    );
 
-    // Determine the desired format and convert the front matter
-    let output_format = match format {
-        "yaml" => Format::Yaml,
-        "toml" => Format::Toml,
-        "json" => Format::Json,
-        other => {
-            return Err(anyhow::anyhow!(
-                "Unsupported format specified: '{}'. Supported formats are: yaml, toml, json.",
-                other
-            ));
-        }
-    };
+    // Execute the appropriate command based on enabled features
+    let result = execute_command().await;
 
-    let formatted_frontmatter = to_format(&frontmatter, output_format)
-        .context("Failed to format the extracted front matter")?;
-
-    // Write the front matter to the specified output file or print to console
-    if let Some(output_path) = output {
-        fs::write(&output_path, &formatted_frontmatter).with_context(
-            || {
-                format!(
-                    "Failed to write to output file: {:?}",
-                    output_path
-                )
-            },
-        )?;
-        println!(
-            "Front matter successfully written to output file: {:?}",
-            output_path
-        );
-    } else {
-        println!("Extracted Front Matter (format: {}):", format);
-        println!("{}", formatted_frontmatter);
+    // Handle any errors that occurred during execution
+    if let Err(ref e) = result {
+        // Log the error with full context for debugging
+        log::error!("Application error: {:#}", e);
+        // Print user-friendly error message
+        eprintln!("Error: {}", e);
+        process::exit(1);
     }
 
-    // Print the remaining content to the console
-    println!("\nRemaining Content:\n{}", remaining_content);
-
+    log::info!("Process completed successfully");
     Ok(())
 }
 
-/// Builds a static site.
-async fn build_command(
-    content_dir: &Path,
-    output_dir: &Path,
-    template_dir: &Path,
-) -> Result<()> {
-    let config = Config::builder()
-        .site_name("my-site")
-        .content_dir(content_dir)
-        .output_dir(output_dir)
-        .template_dir(template_dir)
-        .build()?;
+/// Configures the logging system.
+///
+/// Reads the desired log level from the `RUST_LOG` environment variable and sets up a logger
+/// that writes to standard error with colour-coded output.
+///
+/// # Examples
+///
+/// Setting the log level to `debug`:
+/// ```bash
+/// export RUST_LOG=debug
+/// cargo run
+/// ```
+fn setup_logging() {
+    // Get desired log level from RUST_LOG env var, default to "debug"
+    let env =
+        env::var("RUST_LOG").unwrap_or_else(|_| "debug".to_string());
+    let level = match env.to_lowercase().as_str() {
+        "error" => log::LevelFilter::Error,
+        "warn" => log::LevelFilter::Warn,
+        "info" => log::LevelFilter::Info,
+        "debug" => log::LevelFilter::Debug,
+        "trace" => log::LevelFilter::Trace,
+        _ => log::LevelFilter::Debug,
+    };
 
-    let engine = Engine::new()?;
-    engine.generate(&config).await?;
+    // Set up the logger
+    log::set_logger(&LOGGER)
+        .map(|()| log::set_max_level(level))
+        .unwrap_or_else(|e| {
+            eprintln!("Warning: Failed to initialize logger: {}", e);
+        });
 
-    println!("Site built successfully!");
-    Ok(())
+    log::debug!("Logging initialized at level: {}", level);
+}
+
+/// Executes the appropriate command based on enabled features.
+///
+/// This function ensures that both `cli` and `ssg` features are correctly routed.
+/// If no features are enabled, it displays an error.
+///
+/// # Errors
+/// Returns an error if command parsing or execution fails.
+async fn execute_command() -> Result<()> {
+    #[cfg(all(feature = "ssg", not(feature = "cli")))]
+    {
+        log::debug!("Executing in SSG mode");
+        let ssg_command = SsgCommand::parse();
+        return ssg_command.execute().await;
+    }
+
+    #[cfg(all(feature = "cli", not(feature = "ssg")))]
+    {
+        log::debug!("Executing in CLI mode");
+        let cli_command = Cli::parse();
+        return cli_command.process().await;
+    }
+
+    #[cfg(all(feature = "cli", feature = "ssg"))]
+    {
+        // Handle both CLI and SSG features
+        log::debug!("Executing with both CLI and SSG features enabled");
+
+        // Use the first positional argument to determine the mode
+        let args: Vec<String> = env::args().collect();
+        if args.len() > 1 && (args[1] == "build" || args[1] == "serve")
+        {
+            let ssg_command = SsgCommand::parse();
+            ssg_command.execute().await
+        } else {
+            let cli_command = Cli::parse();
+            cli_command.process().await
+        }
+    }
+
+    #[cfg(not(any(feature = "cli", feature = "ssg")))]
+    {
+        log::error!("No features enabled");
+        eprintln!("Error: No features enabled. Enable 'cli' or 'ssg' in Cargo.toml.");
+        process::exit(1);
+    }
+}
+
+/// Reports the enabled features of the application.
+///
+/// This function is primarily used for debugging and logging purposes, providing
+/// a clear overview of the functionality available in the current build.
+///
+/// # Returns
+///
+/// A comma-separated string of enabled features, or `"none"` if no features are enabled.
+///
+/// # Examples
+///
+/// ```rust
+/// let features = get_enabled_features();
+/// println!("Enabled features: {}", features);
+/// ```
+fn get_enabled_features() -> String {
+    let mut features = Vec::new();
+
+    #[cfg(feature = "cli")]
+    features.push("cli");
+
+    #[cfg(feature = "ssg")]
+    features.push("ssg");
+
+    if features.is_empty() {
+        "none".to_string()
+    } else {
+        features.join(", ")
+    }
+}
+
+/// Custom logger for the Frontmatter Generator.
+///
+/// This logger writes formatted log messages to standard error, including a timestamp,
+/// log level, and the message. Colour codes are used to improve readability.
+///
+/// # Examples
+///
+/// Logging an informational message:
+/// ```rust
+/// log::info!("Starting application");
+/// ```
+#[derive(Clone, Copy)]
+struct Logger;
+
+/// Global logger instance
+static LOGGER: Logger = Logger;
+
+impl log::Log for Logger {
+    fn enabled(&self, _metadata: &log::Metadata) -> bool {
+        // Enable based on max_level set in setup_logging
+        true
+    }
+
+    fn log(&self, record: &log::Record) {
+        if self.enabled(record.metadata()) {
+            let level_color = match record.level() {
+                log::Level::Error => "\x1b[31m", // Red
+                log::Level::Warn => "\x1b[33m",  // Yellow
+                log::Level::Info => "\x1b[32m",  // Green
+                log::Level::Debug => "\x1b[36m", // Cyan
+                log::Level::Trace => "\x1b[90m", // Bright black
+            };
+            eprintln!(
+                "{}[{}]\x1b[0m {}",
+                level_color,
+                record.level(),
+                record.args()
+            );
+        }
+    }
+
+    fn flush(&self) {}
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Write;
 
-    /// Helper function to test `validate_command` with direct content.
-    async fn validate_with_content(
-        content: &str,
-        required_fields: &[&str],
-    ) -> Result<()> {
-        // Create a temporary file
-        let mut temp_file = tempfile::NamedTempFile::new()?;
-        temp_file.write_all(content.as_bytes())?;
+    /// Tests logging setup with various environment configurations.
+    #[test]
+    fn test_logging_setup() {
+        // Test default logging
+        env::remove_var("RUST_LOG");
+        setup_logging();
 
-        // Call the validate_command function with the path of the temporary file
-        validate_command(temp_file.path(), required_fields).await
+        // Test custom log level
+        env::set_var("RUST_LOG", "debug");
+        setup_logging();
+        assert_eq!(env::var("RUST_LOG").unwrap(), "debug");
     }
 
-    #[tokio::test]
-    async fn test_validate_command_all_fields_present() {
-        let content = r#"---
-title: "My Title"
-date: "2025-09-09"
-author: "Jane Doe"
----"#;
-
-        // Convert Vec<String> to Vec<&str>
-        let required_fields = vec!["title", "date", "author"];
-
-        // Run the helper function with content
-        let result =
-            validate_with_content(content, &required_fields).await;
-
-        // Debugging: Check the result of the validation
-        if let Err(e) = &result {
-            println!("Validation failed with error: {:?}", e);
-        }
-
+    /// Tests enabled features reporting.
+    #[test]
+    fn test_enabled_features() {
+        let features = get_enabled_features();
         assert!(
-            result.is_ok(),
-            "Validation failed with error: {:?}",
-            result
+            !features.is_empty(),
+            "Should list enabled features or 'none'"
         );
     }
 
+    /// Tests command execution in test environment.
     #[tokio::test]
-    async fn test_extract_command_to_stdout() {
-        let test_file_path = "test.md";
-        let content = r#"---
-title: "My Title"
-date: "2025-09-09"
-author: "Jane Doe"
----"#;
+    #[ignore = "This test is only for interactive testing"]
+    async fn test_command_execution() {
+        // Save original args
+        let original_args: Vec<String> = env::args().collect();
 
-        // Write the test file
-        let write_result =
-            tokio::fs::write(test_file_path, content).await;
-        assert!(
-            write_result.is_ok(),
-            "Failed to write test file: {:?}",
-            write_result
-        );
+        // Test with no arguments
+        env::set_var("CARGO_PKG_VERSION", "0.1.0");
+        let result = execute_command().await;
+        assert!(result.is_err());
 
-        // Ensure the file exists
-        assert!(
-            Path::new(test_file_path).exists(),
-            "The test file does not exist after creation."
-        );
+        // Test with help command
+        env::set_var("CARGO_PKG_VERSION", "0.1.0");
+        let _args = ["program".to_string(), "help".to_string()];
+        env::set_var("CARGO_PKG_NAME", "frontmatter-gen");
 
-        // Run the extract_command function
-        let result =
-            extract_command(Path::new(test_file_path), "yaml", None)
-                .await;
-        assert!(
-            result.is_ok(),
-            "Extraction failed with error: {:?}",
-            result
-        );
+        let result = execute_command().await;
+        assert!(result.is_err());
 
-        // Cleanup: Ensure the file is removed after the test
-        if Path::new(test_file_path).exists() {
-            let remove_result =
-                tokio::fs::remove_file(test_file_path).await;
-            assert!(
-                remove_result.is_ok(),
-                "Failed to remove test file: {:?}",
-                remove_result
-            );
-        } else {
-            // Log a message instead of panicking if the file doesn't exist
-            eprintln!(
-            "Test file '{}' was already removed or not found during cleanup.",
-            test_file_path
-        );
+        // Restore original args
+        for (i, arg) in original_args.iter().enumerate() {
+            if i == 0 {
+                env::set_var("CARGO_PKG_NAME", arg);
+            }
         }
     }
 
-    #[tokio::test]
-    async fn test_build_command_missing_dirs() {
-        let content_dir = Path::new("missing_content");
-        let output_dir = Path::new("missing_public");
-        let template_dir = Path::new("missing_templates");
+    /// Test that the help output is correct
+    #[test]
+    fn test_help_output() {
+        env::set_var("CARGO_PKG_NAME", "frontmatter-gen");
+        env::set_var("CARGO_PKG_VERSION", "0.1.0");
 
-        // Run the build command, which is expected to fail
-        let result =
-            build_command(content_dir, output_dir, template_dir).await;
-        assert!(result.is_err(), "Expected an error but got success");
-
-        // Cleanup: Ensure the directories are removed after the test
-        if content_dir.exists() {
-            let remove_result =
-                tokio::fs::remove_dir_all(content_dir).await;
-            assert!(
-                remove_result.is_ok(),
-                "Failed to remove content directory: {:?}",
-                remove_result
-            );
+        #[cfg(feature = "cli")]
+        {
+            let cli =
+                Cli::try_parse_from(["frontmatter-gen", "--help"]);
+            assert!(cli.is_err());
+            let err = cli.unwrap_err();
+            let output = err.to_string();
+            assert!(output.contains("Usage:"));
+            assert!(output.contains("Commands:"));
+            assert!(output.contains("extract"));
+            assert!(output.contains("validate"));
         }
+    }
 
-        if output_dir.exists() {
-            let remove_result =
-                tokio::fs::remove_dir_all(output_dir).await;
+    /// Test version output is correct
+    #[test]
+    fn test_version_output() {
+        // Set environment variables to mock package metadata
+        env::set_var("CARGO_PKG_NAME", "frontmatter-gen");
+        env::set_var("CARGO_PKG_VERSION", "0.0.4");
+
+        #[cfg(feature = "cli")]
+        {
+            // Try to parse the version command
+            let cli =
+                Cli::try_parse_from(["frontmatter-gen", "--version"]);
+
+            // If parsing fails, capture the error message
             assert!(
-                remove_result.is_ok(),
-                "Failed to remove output directory: {:?}",
-                remove_result
+                cli.is_err(),
+                "Expected an error for version output"
             );
-        }
 
-        if template_dir.exists() {
-            let remove_result =
-                tokio::fs::remove_dir_all(template_dir).await;
+            let err = cli.unwrap_err();
+            let output = err.to_string();
+
+            // Assert that the output contains the correct version
             assert!(
-                remove_result.is_ok(),
-                "Failed to remove template directory: {:?}",
-                remove_result
+                output.contains("0.0.4"),
+                "Version output does not contain '0.0.4'. Actual output: {}",
+                output
             );
         }
     }

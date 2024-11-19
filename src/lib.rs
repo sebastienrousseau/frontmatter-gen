@@ -88,11 +88,15 @@ pub use crate::{
 };
 
 // Module declarations
+#[cfg(feature = "cli")]
+pub mod cli;
 pub mod config;
 pub mod engine;
 pub mod error;
 pub mod extractor;
 pub mod parser;
+#[cfg(feature = "ssg")]
+pub mod ssg;
 pub mod types;
 pub mod utils;
 
@@ -177,7 +181,10 @@ fn validate_input(content: &str, options: &ParseOptions) -> Result<()> {
     }
 
     // Control character validation (except whitespace)
-    if content.chars().any(|c| c.is_control() && !c.is_whitespace()) {
+    if content
+        .chars()
+        .any(|c| c.is_control() && !c.is_whitespace())
+    {
         return Err(FrontmatterError::ValidationError(
             "Content contains invalid control characters".to_string(),
         ));
@@ -191,7 +198,10 @@ fn validate_input(content: &str, options: &ParseOptions) -> Result<()> {
     }
 
     // Line ending validation
-    if content.contains("\r\n") && content.contains('\n') && !content.contains("\r\n") {
+    if content.contains("\r\n")
+        && content.contains('\n')
+        && !content.contains("\r\n")
+    {
         return Err(FrontmatterError::ValidationError(
             "Mixed line endings detected".to_string(),
         ));

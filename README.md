@@ -23,7 +23,7 @@ A high-performance Rust library for parsing and serialising frontmatter in YAML,
 
 `frontmatter-gen` is a comprehensive Rust library that provides robust handling of frontmatter in content files. It delivers a type-safe, efficient solution for extracting, parsing, and serialising frontmatter in multiple formats. Whether you're building a static site generator, content management system, or any application requiring structured metadata, `frontmatter-gen` offers the tools you need.
 
-### Key Features 🎯
+## Key Features 🎯
 
 - **Zero-Copy Parsing**: Parse YAML, TOML, and JSON frontmatter efficiently with zero memory copying
 - **Safe Extraction**: Extract frontmatter using standard delimiters (`---` for YAML, `+++` for TOML) with comprehensive error handling
@@ -34,7 +34,7 @@ A high-performance Rust library for parsing and serialising frontmatter in YAML,
 - **Async Support**: First-class asynchronous operation support
 - **Flexible Configuration**: Customisable parsing behaviour to match your needs
 
-### Available Features 🛠️
+## Available Features 🛠️
 
 This crate provides several feature flags to customise its functionality:
 
@@ -42,24 +42,25 @@ This crate provides several feature flags to customise its functionality:
 - **cli**: Command-line interface tools for quick operations
 - **ssg**: Static Site Generator functionality (includes CLI features)
 
-You can combine multiple features as needed:
+Configure features in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-# Enable logging with CLI support
+
+# Enable CLI support for validation and extraction
 frontmatter-gen = { version = "0.0.4", features = ["cli"] }
 
-# Enable all features
+# Enable all features (validation, extraction and static site generation)
 frontmatter-gen = { version = "0.0.4", features = ["ssg"] }
 ```
 
-When installing via cargo install:
+Installation via cargo:
 
 ```bash
-# Install with CLI and logging support
+# Install with CLI support
 cargo install frontmatter-gen --features="cli"
 
-# Install with SSG and logging support
+# Install with SSG support
 cargo install frontmatter-gen --features="ssg"
 ```
 
@@ -71,36 +72,25 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-# Basic frontmatter parsing only
+
+# Basic functionality
 frontmatter-gen = "0.0.4"
 
-# With Static Site Generator functionality
+# With CLI support
+frontmatter-gen = { version = "0.0.4", features = ["cli"] }
+
+# All features (CLI and SSG)
 frontmatter-gen = { version = "0.0.4", features = ["ssg"] }
 ```
 
-### CLI Installation
+## Basic Usage 🔨
 
-To install the CLI tool, use:
-
-```bash
-# Install with CLI support
-cargo install frontmatter-gen --features="cli"
-
-# Install with SSG support (includes CLI)
-cargo install frontmatter-gen --features="ssg"
-```
-
-This will install the `fmg` command-line tool. Note: Make sure you have Rust and Cargo installed on your system.
-
-### Basic Usage 🔨
-
-#### Extract and Parse Frontmatter
+### Extract and Parse Frontmatter
 
 ```rust
 use frontmatter_gen::extract;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Example content with properly formatted YAML frontmatter
     let content = r#"---
 title: My Document
 date: 2025-09-09
@@ -111,21 +101,19 @@ tags:
 # Content begins here"#;
 
     let (frontmatter, content) = extract(content)?;
-    
-    // Access frontmatter fields safely with error handling
+
     if let Some(title) = frontmatter.get("title").and_then(|v| v.as_str()) {
         println!("Title: {}", title);
     }
-    
+
     println!("Content: {}", content);
     Ok(())
 }
 ```
 
-#### Format Conversion
+### Format Conversion
 
 ```rust
-// Example 2: Format Conversion - Fixed
 use frontmatter_gen::{Frontmatter, Format, Value, to_format};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -133,133 +121,102 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     frontmatter.insert("title".to_string(), Value::String("My Document".to_string()));
 
     let json = to_format(&frontmatter, Format::Json)?;
-    // The actual JSON output includes quotes
-    println!("JSON output: {}", json);  // For debugging
-    assert!(json.contains(r#""title":"My Document""#));  // Fixed assertion
+    println!("JSON output: {}", json);
+    assert!(json.contains(r#""title":"My Document""#));
 
     Ok(())
 }
 ```
-
-### Advanced Features 🚀
-
-#### Handle Complex Nested Structures
-
-```rust
-// Example 3: Complex Nested Structures - Fixed
-use frontmatter_gen::{parser, Format, Value};
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Remove the leading "---" as parser::parse expects raw YAML content
-    let yaml = r#"
-title: My Document
-metadata:
-  author:
-    name: Jane Smith
-    email: jane@example.com
-  categories:
-    - technology
-    - rust
-settings:
-  template: article
-  published: true
-  stats:
-    views: 1000
-    likes: 50"#;
-
-    let frontmatter = parser::parse(yaml.trim(), Format::Yaml)?;
-    
-    // Safe nested value access
-    if let Some(Value::Object(metadata)) = frontmatter.get("metadata") {
-        if let Some(Value::Object(author)) = metadata.get("author") {
-            if let Some(Value::String(name)) = author.get("name") {
-                println!("Author: {}", name);
-            }
-        }
-    }
-
-    Ok(())
-}
-```
-
-## Documentation 📚
-
-For comprehensive API documentation and examples, visit:
-
-- [API Documentation on docs.rs][04]
-- [User Guide and Tutorials][00]
-- [Example Code Repository][02]
 
 ## CLI Tool 🛠️
 
-The library includes a powerful command-line interface for quick frontmatter operations.
-
-### Prerequisites
-
-Before using the CLI, ensure you have installed it with the required features:
+The `fmg` command provides comprehensive frontmatter operations:
 
 ```bash
-# Install CLI with SSG support
-cargo install frontmatter-gen --features="ssg"
-```
-
-### CLI Commands
-
-### CLI Commands
-
-The `fmg` command provides several operations for working with frontmatter:
-
-```bash
-# Generate a static site
-fmg build \
-    --content-dir examples/content \
-    --output-dir examples/public \
-    --template-dir examples/templates
-
 # Extract frontmatter in various formats
 fmg extract input.md --format yaml
 fmg extract input.md --format toml
 fmg extract input.md --format json
 
-# Save extracted frontmatter to files
-fmg extract input.md --format yaml --output output.yaml
-fmg extract input.md --format toml --output output.toml
-fmg extract input.md --format json --output output.json
+# Save extracted frontmatter
+fmg extract input.md --format yaml --output frontmatter.yaml
 
-# Validate frontmatter with required fields
+# Validate frontmatter
 fmg validate input.md --required title,date,author
 ```
 
-### Running from Source
-
-If you prefer to run the CLI tool directly from the source code without installation:
-
-1. Clone the repository:
+You can also use the CLI directly from the source code:
 
 ```bash
-git clone https://github.com/sebastienrousseau/frontmatter-gen.git
-cd frontmatter-gen
+# Extract frontmatter in various formats
+cargo run --features="cli" extract input.md --format yaml
+cargo run --features="cli" extract input.md --format toml
+cargo run --features="cli" extract input.md --format json
+
+# Save extracted frontmatter
+cargo run --features="cli" extract input.md --format yaml --output frontmatter.yaml
 ```
 
-2. Run the CLI commands using cargo:
+## Static Site Generation 🌐
+
+Build and serve your static site:
 
 ```bash
-# Generate a static site
-cargo run --features="ssg" build \
-    --content-dir examples/content \
-    --output-dir examples/public \
-    --template-dir examples/templates
+# Generate a static site with the fmg CLI
+fmg build \
+    --content-dir content \
+    --output-dir public \
+    --template-dir templates
 
-# Extract and validate frontmatter
-cargo run --features="ssg" extract input.md --format yaml
-cargo run --features="ssg" validate input.md --required title,date
+or from the source code:
+
+# Generate a static site using cargo
+cargo run --features="ssg" -- build \
+    --content-dir content \
+    --output-dir public \
+    --template-dir templates
 ```
 
-### Logging Support 📝
+### Serve locally (using Python for demonstration)
+
+```bash
+# Change to the output directory
+cd public
+
+# Serve the site
+python -m http.server 8000 --bind 127.0.0.1
+```
+
+Then visit `http://127.0.0.1:8000` in your favourite browser.
+
+## Error Handling 🚨
+
+The library provides comprehensive error handling:
+
+```rust
+use frontmatter_gen::{extract, error::FrontmatterError};
+
+fn process_content(content: &str) -> Result<(), FrontmatterError> {
+    let (frontmatter, _) = extract(content)?;
+    
+    // Validate required fields
+    for field in ["title", "date", "author"].iter() {
+        if !frontmatter.contains_key(*field) {
+            return Err(FrontmatterError::ValidationError(
+                format!("Missing required field: {}", field)
+            ));
+        }
+    }
+    
+    Ok(())
+}
+```
+
+## Logging Support 📝
 
 When the `logging` feature is enabled, the library integrates with Rust's `log` crate for detailed debug output. You can use any compatible logger implementation (e.g., `env_logger`, `simple_logger`).
 
-#### Basic Logging Setup
+### Basic Logging Setup
 
 ```rust
 use frontmatter_gen::extract;
@@ -359,7 +316,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-#### CLI Logging
+## CLI Logging 📝
 
 When using the CLI with logging enabled:
 
@@ -401,6 +358,14 @@ fn process_content(content: &str) -> Result<(), FrontmatterError> {
     Ok(())
 }
 ```
+
+## Documentation 📚
+
+For comprehensive API documentation and examples, visit:
+
+- [API Documentation on docs.rs][04]
+- [User Guide and Tutorials][00]
+- [Example Code Repository][02]
 
 ## Contributing 🤝
 
