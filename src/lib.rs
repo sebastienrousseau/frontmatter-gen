@@ -619,3 +619,41 @@ mod edge_case_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod validate_input_tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_input_exceeds_max_size() {
+        let options = ParseOptions::default();
+        let oversized_content = "a".repeat(options.max_size.get() + 1);
+        let result = validate_input(&oversized_content, &options);
+        assert!(matches!(
+            result,
+            Err(FrontmatterError::ContentTooLarge { .. })
+        ));
+    }
+
+    #[test]
+    fn test_validate_input_contains_null_bytes() {
+        let options = ParseOptions::default();
+        let malicious_content = "title: Valid\0Post";
+        let result = validate_input(malicious_content, &options);
+        assert!(matches!(
+            result,
+            Err(FrontmatterError::ValidationError(ref e)) if e == "Content contains null bytes"
+        ));
+    }
+
+    #[test]
+    fn test_validate_input_path_traversal() {
+        let options = ParseOptions::default();
+        let malicious_content = "../malicious/path";
+        let result = validate_input(malicious_content, &options);
+        assert!(matches!(
+            result,
+            Err(FrontmatterError::ValidationError(ref e)) if e == "Content contains path traversal patterns"
+        ));
+    }
+}

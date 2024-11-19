@@ -375,18 +375,19 @@ impl Config {
     }
 
     #[cfg(feature = "ssg")]
-fn is_valid_language_code(&self, code: &str) -> bool {
-    let parts: Vec<&str> = code.split('-').collect();
-    if let (Some(&lang), Some(&region)) = (parts.first(), parts.get(1)) {
-        lang.len() == 2
-            && region.len() == 2
-            && lang.chars().all(|c| c.is_ascii_lowercase())
-            && region.chars().all(|c| c.is_ascii_uppercase())
-    } else {
-        false
+    fn is_valid_language_code(&self, code: &str) -> bool {
+        let parts: Vec<&str> = code.split('-').collect();
+        if let (Some(&lang), Some(&region)) =
+            (parts.first(), parts.get(1))
+        {
+            lang.len() == 2
+                && region.len() == 2
+                && lang.chars().all(|c| c.is_ascii_lowercase())
+                && region.chars().all(|c| c.is_ascii_uppercase())
+        } else {
+            false
+        }
     }
-}
-
 
     /// Checks if a port number is valid
     #[cfg(feature = "ssg")]
@@ -965,18 +966,18 @@ mod tests {
         }
 
         #[cfg(feature = "ssg")]
-#[test]
-fn test_is_valid_language_code_safe() {
-    let config = Config::builder().site_name("Test").build().unwrap();
+        #[test]
+        fn test_is_valid_language_code_safe() {
+            let config =
+                Config::builder().site_name("Test").build().unwrap();
 
-    assert!(config.is_valid_language_code("en-US"));
-    assert!(config.is_valid_language_code("fr-FR"));
-    assert!(!config.is_valid_language_code("invalid-code"));
-    assert!(!config.is_valid_language_code("en"));
-    assert!(!config.is_valid_language_code(""));
-    assert!(!config.is_valid_language_code("e-US"));
-    assert!(!config.is_valid_language_code("en-Us"));
-}
-
+            assert!(config.is_valid_language_code("en-US"));
+            assert!(config.is_valid_language_code("fr-FR"));
+            assert!(!config.is_valid_language_code("invalid-code"));
+            assert!(!config.is_valid_language_code("en"));
+            assert!(!config.is_valid_language_code(""));
+            assert!(!config.is_valid_language_code("e-US"));
+            assert!(!config.is_valid_language_code("en-Us"));
+        }
     }
 }

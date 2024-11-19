@@ -163,7 +163,8 @@ pub fn parse_with_options(
     if options.validate {
         log::debug!(
             "Validating frontmatter with max_depth={} and max_keys={}",
-            options.max_depth, options.max_keys
+            options.max_depth,
+            options.max_keys
         );
         validate_frontmatter(
             &frontmatter,
