@@ -100,7 +100,7 @@ This will install the `fmg` command-line tool. Note: Make sure you have Rust and
 use frontmatter_gen::extract;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Example content with YAML frontmatter
+    // Example content with properly formatted YAML frontmatter
     let content = r#"---
 title: My Document
 date: 2025-09-09
@@ -110,15 +110,14 @@ tags:
 ---
 # Content begins here"#;
 
-    // Extract frontmatter and content
     let (frontmatter, content) = extract(content)?;
     
-    // Access frontmatter fields safely
-    println!("Title: {}", frontmatter.get("title")
-        .and_then(|v| v.as_str())
-        .unwrap_or("Untitled"));
-    println!("Content: {}", content);
+    // Access frontmatter fields safely with error handling
+    if let Some(title) = frontmatter.get("title").and_then(|v| v.as_str()) {
+        println!("Title: {}", title);
+    }
     
+    println!("Content: {}", content);
     Ok(())
 }
 ```
@@ -126,23 +125,17 @@ tags:
 #### Format Conversion
 
 ```rust
+// Example 2: Format Conversion - Fixed
 use frontmatter_gen::{Frontmatter, Format, Value, to_format};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create frontmatter with some data
     let mut frontmatter = Frontmatter::new();
-    frontmatter.insert("title".to_string(), Value::String("My Document".into()));
-    frontmatter.insert("draft".to_string(), Value::Boolean(false));
-    frontmatter.insert("views".to_string(), Value::Number(42.0));
+    frontmatter.insert("title".to_string(), Value::String("My Document".to_string()));
 
-    // Convert to different formats
-    let yaml = to_format(&frontmatter, Format::Yaml)?;
-    let toml = to_format(&frontmatter, Format::Toml)?;
     let json = to_format(&frontmatter, Format::Json)?;
-
-    println!("YAML:\n{}\n", yaml);
-    println!("TOML:\n{}\n", toml);
-    println!("JSON:\n{}\n", json);
+    // The actual JSON output includes quotes
+    println!("JSON output: {}", json);  // For debugging
+    assert!(json.contains(r#""title":"My Document""#));  // Fixed assertion
 
     Ok(())
 }
@@ -153,10 +146,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #### Handle Complex Nested Structures
 
 ```rust
+// Example 3: Complex Nested Structures - Fixed
 use frontmatter_gen::{parser, Format, Value};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Complex nested YAML frontmatter
+    // Remove the leading "---" as parser::parse expects raw YAML content
     let yaml = r#"
 title: My Document
 metadata:
@@ -171,12 +165,11 @@ settings:
   published: true
   stats:
     views: 1000
-    likes: 50
-"#;
+    likes: 50"#;
 
-    let frontmatter = parser::parse(yaml, Format::Yaml)?;
+    let frontmatter = parser::parse(yaml.trim(), Format::Yaml)?;
     
-    // Access nested values safely using pattern matching
+    // Safe nested value access
     if let Some(Value::Object(metadata)) = frontmatter.get("metadata") {
         if let Some(Value::Object(author)) = metadata.get("author") {
             if let Some(Value::String(name)) = author.get("name") {
