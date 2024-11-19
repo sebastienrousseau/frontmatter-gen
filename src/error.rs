@@ -371,12 +371,19 @@ impl FrontmatterError {
     /// ```
     pub fn with_context(self, context: ErrorContext) -> Self {
         match self {
-            Self::ParseError(msg) => Self::ParseError(format!(
-                "{} (line: {}, column: {})",
-                msg,
-                context.line.unwrap_or(0),
-                context.column.unwrap_or(0)
-            )),
+            Self::ParseError(msg) => {
+                let mut formatted_message = format!(
+                    "{} (line: {}, column: {})",
+                    msg,
+                    context.line.unwrap_or(0),
+                    context.column.unwrap_or(0)
+                );
+                if let Some(snippet) = &context.snippet {
+                    formatted_message
+                        .push_str(&format!(" near '{}'", snippet));
+                }
+                Self::ParseError(formatted_message)
+            }
             _ => self,
         }
     }
@@ -946,6 +953,209 @@ mod tests {
             assert!(frontmatter_error
                 .to_string()
                 .contains("Metadata error"));
+        }
+    }
+
+    #[cfg(test)]
+    mod additional_tests {
+        use super::*;
+
+        #[test]
+        fn test_with_context_non_parse_error() {
+            let context = ErrorContext {
+                line: Some(10),
+                column: Some(5),
+                snippet: Some("example snippet".to_string()),
+            };
+
+            let error = FrontmatterError::ValidationError(
+                "invalid input".to_string(),
+            );
+            let modified_error = error.clone().with_context(context);
+            // `with_context` should not modify non-parse errors.
+            assert_eq!(modified_error.to_string(), error.to_string());
+        }
+
+        #[test]
+        fn test_error_context_display_edge_cases() {
+            let missing_line_column = ErrorContext {
+                line: None,
+                column: None,
+                snippet: Some("snippet only".to_string()),
+            };
+            assert_eq!(
+                missing_line_column.to_string(),
+                "at unknown:unknown near 'snippet only'"
+            );
+
+            let missing_snippet = ErrorContext {
+                line: Some(3),
+                column: Some(15),
+                snippet: None,
+            };
+            assert_eq!(missing_snippet.to_string(), "at 3:15");
+
+            let missing_all = ErrorContext {
+                line: None,
+                column: None,
+                snippet: None,
+            };
+            assert_eq!(missing_all.to_string(), "at unknown:unknown");
+        }
+
+        #[test]
+        fn test_default_category() {
+            let error = FrontmatterError::InvalidJson;
+            assert_eq!(error.category(), ErrorCategory::Parsing);
+
+            let unsupported_error =
+                FrontmatterError::UnsupportedFormat { line: 42 };
+            assert_eq!(
+                unsupported_error.category(),
+                ErrorCategory::Parsing
+            );
+        }
+
+        #[test]
+        fn test_io_error_conversion() {
+            let io_error = std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "access denied",
+            );
+            let frontmatter_error = FrontmatterError::from(io_error);
+            assert!(matches!(
+                frontmatter_error,
+                FrontmatterError::ParseError(_)
+            ));
+            assert!(frontmatter_error
+                .to_string()
+                .contains("access denied"));
+        }
+
+        #[test]
+        fn test_engine_error_to_frontmatter_error() {
+            let content_error =
+                EngineError::ContentError("content issue".to_string());
+            let frontmatter_error: FrontmatterError =
+                content_error.into();
+            assert!(
+                matches!(frontmatter_error, FrontmatterError::ParseError(msg) if msg.contains("Content error: content issue"))
+            );
+
+            let template_error = EngineError::TemplateError(
+                "template issue".to_string(),
+            );
+            let frontmatter_error: FrontmatterError =
+                template_error.into();
+            assert!(
+                matches!(frontmatter_error, FrontmatterError::ParseError(msg) if msg.contains("Template error: template issue"))
+            );
+
+            let asset_error =
+                EngineError::AssetError("asset issue".to_string());
+            let frontmatter_error: FrontmatterError =
+                asset_error.into();
+            assert!(
+                matches!(frontmatter_error, FrontmatterError::ParseError(msg) if msg.contains("Asset error: asset issue"))
+            );
+
+            let io_error = std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "file missing",
+            );
+            let engine_error =
+                EngineError::FileSystemError { source: io_error };
+            let frontmatter_error: FrontmatterError =
+                engine_error.into();
+            assert!(
+                matches!(frontmatter_error, FrontmatterError::ParseError(msg) if msg.contains("File system error: file missing"))
+            );
+
+            let metadata_error = EngineError::MetadataError(
+                "metadata issue".to_string(),
+            );
+            let frontmatter_error: FrontmatterError =
+                metadata_error.into();
+            assert!(
+                matches!(frontmatter_error, FrontmatterError::ParseError(msg) if msg.contains("Metadata error: metadata issue"))
+            );
+        }
+        #[test]
+        fn test_all_error_variants() {
+            let large_error = FrontmatterError::ContentTooLarge {
+                size: 12345,
+                max: 10000,
+            };
+            assert_eq!(
+        large_error.to_string(),
+        "Content size 12345 exceeds maximum allowed size of 10000 bytes"
+    );
+
+            let nesting_error =
+                FrontmatterError::NestingTooDeep { depth: 20, max: 10 };
+            assert_eq!(
+                nesting_error.to_string(),
+                "Nesting depth 20 exceeds maximum allowed depth of 10"
+            );
+
+            let unsupported_format =
+                FrontmatterError::UnsupportedFormat { line: 99 };
+            assert_eq!(
+                unsupported_format.to_string(),
+                "Unsupported frontmatter format detected at line 99"
+            );
+
+            let no_frontmatter = FrontmatterError::NoFrontmatterFound;
+            assert_eq!(
+                no_frontmatter.to_string(),
+                "No frontmatter found in the content"
+            );
+
+            let invalid_url = FrontmatterError::InvalidUrl(
+                "http://invalid-url".to_string(),
+            );
+            assert_eq!(
+                invalid_url.to_string(),
+                "Invalid URL: http://invalid-url"
+            );
+
+            let invalid_language =
+                FrontmatterError::InvalidLanguage("xx".to_string());
+            assert_eq!(
+                invalid_language.to_string(),
+                "Invalid language code: xx"
+            );
+
+            let json_depth_limit =
+                FrontmatterError::JsonDepthLimitExceeded;
+            assert_eq!(
+                json_depth_limit.to_string(),
+                "JSON frontmatter exceeds maximum nesting depth"
+            );
+        }
+
+        #[test]
+        fn test_generic_parse_error_with_context() {
+            let context = ErrorContext {
+                line: Some(5),
+                column: Some(20),
+                snippet: Some("unexpected token".to_string()),
+            };
+            let error = FrontmatterError::generic_parse_error(
+                "Unexpected error",
+            )
+            .with_context(context);
+            assert!(error.to_string().contains("line: 5"));
+            assert!(error.to_string().contains("column: 20"));
+            assert!(error.to_string().contains("unexpected token"));
+        }
+        #[test]
+        fn test_category_fallback() {
+            let unknown_error = FrontmatterError::InvalidYaml; // Any untested error
+            assert_eq!(
+                unknown_error.category(),
+                ErrorCategory::Parsing
+            ); // Default fallback for unlisted errors
         }
     }
 }
