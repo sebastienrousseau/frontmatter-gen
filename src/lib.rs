@@ -159,8 +159,9 @@ impl Default for ParseOptions {
 /// - Content exceeds maximum size
 /// - Content contains invalid characters
 /// - Content structure is invalid
+#[inline]
 fn validate_input(content: &str, options: &ParseOptions) -> Result<()> {
-    // Check content size
+    // Size validation
     if content.len() > options.max_size.get() {
         return Err(FrontmatterError::ContentTooLarge {
             size: content.len(),
@@ -168,17 +169,31 @@ fn validate_input(content: &str, options: &ParseOptions) -> Result<()> {
         });
     }
 
-    // Validate character content
+    // Character validation
     if content.contains('\0') {
         return Err(FrontmatterError::ValidationError(
             "Content contains null bytes".to_string(),
         ));
     }
 
-    // Check for other malicious patterns
+    // Control character validation (except whitespace)
+    if content.chars().any(|c| c.is_control() && !c.is_whitespace()) {
+        return Err(FrontmatterError::ValidationError(
+            "Content contains invalid control characters".to_string(),
+        ));
+    }
+
+    // Path traversal prevention
     if content.contains("../") || content.contains("..\\") {
         return Err(FrontmatterError::ValidationError(
             "Content contains path traversal patterns".to_string(),
+        ));
+    }
+
+    // Line ending validation
+    if content.contains("\r\n") && content.contains('\n') && !content.contains("\r\n") {
+        return Err(FrontmatterError::ValidationError(
+            "Mixed line endings detected".to_string(),
         ));
     }
 
