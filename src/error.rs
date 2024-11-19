@@ -2,8 +2,25 @@
 //!
 //! This module provides a comprehensive set of error types to handle various
 //! failure scenarios that may occur during frontmatter parsing, conversion,
-//! and extraction. Each variant includes detailed error messages to aid in
-//! debugging and improve error handling.
+//! and extraction operations. Each error variant includes detailed error
+//! messages and context to aid in debugging and error handling.
+//!
+//! # Error Handling Strategies
+//!
+//! The error system provides several ways to handle errors:
+//!
+//! - **Context-aware errors**: Use `ErrorContext` to add line/column information
+//! - **Categorised errors**: Group errors by type using `ErrorCategory`
+//! - **Error conversion**: Convert from standard errors using `From` implementations
+//! - **Rich error messages**: Detailed error descriptions with context
+//!
+//! # Features
+//!
+//! - Type-safe error handling with descriptive messages
+//! - Support for YAML, TOML, and JSON parsing errors
+//! - Content validation errors with size and depth checks
+//! - Format-specific error handling
+//! - Extraction and conversion error handling
 //!
 //! # Examples
 //!
@@ -11,6 +28,7 @@
 //! use frontmatter_gen::error::FrontmatterError;
 //!
 //! fn example() -> Result<(), FrontmatterError> {
+//!     // Example of handling YAML parsing errors
 //!     let invalid_yaml = "invalid: : yaml";
 //!     match serde_yml::from_str::<serde_yml::Value>(invalid_yaml) {
 //!         Ok(_) => Ok(()),
@@ -23,14 +41,37 @@ use serde_json::Error as JsonError;
 use serde_yml::Error as YamlError;
 use thiserror::Error;
 
+/// Provides additional context for frontmatter errors.
+#[derive(Debug, Clone)]
+pub struct ErrorContext {
+    /// Line number where the error occurred
+    pub line: Option<usize>,
+    /// Column number where the error occurred
+    pub column: Option<usize>,
+    /// Snippet of the content where the error occurred
+    pub snippet: Option<String>,
+}
+
 /// Represents errors that can occur during frontmatter operations.
 ///
-/// This enum uses the `thiserror` crate to provide structured error messages,
-/// improving the ease of debugging and handling errors encountered in
-/// frontmatter processing.
+/// This enumeration uses the `thiserror` crate to provide structured error
+/// messages, improving the ease of debugging and handling errors encountered
+/// in frontmatter processing.
+///
+/// Each variant represents a specific type of error that may occur during
+/// frontmatter operations, with appropriate context and error details.
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum FrontmatterError {
-    /// Content exceeds the maximum allowed size
+    /// Content exceeds the maximum allowed size.
+    ///
+    /// This error occurs when the content size is larger than the configured
+    /// maximum limit.
+    ///
+    /// # Fields
+    ///
+    /// * `size` - The actual size of the content
+    /// * `max` - The maximum allowed size
     #[error("Content size {size} exceeds maximum allowed size of {max} bytes")]
     ContentTooLarge {
         /// The actual size of the content
@@ -39,7 +80,10 @@ pub enum FrontmatterError {
         max: usize,
     },
 
-    /// Nesting depth exceeds the maximum allowed
+    /// Nesting depth exceeds the maximum allowed.
+    ///
+    /// This error occurs when the structure's nesting depth is greater than
+    /// the configured maximum depth.
     #[error(
         "Nesting depth {depth} exceeds maximum allowed depth of {max}"
     )]
@@ -50,73 +94,115 @@ pub enum FrontmatterError {
         max: usize,
     },
 
-    /// Error occurred while parsing YAML content
+    /// Error occurred whilst parsing YAML content.
+    ///
+    /// This error occurs when the YAML parser encounters invalid syntax or
+    /// structure.
     #[error("Failed to parse YAML: {source}")]
     YamlParseError {
         /// The original error from the YAML parser
         source: YamlError,
     },
 
-    /// Error occurred while parsing TOML content
+    /// Error occurred whilst parsing TOML content.
+    ///
+    /// This error occurs when the TOML parser encounters invalid syntax or
+    /// structure.
     #[error("Failed to parse TOML: {0}")]
     TomlParseError(#[from] toml::de::Error),
 
-    /// Error occurred while parsing JSON content
+    /// Error occurred whilst parsing JSON content.
+    ///
+    /// This error occurs when the JSON parser encounters invalid syntax or
+    /// structure.
     #[error("Failed to parse JSON: {0}")]
     JsonParseError(#[from] JsonError),
 
-    /// The frontmatter format is invalid or unsupported
+    /// The frontmatter format is invalid or unsupported.
+    ///
+    /// This error occurs when the frontmatter format cannot be determined or
+    /// is not supported by the library.
     #[error("Invalid frontmatter format")]
     InvalidFormat,
 
-    /// Error occurred during conversion between formats
+    /// Error occurred during conversion between formats.
+    ///
+    /// This error occurs when converting frontmatter from one format to another
+    /// fails.
     #[error("Failed to convert frontmatter: {0}")]
     ConversionError(String),
 
-    /// Generic error during parsing
+    /// Generic error during parsing.
+    ///
+    /// This error occurs when a parsing operation fails with a generic error.
     #[error("Failed to parse frontmatter: {0}")]
     ParseError(String),
 
-    /// Unsupported or unknown frontmatter format was detected
+    /// Unsupported or unknown frontmatter format was detected.
+    ///
+    /// This error occurs when an unsupported frontmatter format is encountered
+    /// at a specific line.
     #[error("Unsupported frontmatter format detected at line {line}")]
     UnsupportedFormat {
         /// The line number where the unsupported format was encountered
         line: usize,
     },
 
-    /// No frontmatter content was found
+    /// No frontmatter content was found.
+    ///
+    /// This error occurs when attempting to extract frontmatter from content
+    /// that does not contain any frontmatter section.
     #[error("No frontmatter found in the content")]
     NoFrontmatterFound,
 
-    /// Invalid JSON frontmatter
+    /// Invalid JSON frontmatter.
+    ///
+    /// This error occurs when the JSON frontmatter is malformed or invalid.
     #[error("Invalid JSON frontmatter")]
     InvalidJson,
 
-    /// Invalid TOML frontmatter
+    /// Invalid TOML frontmatter.
+    ///
+    /// This error occurs when the TOML frontmatter is malformed or invalid.
     #[error("Invalid TOML frontmatter")]
     InvalidToml,
 
-    /// Invalid YAML frontmatter
+    /// Invalid YAML frontmatter.
+    ///
+    /// This error occurs when the YAML frontmatter is malformed or invalid.
     #[error("Invalid YAML frontmatter")]
     InvalidYaml,
 
-    /// Invalid URL format
+    /// Invalid URL format.
+    ///
+    /// This error occurs when an invalid URL is encountered in the frontmatter.
     #[error("Invalid URL: {0}")]
     InvalidUrl(String),
 
-    /// Invalid language code
+    /// Invalid language code.
+    ///
+    /// This error occurs when an invalid language code is encountered in the
+    /// frontmatter.
     #[error("Invalid language code: {0}")]
     InvalidLanguage(String),
 
-    /// JSON frontmatter exceeds maximum nesting depth
+    /// JSON frontmatter exceeds maximum nesting depth.
+    ///
+    /// This error occurs when the JSON frontmatter structure exceeds the
+    /// maximum allowed nesting depth.
     #[error("JSON frontmatter exceeds maximum nesting depth")]
     JsonDepthLimitExceeded,
 
-    /// Error during frontmatter extraction
+    /// Error during frontmatter extraction.
+    ///
+    /// This error occurs when there is a problem extracting frontmatter from
+    /// the content.
     #[error("Extraction error: {0}")]
     ExtractionError(String),
 
-    /// Input validation error
+    /// Input validation error.
+    ///
+    /// This error occurs when the input fails validation checks.
     #[error("Input validation error: {0}")]
     ValidationError(String),
 }
@@ -168,7 +254,44 @@ impl Clone for FrontmatterError {
     }
 }
 
+/// Categories of frontmatter errors.
+///
+/// This enumeration defines the main categories of errors that can occur
+/// during frontmatter operations.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum ErrorCategory {
+    /// Parsing-related errors
+    Parsing,
+    /// Validation-related errors
+    Validation,
+    /// Conversion-related errors
+    Conversion,
+    /// Configuration-related errors
+    Configuration,
+}
+
 impl FrontmatterError {
+    /// Returns the category of the error.
+    ///
+    /// # Returns
+    ///
+    /// Returns the `ErrorCategory` that best describes this error.
+    pub fn category(&self) -> ErrorCategory {
+        match self {
+            Self::YamlParseError { .. }
+            | Self::TomlParseError(_)
+            | Self::JsonParseError(_)
+            | Self::ParseError(_) => ErrorCategory::Parsing,
+            Self::ValidationError(_) => ErrorCategory::Validation,
+            Self::ConversionError(_) => ErrorCategory::Conversion,
+            Self::ContentTooLarge { .. }
+            | Self::NestingTooDeep { .. } => {
+                ErrorCategory::Configuration
+            }
+            _ => ErrorCategory::Parsing,
+        }
+    }
+
     /// Creates a generic parse error with a custom message.
     ///
     /// # Arguments
@@ -225,6 +348,38 @@ impl FrontmatterError {
     pub fn validation_error(message: &str) -> Self {
         Self::ValidationError(message.to_string())
     }
+
+    /// Adds context to an error.
+    ///
+    /// # Arguments
+    ///
+    /// * `context` - Additional context information about the error
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use frontmatter_gen::error::{FrontmatterError, ErrorContext};
+    ///
+    /// let context = ErrorContext {
+    ///     line: Some(42),
+    ///     column: Some(10),
+    ///     snippet: Some("invalid content".to_string()),
+    /// };
+    ///
+    /// let error = FrontmatterError::ParseError("Invalid syntax".to_string())
+    ///     .with_context(context);
+    /// ```
+    pub fn with_context(self, context: ErrorContext) -> Self {
+        match self {
+            Self::ParseError(msg) => Self::ParseError(format!(
+                "{} (line: {}, column: {})",
+                msg,
+                context.line.unwrap_or(0),
+                context.column.unwrap_or(0)
+            )),
+            _ => self,
+        }
+    }
 }
 
 /// Errors that can occur during site generation
@@ -253,6 +408,98 @@ pub enum EngineError {
     /// Error occurred during metadata processing
     #[error("Metadata error: {0}")]
     MetadataError(String),
+}
+
+impl std::fmt::Display for ErrorContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "at {}:{}",
+            self.line.map_or("unknown".to_string(), |l| l.to_string()),
+            self.column
+                .map_or("unknown".to_string(), |c| c.to_string())
+        )?;
+        if let Some(snippet) = &self.snippet {
+            write!(f, " near '{}'", snippet)?;
+        }
+        Ok(())
+    }
+}
+
+// Common conversions -- add this after your existing From implementations
+
+/// Converts an `EngineError` into a `FrontmatterError`
+///
+/// This allows engine errors to be converted into frontmatter errors when needed,
+/// preserving the error context and message.
+///
+/// # Examples
+///
+/// ```
+/// use frontmatter_gen::error::{EngineError, FrontmatterError};
+/// use std::io;
+///
+/// let engine_error = EngineError::ContentError("content processing failed".to_string());
+/// let frontmatter_error: FrontmatterError = engine_error.into();
+/// assert!(matches!(frontmatter_error, FrontmatterError::ParseError(_)));
+/// ```
+impl From<EngineError> for FrontmatterError {
+    fn from(err: EngineError) -> Self {
+        match err {
+            EngineError::ContentError(msg) => {
+                Self::ParseError(format!("Content error: {}", msg))
+            }
+            EngineError::TemplateError(msg) => {
+                Self::ParseError(format!("Template error: {}", msg))
+            }
+            EngineError::AssetError(msg) => {
+                Self::ParseError(format!("Asset error: {}", msg))
+            }
+            EngineError::FileSystemError { source } => {
+                Self::ParseError(format!(
+                    "File system error: {}",
+                    source
+                ))
+            }
+            EngineError::MetadataError(msg) => {
+                Self::ParseError(format!("Metadata error: {}", msg))
+            }
+        }
+    }
+}
+
+impl Clone for EngineError {
+    fn clone(&self) -> Self {
+        match self {
+            Self::ContentError(msg) => Self::ContentError(msg.clone()),
+            Self::TemplateError(msg) => {
+                Self::TemplateError(msg.clone())
+            }
+            Self::AssetError(msg) => Self::AssetError(msg.clone()),
+            Self::FileSystemError { source } => Self::FileSystemError {
+                source: std::io::Error::new(
+                    source.kind(),
+                    source.to_string(),
+                ),
+            },
+            Self::MetadataError(msg) => {
+                Self::MetadataError(msg.clone())
+            }
+        }
+    }
+}
+
+// Common conversions
+impl From<std::io::Error> for FrontmatterError {
+    fn from(err: std::io::Error) -> Self {
+        Self::ParseError(err.to_string())
+    }
+}
+
+impl From<FrontmatterError> for String {
+    fn from(err: FrontmatterError) -> String {
+        err.to_string()
+    }
 }
 
 #[cfg(test)]
@@ -467,6 +714,8 @@ mod tests {
 
     /// Tests for the Clone implementation of `FrontmatterError`.
     mod clone_tests {
+        use crate::error::EngineError;
+        use crate::error::ErrorContext;
         use crate::error::FrontmatterError;
 
         #[test]
@@ -592,6 +841,111 @@ mod tests {
                 cloned,
                 FrontmatterError::ValidationError(msg) if msg == "validation issue"
             ));
+        }
+
+        #[test]
+        fn test_error_with_context() {
+            let context = ErrorContext {
+                line: Some(42),
+                column: Some(10),
+                snippet: Some("invalid syntax".to_string()),
+            };
+
+            let error = FrontmatterError::ParseError(
+                "Parse failed".to_string(),
+            )
+            .with_context(context);
+
+            assert!(error.to_string().contains("line: 42"));
+            assert!(error.to_string().contains("column: 10"));
+        }
+
+        #[test]
+        fn test_engine_error_clone() {
+            let original =
+                EngineError::ContentError("test error".to_string());
+            let cloned = original.clone();
+            assert_eq!(cloned.to_string(), original.to_string());
+        }
+
+        #[test]
+        fn test_from_io_error() {
+            let io_error = std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "file not found",
+            );
+            let frontmatter_error = FrontmatterError::from(io_error);
+            assert!(matches!(
+                frontmatter_error,
+                FrontmatterError::ParseError(_)
+            ));
+        }
+
+        #[test]
+        fn test_error_context_display() {
+            let context = ErrorContext {
+                line: Some(42),
+                column: Some(10),
+                snippet: Some("invalid syntax".to_string()),
+            };
+            assert_eq!(
+                context.to_string(),
+                "at 42:10 near 'invalid syntax'"
+            );
+
+            let partial_context = ErrorContext {
+                line: Some(42),
+                column: None,
+                snippet: None,
+            };
+            assert_eq!(partial_context.to_string(), "at 42:unknown");
+        }
+
+        #[test]
+        fn test_engine_error_conversion() {
+            // Test content error conversion
+            let engine_error =
+                EngineError::ContentError("test error".to_string());
+            let frontmatter_error: FrontmatterError =
+                engine_error.into();
+            assert!(matches!(
+                frontmatter_error,
+                FrontmatterError::ParseError(_)
+            ));
+            assert!(frontmatter_error
+                .to_string()
+                .contains("Content error: test error"));
+
+            // Test filesystem error conversion
+            let io_error = std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "file not found",
+            );
+            let engine_error =
+                EngineError::FileSystemError { source: io_error };
+            let frontmatter_error: FrontmatterError =
+                engine_error.into();
+            assert!(matches!(
+                frontmatter_error,
+                FrontmatterError::ParseError(_)
+            ));
+            assert!(frontmatter_error
+                .to_string()
+                .contains("File system error"));
+
+            // Test metadata error conversion
+            let engine_error = EngineError::MetadataError(
+                "metadata error".to_string(),
+            );
+            let frontmatter_error: FrontmatterError =
+                engine_error.into();
+            assert!(matches!(
+                frontmatter_error,
+                FrontmatterError::ParseError(_)
+            ));
+            assert!(frontmatter_error
+                .to_string()
+                .contains("Metadata error"));
         }
     }
 }
