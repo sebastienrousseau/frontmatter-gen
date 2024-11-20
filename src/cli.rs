@@ -206,114 +206,534 @@ mod tests {
     use std::io::Write;
     use tempfile::tempdir;
 
-    #[tokio::test]
-    async fn test_extract_command() -> Result<()> {
-        let dir = tempdir()?;
-        let input_path = dir.path().join("test.md");
-        let output_path = dir.path().join("output.yaml");
+    // Tests for process_extract function
+    mod extract_tests {
+        use super::*;
 
-        // Create test input file with strict YAML formatting
-        let content = r#"---
+        #[tokio::test]
+        async fn test_extract_command() -> Result<()> {
+            let dir = tempdir()?;
+            let input_path = dir.path().join("test.md");
+            let output_path = dir.path().join("output.yaml");
+
+            // Create test input file with strict YAML formatting
+            let content = r#"---
 title: "Test"
 date: "2024-01-01"
 ---
 Content here"#;
-        let mut file = File::create(&input_path)?;
-        writeln!(file, "{}", content)?;
+            let mut file = File::create(&input_path)?;
+            writeln!(file, "{}", content)?;
 
-        // Test extract command
-        process_extract(
-            &input_path,
-            "yaml",
-            &Some(output_path.clone()),
-        )
-        .await?;
+            // Test extract command
+            process_extract(
+                &input_path,
+                "yaml",
+                &Some(output_path.clone()),
+            )
+            .await?;
 
-        // Read and log the output for debugging
-        let output_content =
-            tokio::fs::read_to_string(&output_path).await?;
-        log::debug!("Generated YAML content:\n{}", output_content);
+            // Read and log the output for debugging
+            let output_content =
+                tokio::fs::read_to_string(&output_path).await?;
+            log::debug!("Generated YAML content:\n{}", output_content);
 
-        // Verify output - use more flexible assertions
-        assert!(
-            output_content.contains("title:"),
-            "title field not found in output"
-        );
-        assert!(
-            output_content.contains("Test"),
-            "Test value not found in output"
-        );
-        assert!(
-            output_content.contains("date:"),
-            "date field not found in output"
-        );
-        assert!(
-            output_content.contains("2024-01-01"),
-            "date value not found in output"
-        );
+            // Verify output - use more flexible assertions
+            assert!(
+                output_content.contains("title:"),
+                "title field not found in output"
+            );
+            assert!(
+                output_content.contains("Test"),
+                "Test value not found in output"
+            );
+            assert!(
+                output_content.contains("date:"),
+                "date field not found in output"
+            );
+            assert!(
+                output_content.contains("2024-01-01"),
+                "date value not found in output"
+            );
 
-        Ok(())
-    }
+            Ok(())
+        }
 
-    #[tokio::test]
-    async fn test_validate_command() -> Result<()> {
-        let dir = tempdir()?;
-        let input_path = dir.path().join("test.md");
+        #[tokio::test]
+        async fn test_extract_command_invalid_input_file() -> Result<()>
+        {
+            let input_path = PathBuf::from("nonexistent.md");
+            let output_path = None;
+            let result =
+                process_extract(&input_path, "yaml", &output_path)
+                    .await;
+            assert!(result.is_err());
+            if let Err(e) = result {
+                assert!(e
+                    .to_string()
+                    .contains("Failed to read input file"));
+            }
+            Ok(())
+        }
 
-        // Create test input file
-        let content = r#"---
+        #[tokio::test]
+        async fn test_extract_command_unsupported_format() -> Result<()>
+        {
+            let dir = tempdir()?;
+            let input_path = dir.path().join("test.md");
+
+            // Create test input file
+            let content = r#"---
 title: Test
 date: 2024-01-01
 ---
 Content here"#;
-        let mut file = File::create(&input_path)?;
-        writeln!(file, "{}", content)?;
+            let mut file = File::create(&input_path)?;
+            writeln!(file, "{}", content)?;
 
-        // Test validate command with valid fields
-        process_validate(&input_path, &Some("title,date".to_string()))
-            .await?;
-
-        // Test validate command with missing field
-        let result = process_validate(
-            &input_path,
-            &Some("title,author".to_string()),
-        )
-        .await;
-        assert!(result.is_err());
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_cli_parsing() {
-        use clap::Parser;
-
-        // Test extract command parsing
-        let args = Cli::parse_from([
-            "program", "extract", "input.md", "--format", "yaml",
-        ]);
-        match args.command {
-            Commands::Extract { input, format, .. } => {
-                assert_eq!(input, PathBuf::from("input.md"));
-                assert_eq!(format, "yaml");
+            let result =
+                process_extract(&input_path, "xml", &None).await;
+            assert!(result.is_err());
+            if let Err(e) = result {
+                assert!(e.to_string().contains("Unsupported format"));
             }
-            _ => panic!("Expected Extract command"),
+            Ok(())
         }
 
-        // Test validate command parsing
-        let args = Cli::parse_from([
-            "program",
-            "validate",
-            "input.md",
-            "--required",
-            "title,date",
-        ]);
-        match args.command {
-            Commands::Validate { input, required } => {
-                assert_eq!(input, PathBuf::from("input.md"));
-                assert_eq!(required, Some("title,date".to_string()));
+        #[tokio::test]
+        async fn test_extract_command_no_frontmatter() -> Result<()> {
+            let dir = tempdir()?;
+            let input_path = dir.path().join("test.md");
+
+            // Create test input file without frontmatter
+            let content = "Content here without frontmatter";
+            let mut file = File::create(&input_path)?;
+            writeln!(file, "{}", content)?;
+
+            let result =
+                process_extract(&input_path, "yaml", &None).await;
+            assert!(result.is_err());
+            if let Err(e) = result {
+                assert!(e
+                    .to_string()
+                    .contains("Failed to extract frontmatter"));
             }
-            _ => panic!("Expected Validate command"),
+            Ok(())
+        }
+
+        #[tokio::test]
+        async fn test_extract_command_invalid_frontmatter() -> Result<()>
+        {
+            let dir = tempdir()?;
+            let input_path = dir.path().join("test.md");
+
+            // Create test input file with invalid frontmatter
+            let content = r#"---
+title: "Test
+date: 2024-01-01
+---
+Content here"#; // Note the missing closing quote for title
+
+            let mut file = File::create(&input_path)?;
+            writeln!(file, "{}", content)?;
+
+            let result =
+                process_extract(&input_path, "yaml", &None).await;
+            assert!(result.is_err());
+            if let Err(e) = result {
+                assert!(e
+                    .to_string()
+                    .contains("Failed to extract frontmatter"));
+            }
+            Ok(())
+        }
+
+        #[cfg(unix)]
+        #[tokio::test]
+        async fn test_extract_command_output_write_error() -> Result<()>
+        {
+            let dir = tempdir()?;
+            let input_path = dir.path().join("test.md");
+            let output_dir = dir.path().join("readonly_dir");
+
+            // Create test input file with valid frontmatter
+            let content = r#"---
+title: "Test"
+date: "2024-01-01"
+---
+Content here"#;
+            let mut file = File::create(&input_path)?;
+            writeln!(file, "{}", content)?;
+
+            // Create a read-only directory
+            tokio::fs::create_dir(&output_dir).await?;
+            let mut perms =
+                tokio::fs::metadata(&output_dir).await?.permissions();
+            perms.set_readonly(true);
+            tokio::fs::set_permissions(&output_dir, perms).await?;
+
+            let output_path = output_dir.join("output.yaml");
+
+            // Attempt to write to the read-only directory
+            let result = process_extract(
+                &input_path,
+                "yaml",
+                &Some(output_path.clone()),
+            )
+            .await;
+            assert!(result.is_err());
+            if let Err(e) = result {
+                assert!(e
+                    .to_string()
+                    .contains("Failed to write to output file"));
+            }
+
+            Ok(())
+        }
+
+        #[tokio::test]
+        async fn test_extract_command_toml_format() -> Result<()> {
+            let dir = tempdir()?;
+            let input_path = dir.path().join("test.md");
+            let output_path = dir.path().join("output.toml");
+
+            // Create test input file with valid frontmatter
+            let content = r#"---
+title: "Test"
+date: "2024-01-01"
+---
+Content here"#;
+
+            let mut file = File::create(&input_path)?;
+            writeln!(file, "{}", content)?;
+
+            let result = process_extract(
+                &input_path,
+                "toml",
+                &Some(output_path.clone()),
+            )
+            .await;
+            assert!(result.is_ok());
+
+            // Read and log the output for debugging
+            let output_content =
+                tokio::fs::read_to_string(&output_path).await?;
+            log::debug!("Generated TOML content:\n{}", output_content);
+
+            // Verify output
+            assert!(output_content.contains("title = "));
+            assert!(output_content.contains("Test"));
+            assert!(output_content.contains("date = "));
+            assert!(output_content.contains("2024-01-01"));
+
+            Ok(())
+        }
+
+        #[tokio::test]
+        async fn test_extract_command_json_format() -> Result<()> {
+            let dir = tempdir()?;
+            let input_path = dir.path().join("test.md");
+            let output_path = dir.path().join("output.json");
+
+            // Create test input file with valid frontmatter
+            let content = r#"---
+title: "Test"
+date: "2024-01-01"
+---
+Content here"#;
+
+            let mut file = File::create(&input_path)?;
+            writeln!(file, "{}", content)?;
+
+            let result = process_extract(
+                &input_path,
+                "json",
+                &Some(output_path.clone()),
+            )
+            .await;
+            assert!(result.is_ok());
+
+            // Read and log the output for debugging
+            let output_content =
+                tokio::fs::read_to_string(&output_path).await?;
+            log::debug!("Generated JSON content:\n{}", output_content);
+
+            // Verify output
+            assert!(output_content.contains("\"title\":"));
+            assert!(output_content.contains("Test"));
+            assert!(output_content.contains("\"date\":"));
+            assert!(output_content.contains("2024-01-01"));
+
+            Ok(())
+        }
+
+        #[tokio::test]
+        async fn test_extract_command_no_output_file() -> Result<()> {
+            let dir = tempdir()?;
+            let input_path = dir.path().join("test.md");
+
+            // Create test input file with valid frontmatter
+            let content = r#"---
+title: "Test"
+date: "2024-01-01"
+---
+Content here"#;
+
+            let mut file = File::create(&input_path)?;
+            writeln!(file, "{}", content)?;
+
+            let result =
+                process_extract(&input_path, "yaml", &None).await;
+            assert!(result.is_ok());
+
+            // Since output is to stdout, we can't easily capture it here
+            // We can assume that if no error occurred, the function worked as expected
+
+            Ok(())
+        }
+    }
+
+    // Tests for process_validate function
+    mod validate_tests {
+        use super::*;
+
+        #[tokio::test]
+        async fn test_validate_command() -> Result<()> {
+            let dir = tempdir()?;
+            let input_path = dir.path().join("test.md");
+
+            // Create test input file
+            let content = r#"---
+title: Test
+date: 2024-01-01
+---
+Content here"#;
+            let mut file = File::create(&input_path)?;
+            writeln!(file, "{}", content)?;
+
+            // Test validate command with valid fields
+            process_validate(
+                &input_path,
+                &Some("title,date".to_string()),
+            )
+            .await?;
+
+            // Test validate command with missing field
+            let result = process_validate(
+                &input_path,
+                &Some("title,author".to_string()),
+            )
+            .await;
+            assert!(result.is_err());
+
+            Ok(())
+        }
+
+        #[tokio::test]
+        async fn test_validate_command_invalid_input_file() -> Result<()>
+        {
+            let input_path = PathBuf::from("nonexistent.md");
+
+            let result = process_validate(
+                &input_path,
+                &Some("title".to_string()),
+            )
+            .await;
+            assert!(result.is_err());
+            if let Err(e) = result {
+                assert!(e
+                    .to_string()
+                    .contains("Failed to read input file"));
+            }
+
+            Ok(())
+        }
+
+        #[tokio::test]
+        async fn test_validate_command_no_frontmatter() -> Result<()> {
+            let dir = tempdir()?;
+            let input_path = dir.path().join("test.md");
+
+            // Create test input file without frontmatter
+            let content = "Content here without frontmatter";
+            let mut file = File::create(&input_path)?;
+            writeln!(file, "{}", content)?;
+
+            let result = process_validate(
+                &input_path,
+                &Some("title".to_string()),
+            )
+            .await;
+            assert!(result.is_err());
+            if let Err(e) = result {
+                assert!(e
+                    .to_string()
+                    .contains("Failed to extract frontmatter"));
+            }
+
+            Ok(())
+        }
+
+        #[tokio::test]
+        async fn test_validate_command_invalid_frontmatter(
+        ) -> Result<()> {
+            let dir = tempdir()?;
+            let input_path = dir.path().join("test.md");
+
+            // Create test input file with invalid frontmatter
+            let content = r#"---
+title: "Test
+date: 2024-01-01
+---
+Content here"#; // Missing closing quote
+
+            let mut file = File::create(&input_path)?;
+            writeln!(file, "{}", content)?;
+
+            let result = process_validate(
+                &input_path,
+                &Some("title".to_string()),
+            )
+            .await;
+            assert!(result.is_err());
+            if let Err(e) = result {
+                assert!(e
+                    .to_string()
+                    .contains("Failed to extract frontmatter"));
+            }
+
+            Ok(())
+        }
+
+        #[tokio::test]
+        async fn test_validate_command_no_required_fields() -> Result<()>
+        {
+            let dir = tempdir()?;
+            let input_path = dir.path().join("test.md");
+
+            // Create test input file with valid frontmatter
+            let content = r#"---
+title: Test
+date: 2024-01-01
+---
+Content here"#;
+
+            let mut file = File::create(&input_path)?;
+            writeln!(file, "{}", content)?;
+
+            // Test validate command with no required fields
+            let result = process_validate(&input_path, &None).await;
+            assert!(result.is_ok());
+
+            Ok(())
+        }
+    }
+
+    // Tests for CLI parsing
+    mod cli_parsing_tests {
+        use super::*;
+        use clap::Parser;
+
+        #[test]
+        fn test_cli_parsing() {
+            // Test extract command parsing
+            let args = Cli::parse_from([
+                "program", "extract", "input.md", "--format", "yaml",
+            ]);
+            match args.command {
+                Commands::Extract { input, format, .. } => {
+                    assert_eq!(input, PathBuf::from("input.md"));
+                    assert_eq!(format, "yaml");
+                }
+                _ => panic!("Expected Extract command"),
+            }
+
+            // Test validate command parsing
+            let args = Cli::parse_from([
+                "program",
+                "validate",
+                "input.md",
+                "--required",
+                "title,date",
+            ]);
+            match args.command {
+                Commands::Validate { input, required } => {
+                    assert_eq!(input, PathBuf::from("input.md"));
+                    assert_eq!(
+                        required,
+                        Some("title,date".to_string())
+                    );
+                }
+                _ => panic!("Expected Validate command"),
+            }
+        }
+    }
+
+    // Tests for CLI process function
+    mod cli_process_tests {
+        use super::*;
+
+        #[tokio::test]
+        async fn test_cli_process_extract() -> Result<()> {
+            let dir = tempdir()?;
+            let input_path = dir.path().join("test.md");
+            let output_path = dir.path().join("output.yaml");
+
+            // Create test input file with valid frontmatter
+            let content = r#"---
+title: Test
+date: 2024-01-01
+---
+Content here"#;
+
+            let mut file = File::create(&input_path)?;
+            writeln!(file, "{}", content)?;
+
+            let cli = Cli {
+                command: Commands::Extract {
+                    input: input_path.clone(),
+                    format: "yaml".to_string(),
+                    output: Some(output_path.clone()),
+                },
+            };
+
+            let result = cli.process().await;
+            assert!(result.is_ok());
+
+            // Verify output file was created
+            let output_content =
+                tokio::fs::read_to_string(&output_path).await?;
+            assert!(output_content.contains("title:"));
+            assert!(output_content.contains("Test"));
+
+            Ok(())
+        }
+
+        #[tokio::test]
+        async fn test_cli_process_validate() -> Result<()> {
+            let dir = tempdir()?;
+            let input_path = dir.path().join("test.md");
+
+            // Create test input file
+            let content = r#"---
+title: Test
+date: 2024-01-01
+---
+Content here"#;
+            let mut file = File::create(&input_path)?;
+            writeln!(file, "{}", content)?;
+
+            let cli = Cli {
+                command: Commands::Validate {
+                    input: input_path.clone(),
+                    required: Some("title,date".to_string()),
+                },
+            };
+
+            let result = cli.process().await;
+            assert!(result.is_ok());
+
+            Ok(())
         }
     }
 }

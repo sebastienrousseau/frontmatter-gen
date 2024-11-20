@@ -649,6 +649,20 @@ mod tests {
                 "Input validation error: Invalid input"
             );
         }
+
+        #[test]
+        fn test_toml_parse_error() {
+            let toml_data = "invalid = toml";
+            let result: Result<toml::Value, _> =
+                toml::from_str(toml_data);
+            assert!(result.is_err());
+            let error =
+                FrontmatterError::TomlParseError(result.unwrap_err());
+            assert!(matches!(
+                error,
+                FrontmatterError::TomlParseError(_)
+            ));
+        }
     }
 
     /// Tests for EngineError
@@ -721,9 +735,7 @@ mod tests {
 
     /// Tests for the Clone implementation of `FrontmatterError`.
     mod clone_tests {
-        use crate::error::EngineError;
-        use crate::error::ErrorContext;
-        use crate::error::FrontmatterError;
+        use super::*;
 
         #[test]
         fn test_clone_content_too_large() {
@@ -954,8 +966,153 @@ mod tests {
                 .to_string()
                 .contains("Metadata error"));
         }
+
+        #[test]
+        fn test_clone_yaml_parse_error() {
+            let yaml_data = "invalid: : yaml";
+            let result: Result<serde_yml::Value, _> =
+                serde_yml::from_str(yaml_data);
+            assert!(result.is_err());
+            let original = FrontmatterError::YamlParseError {
+                source: result.unwrap_err(),
+            };
+            let cloned = original.clone();
+            // Since YamlParseError clones to InvalidFormat
+            assert!(matches!(cloned, FrontmatterError::InvalidFormat));
+        }
+
+        #[test]
+        fn test_clone_json_parse_error() {
+            let json_data = "{ invalid json }";
+            let result: Result<serde_json::Value, _> =
+                serde_json::from_str(json_data);
+            assert!(result.is_err());
+            let original =
+                FrontmatterError::JsonParseError(result.unwrap_err());
+            let cloned = original.clone();
+            // Since JsonParseError clones to InvalidFormat
+            assert!(matches!(cloned, FrontmatterError::InvalidFormat));
+        }
     }
 
+    /// Tests for the `category` method of FrontmatterError
+    mod category_tests {
+        use super::*;
+
+        #[test]
+        fn test_error_category() {
+            // Parsing category
+            let yaml_error = serde_yml::from_str::<serde_yml::Value>(
+                "invalid: : yaml",
+            )
+            .unwrap_err();
+            let toml_error =
+                toml::from_str::<toml::Value>("invalid = toml")
+                    .unwrap_err();
+            let json_error = serde_json::from_str::<serde_json::Value>(
+                "{ invalid json }",
+            )
+            .unwrap_err();
+
+            let errors = vec![
+                FrontmatterError::YamlParseError { source: yaml_error },
+                FrontmatterError::TomlParseError(toml_error),
+                FrontmatterError::JsonParseError(json_error),
+                FrontmatterError::ParseError("test error".to_string()),
+                FrontmatterError::InvalidFormat,
+                FrontmatterError::UnsupportedFormat { line: 1 },
+                FrontmatterError::NoFrontmatterFound,
+                FrontmatterError::InvalidJson,
+                FrontmatterError::InvalidToml,
+                FrontmatterError::InvalidYaml,
+                FrontmatterError::JsonDepthLimitExceeded,
+                FrontmatterError::ExtractionError(
+                    "test error".to_string(),
+                ),
+                FrontmatterError::InvalidUrl("test url".to_string()),
+                FrontmatterError::InvalidLanguage(
+                    "test lang".to_string(),
+                ),
+            ];
+
+            for error in errors {
+                assert_eq!(
+                    error.category(),
+                    ErrorCategory::Parsing,
+                    "Error {:?} should have category Parsing",
+                    error
+                );
+            }
+
+            // Validation category
+            let error = FrontmatterError::ValidationError(
+                "test error".to_string(),
+            );
+            assert_eq!(error.category(), ErrorCategory::Validation);
+
+            // Conversion category
+            let error = FrontmatterError::ConversionError(
+                "test error".to_string(),
+            );
+            assert_eq!(error.category(), ErrorCategory::Conversion);
+
+            // Configuration category
+            let errors = vec![
+                FrontmatterError::ContentTooLarge {
+                    size: 1000,
+                    max: 500,
+                },
+                FrontmatterError::NestingTooDeep { depth: 10, max: 5 },
+            ];
+            for error in errors {
+                assert_eq!(
+                    error.category(),
+                    ErrorCategory::Configuration,
+                    "Error {:?} should have category Configuration",
+                    error
+                );
+            }
+        }
+    }
+
+    /// Tests for converting EngineError variants into FrontmatterError
+    mod engine_error_conversion_tests {
+        use super::*;
+
+        #[test]
+        fn test_engine_error_conversion_template_error() {
+            let engine_error = EngineError::TemplateError(
+                "template processing failed".to_string(),
+            );
+            let frontmatter_error: FrontmatterError =
+                engine_error.into();
+            assert!(matches!(
+                frontmatter_error,
+                FrontmatterError::ParseError(_)
+            ));
+            assert!(frontmatter_error.to_string().contains(
+                "Template error: template processing failed"
+            ));
+        }
+
+        #[test]
+        fn test_engine_error_conversion_asset_error() {
+            let engine_error = EngineError::AssetError(
+                "asset processing failed".to_string(),
+            );
+            let frontmatter_error: FrontmatterError =
+                engine_error.into();
+            assert!(matches!(
+                frontmatter_error,
+                FrontmatterError::ParseError(_)
+            ));
+            assert!(frontmatter_error
+                .to_string()
+                .contains("Asset error: asset processing failed"));
+        }
+    }
+
+    // Additional tests to cover remaining lines and edge cases
     #[cfg(test)]
     mod additional_tests {
         use super::*;
@@ -1033,53 +1190,12 @@ mod tests {
         }
 
         #[test]
-        fn test_engine_error_to_frontmatter_error() {
-            let content_error =
-                EngineError::ContentError("content issue".to_string());
-            let frontmatter_error: FrontmatterError =
-                content_error.into();
-            assert!(
-                matches!(frontmatter_error, FrontmatterError::ParseError(msg) if msg.contains("Content error: content issue"))
-            );
-
-            let template_error = EngineError::TemplateError(
-                "template issue".to_string(),
-            );
-            let frontmatter_error: FrontmatterError =
-                template_error.into();
-            assert!(
-                matches!(frontmatter_error, FrontmatterError::ParseError(msg) if msg.contains("Template error: template issue"))
-            );
-
-            let asset_error =
-                EngineError::AssetError("asset issue".to_string());
-            let frontmatter_error: FrontmatterError =
-                asset_error.into();
-            assert!(
-                matches!(frontmatter_error, FrontmatterError::ParseError(msg) if msg.contains("Asset error: asset issue"))
-            );
-
-            let io_error = std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                "file missing",
-            );
-            let engine_error =
-                EngineError::FileSystemError { source: io_error };
-            let frontmatter_error: FrontmatterError =
-                engine_error.into();
-            assert!(
-                matches!(frontmatter_error, FrontmatterError::ParseError(msg) if msg.contains("File system error: file missing"))
-            );
-
-            let metadata_error = EngineError::MetadataError(
-                "metadata issue".to_string(),
-            );
-            let frontmatter_error: FrontmatterError =
-                metadata_error.into();
-            assert!(
-                matches!(frontmatter_error, FrontmatterError::ParseError(msg) if msg.contains("Metadata error: metadata issue"))
-            );
+        fn test_frontmatter_error_to_string_conversion() {
+            let error = FrontmatterError::InvalidFormat;
+            let error_string: String = error.into();
+            assert_eq!(error_string, "Invalid frontmatter format");
         }
+
         #[test]
         fn test_all_error_variants() {
             let large_error = FrontmatterError::ContentTooLarge {
@@ -1087,9 +1203,9 @@ mod tests {
                 max: 10000,
             };
             assert_eq!(
-        large_error.to_string(),
-        "Content size 12345 exceeds maximum allowed size of 10000 bytes"
-    );
+                large_error.to_string(),
+                "Content size 12345 exceeds maximum allowed size of 10000 bytes"
+            );
 
             let nesting_error =
                 FrontmatterError::NestingTooDeep { depth: 20, max: 10 };
@@ -1149,6 +1265,7 @@ mod tests {
             assert!(error.to_string().contains("column: 20"));
             assert!(error.to_string().contains("unexpected token"));
         }
+
         #[test]
         fn test_category_fallback() {
             let unknown_error = FrontmatterError::InvalidYaml; // Any untested error
