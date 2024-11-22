@@ -268,6 +268,8 @@ impl log::Log for Logger {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use log::Log;
+    use std::sync::Once;
 
     /// Tests logging setup with various environment configurations.
     #[test]
@@ -367,6 +369,251 @@ mod tests {
                 output.contains("0.0.4"),
                 "Version output does not contain '0.0.4'. Actual output: {}",
                 output
+            );
+        }
+    }
+
+    // Ensure the logger is initialized only once across all tests
+    static INIT: Once = Once::new();
+
+    /// Initialize logging for tests
+    fn init_logging() {
+        INIT.call_once(|| {
+            setup_logging();
+        });
+    }
+
+    /// Tests that the `Logger` struct's `enabled` method always returns true.
+    #[test]
+    fn test_logger_enabled() {
+        init_logging();
+        let logger = Logger;
+        let metadata =
+            log::Metadata::builder().level(log::Level::Info).build();
+        assert!(logger.enabled(&metadata));
+    }
+
+    /// Tests that the `Logger` struct's `log` method handles different log levels without panicking.
+    #[test]
+    fn test_logger_log_levels() {
+        init_logging();
+        let logger = Logger;
+        let levels = vec![
+            log::Level::Error,
+            log::Level::Warn,
+            log::Level::Info,
+            log::Level::Debug,
+            log::Level::Trace,
+        ];
+
+        for level in levels {
+            let record = log::Record::builder()
+                .args(format_args!("Test log message"))
+                .level(level)
+                .target("test")
+                .build();
+            logger.log(&record);
+        }
+    }
+
+    /// Tests that `setup_logging` gracefully handles the case when `log::set_logger` fails.
+    #[test]
+    fn test_setup_logging_failure() {
+        // Initialize logging the first time
+        setup_logging();
+        // Attempt to initialize logging a second time
+        setup_logging();
+        // The function handles the error internally, so we expect no panic
+    }
+
+    /// Tests that `execute_command` returns an error when no features are enabled.
+    #[cfg(not(any(feature = "cli", feature = "ssg")))]
+    #[tokio::test]
+    async fn test_execute_command_no_features() {
+        let result = execute_command().await;
+        assert!(result.is_err());
+    }
+
+    /// Tests that `get_enabled_features` returns "none" when no features are enabled.
+    #[cfg(not(any(feature = "cli", feature = "ssg")))]
+    #[test]
+    fn test_get_enabled_features_none() {
+        let features = get_enabled_features();
+        assert_eq!(features, "none");
+    }
+
+    /// Tests that `execute_command` works correctly when only the `cli` feature is enabled.
+    #[cfg(all(feature = "cli", not(feature = "ssg")))]
+    mod cli_tests {
+        use super::*;
+        use clap::Parser;
+        use frontmatter_gen::cli::Cli;
+
+        #[tokio::test]
+        async fn test_execute_command_cli() {
+            init_logging();
+            // Simulate CLI arguments
+            let args = vec![
+                "frontmatter-gen",
+                "validate",
+                "input.md",
+                "--required",
+                "title,date",
+            ];
+            // Parse the arguments using clap
+            let cli_command = Cli::try_parse_from(&args)
+                .expect("Failed to parse arguments");
+            let result = cli_command.process().await;
+            // Since we don't have actual file inputs, we expect an error
+            assert!(result.is_err());
+        }
+
+        #[test]
+        fn test_get_enabled_features_cli() {
+            let features = get_enabled_features();
+            assert_eq!(features, "cli");
+        }
+    }
+
+    /// Tests that `execute_command` works correctly when only the `ssg` feature is enabled.
+    #[cfg(all(feature = "ssg", not(feature = "cli")))]
+    mod ssg_tests {
+        use super::*;
+        use clap::Parser;
+        use frontmatter_gen::ssg::SsgCommand;
+
+        #[tokio::test]
+        async fn test_execute_command_ssg() {
+            init_logging();
+            // Simulate SSG arguments
+            let args = vec![
+                "frontmatter-gen",
+                "build",
+                "--content-dir",
+                "content",
+                "--output-dir",
+                "public",
+                "--template-dir",
+                "templates",
+            ];
+            // Parse the arguments using clap
+            let ssg_command = SsgCommand::try_parse_from(&args)
+                .expect("Failed to parse arguments");
+            let result = ssg_command.execute().await;
+            // Since we don't have actual directories, we expect an error
+            assert!(result.is_err());
+        }
+
+        #[test]
+        fn test_get_enabled_features_ssg() {
+            let features = get_enabled_features();
+            assert_eq!(features, "ssg");
+        }
+    }
+
+    /// Tests that `execute_command` correctly dispatches between CLI and SSG when both features are enabled.
+    #[cfg(all(feature = "cli", feature = "ssg"))]
+    mod cli_ssg_tests {
+        use super::*;
+        use clap::Parser;
+        use frontmatter_gen::{cli::Cli, ssg::SsgCommand};
+        use std::io::Write;
+        use tempfile::NamedTempFile;
+
+        #[tokio::test]
+        async fn test_execute_command_both_features() {
+            init_logging();
+
+            // Test SSG command
+            let args_ssg = vec![
+                "frontmatter-gen",
+                "build",
+                "--content-dir",
+                "content",
+                "--output-dir",
+                "public",
+                "--template-dir",
+                "templates",
+            ];
+            // Parse the arguments using clap
+            let ssg_command = SsgCommand::try_parse_from(&args_ssg)
+                .expect("Failed to parse SSG arguments");
+            let result_ssg = ssg_command.execute().await;
+            assert!(result_ssg.is_err());
+
+            // Test CLI command with a temporary file that will cause validation to fail
+            let mut temp_file = NamedTempFile::new()
+                .expect("Failed to create temp file");
+            writeln!(temp_file, "Invalid content")
+                .expect("Failed to write to temp file");
+            let file_path = temp_file.path().to_str().unwrap();
+
+            let args_cli = vec![
+                "frontmatter-gen",
+                "validate",
+                file_path,
+                "--required",
+                "title,date",
+            ];
+
+            let cli_command = Cli::try_parse_from(&args_cli)
+                .expect("Failed to parse CLI arguments");
+            let result_cli = cli_command.process().await;
+
+            // Now, since the file has invalid content, we expect the command to return an error
+            assert!(
+                result_cli.is_err(),
+                "Expected an error due to invalid content"
+            );
+        }
+
+        #[test]
+        fn test_get_enabled_features_both() {
+            let features = get_enabled_features();
+            assert_eq!(features, "cli, ssg");
+        }
+
+        // Add the following to your existing test module
+
+        /// Tests that an invalid `RUST_LOG` value defaults to the debug level.
+        #[test]
+        fn test_logging_with_invalid_rust_log_value() {
+            env::set_var("RUST_LOG", "invalid_level");
+            setup_logging();
+
+            // Verify that the log level defaults to debug
+            let expected_level = log::LevelFilter::Debug;
+            assert_eq!(log::max_level(), expected_level);
+        }
+
+        /// Tests that an empty `RUST_LOG` value defaults to the debug level.
+        #[test]
+        fn test_logging_with_empty_rust_log_value() {
+            env::set_var("RUST_LOG", "");
+            setup_logging();
+
+            // Verify that the log level defaults to debug
+            let expected_level = log::LevelFilter::Debug;
+            assert_eq!(log::max_level(), expected_level);
+        }
+
+        /// Tests that the `Logger::flush()` method can be called without panic.
+        #[test]
+        fn test_logger_flush() {
+            let logger = Logger;
+            logger.flush();
+            // Since flush does nothing, we just ensure it doesn't panic
+        }
+
+        /// Tests the behaviour of `get_enabled_features` when both features are enabled but in reverse order.
+        #[test]
+        #[cfg(all(feature = "ssg", feature = "cli"))]
+        fn test_get_enabled_features_order() {
+            let features = get_enabled_features();
+            // Depending on the compilation, the order might be different
+            assert!(
+                features == "cli, ssg" || features == "ssg, cli",
+                "Features should include both 'cli' and 'ssg'"
             );
         }
     }
