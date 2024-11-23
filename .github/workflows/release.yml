@@ -85,7 +85,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set version
-        run: echo "VERSION=$(grep version Cargo.toml | sed -n 2p | cut -d '"' -f 2)" >> $GITHUB_ENV
+        run: |
+          VERSION=$(grep '^version = ' Cargo.toml | sed 's/.*"\(.*\)".*/\1/')
+          echo "Found version: $VERSION"  # Debug output
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Invalid version format found: $VERSION"
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+        shell: /bin/bash -e {0}
       - uses: actions/download-artifact@v4
         with:
           path: artifacts

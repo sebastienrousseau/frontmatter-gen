@@ -11,7 +11,7 @@
 
 #![allow(missing_docs)]
 
-use frontmatter_gen::error::FrontmatterError;
+use frontmatter_gen::error::Error;
 
 /// Entry point for the FrontMatterGen error handling examples.
 ///
@@ -48,7 +48,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///
 /// This function attempts to parse invalid YAML content and shows
 /// how FrontMatterGen handles parsing errors.
-fn yaml_parse_error_example() -> Result<(), FrontmatterError> {
+fn yaml_parse_error_example() -> Result<(), Error> {
     println!("🦀 YAML Parse Error Example");
     println!("---------------------------------------------");
 
@@ -61,7 +61,7 @@ fn yaml_parse_error_example() -> Result<(), FrontmatterError> {
             "    ❌  Unexpected success in parsing invalid YAML"
         ),
         Err(e) => {
-            let error = FrontmatterError::YamlParseError { source: e };
+            let error = Error::YamlParseError { source: e.into() };
             println!(
                 "    ✅  Successfully caught YAML parse error: {}",
                 error
@@ -73,7 +73,7 @@ fn yaml_parse_error_example() -> Result<(), FrontmatterError> {
 }
 
 /// Demonstrates handling of TOML parsing errors.
-fn toml_parse_error_example() -> Result<(), FrontmatterError> {
+fn toml_parse_error_example() -> Result<(), Error> {
     println!("\n🦀 TOML Parse Error Example");
     println!("---------------------------------------------");
 
@@ -83,7 +83,7 @@ fn toml_parse_error_example() -> Result<(), FrontmatterError> {
             "    ❌  Unexpected success in parsing invalid TOML"
         ),
         Err(e) => {
-            let error = FrontmatterError::TomlParseError(e);
+            let error = Error::TomlParseError(e);
             println!(
                 "    ✅  Successfully caught TOML parse error: {}",
                 error
@@ -95,7 +95,7 @@ fn toml_parse_error_example() -> Result<(), FrontmatterError> {
 }
 
 /// Demonstrates handling of JSON parsing errors.
-fn json_parse_error_example() -> Result<(), FrontmatterError> {
+fn json_parse_error_example() -> Result<(), Error> {
     println!("\n🦀 JSON Parse Error Example");
     println!("---------------------------------------------");
 
@@ -105,7 +105,7 @@ fn json_parse_error_example() -> Result<(), FrontmatterError> {
             "    ❌  Unexpected success in parsing invalid JSON"
         ),
         Err(e) => {
-            let error = FrontmatterError::JsonParseError(e);
+            let error = Error::JsonParseError(e.into());
             println!(
                 "    ✅  Successfully caught JSON parse error: {}",
                 error
@@ -117,25 +117,24 @@ fn json_parse_error_example() -> Result<(), FrontmatterError> {
 }
 
 /// Demonstrates handling of frontmatter conversion errors.
-fn conversion_error_example() -> Result<(), FrontmatterError> {
+fn conversion_error_example() -> Result<(), Error> {
     println!("\n🦀 Conversion Error Example");
     println!("---------------------------------------------");
 
     let error_message = "Failed to convert frontmatter data";
-    let error =
-        FrontmatterError::ConversionError(error_message.to_string());
+    let error = Error::ConversionError(error_message.to_string());
     println!("    ✅  Created Conversion Error: {}", error);
 
     Ok(())
 }
 
 /// Demonstrates handling of unsupported format errors.
-fn unsupported_format_error_example() -> Result<(), FrontmatterError> {
+fn unsupported_format_error_example() -> Result<(), Error> {
     println!("\n🦀 Unsupported Format Error Example");
     println!("---------------------------------------------");
 
     let line = 42;
-    let error = FrontmatterError::unsupported_format(line);
+    let error = Error::unsupported_format(line);
     println!(
         "    ✅  Created Unsupported Format Error for line {}: {}",
         line, error
@@ -145,13 +144,12 @@ fn unsupported_format_error_example() -> Result<(), FrontmatterError> {
 }
 
 /// Demonstrates handling of extraction errors.
-fn extraction_error_example() -> Result<(), FrontmatterError> {
+fn extraction_error_example() -> Result<(), Error> {
     println!("\n🦀 Extraction Error Example");
     println!("---------------------------------------------");
 
     let error_message = "Failed to extract frontmatter";
-    let error =
-        FrontmatterError::ExtractionError(error_message.to_string());
+    let error = Error::ExtractionError(error_message.to_string());
     println!("    ✅  Created Extraction Error: {}", error);
 
     Ok(())
@@ -160,19 +158,18 @@ fn extraction_error_example() -> Result<(), FrontmatterError> {
 /// Demonstrates SSG-specific error handling.
 /// This function is only available when the "ssg" feature is enabled.
 #[cfg(feature = "ssg")]
-fn ssg_specific_error_example() -> Result<(), FrontmatterError> {
+fn ssg_specific_error_example() -> Result<(), Error> {
     println!("\n🦀 SSG-Specific Error Example");
     println!("---------------------------------------------");
 
     // Example of URL validation error (SSG-specific)
     let invalid_url = "not-a-url";
-    let error = FrontmatterError::InvalidUrl(invalid_url.to_string());
+    let error = Error::InvalidUrl(invalid_url.to_string());
     println!("    ✅  Created URL Validation Error: {}", error);
 
     // Example of language code error (SSG-specific)
     let invalid_lang = "invalid";
-    let error =
-        FrontmatterError::InvalidLanguage(invalid_lang.to_string());
+    let error = Error::InvalidLanguage(invalid_lang.to_string());
     println!("    ✅  Created Language Code Error: {}", error);
 
     Ok(())

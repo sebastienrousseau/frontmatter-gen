@@ -10,7 +10,7 @@
 
 #![allow(missing_docs)]
 
-use frontmatter_gen::error::FrontmatterError;
+use frontmatter_gen::error::Error;
 use frontmatter_gen::{extract, to_format, Format, Frontmatter};
 
 /// Entry point for the FrontMatterGen library examples.
@@ -37,7 +37,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Demonstrates extracting frontmatter from content.
-fn extract_example() -> Result<(), FrontmatterError> {
+fn extract_example() -> Result<(), Error> {
     println!("🦀 Frontmatter Extraction Example");
     println!("---------------------------------------------");
 
@@ -61,7 +61,7 @@ Content here"#;
 }
 
 /// Demonstrates converting frontmatter to a specific format.
-fn to_format_example() -> Result<(), FrontmatterError> {
+fn to_format_example() -> Result<(), Error> {
     println!("\n🦀 Frontmatter Conversion Example");
     println!("---------------------------------------------");
 
@@ -85,7 +85,7 @@ fn to_format_example() -> Result<(), FrontmatterError> {
 
 /// SSG-specific examples that are only available with the "ssg" feature
 #[cfg(feature = "ssg")]
-fn ssg_examples() -> Result<(), FrontmatterError> {
+fn ssg_examples() -> Result<(), Error> {
     println!("\n🦀 SSG-Specific Frontmatter Examples");
     println!("---------------------------------------------");
 
@@ -123,7 +123,7 @@ mod tests {
 
     // Core functionality tests
     #[test]
-    fn test_basic_extraction() -> Result<(), FrontmatterError> {
+    fn test_basic_extraction() -> Result<(), Error> {
         let content = r#"---
 title: Test
 ---
@@ -138,7 +138,7 @@ Content"#;
     }
 
     #[test]
-    fn test_format_conversion() -> Result<(), FrontmatterError> {
+    fn test_format_conversion() -> Result<(), Error> {
         let mut frontmatter = Frontmatter::new();
         frontmatter.insert("title".to_string(), "Test".into());
 
@@ -157,7 +157,7 @@ Content"#;
         use super::*;
 
         #[test]
-        fn test_ssg_metadata() -> Result<(), FrontmatterError> {
+        fn test_ssg_metadata() -> Result<(), Error> {
             let content = r#"---
 title: Test
 template: post
