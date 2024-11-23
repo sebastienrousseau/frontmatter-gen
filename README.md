@@ -25,14 +25,12 @@ A high-performance Rust library for parsing and serialising frontmatter in YAML,
 
 ## Key Features 🎯
 
-- **Zero-Copy Parsing**: Parse YAML, TOML, and JSON frontmatter efficiently with zero memory copying
-- **Safe Extraction**: Extract frontmatter using standard delimiters (`---` for YAML, `+++` for TOML) with comprehensive error handling
-- **Type Safety**: Leverage Rust's type system with the `Value` enum for safe frontmatter manipulation
-- **High Performance**: Optimised for speed with minimal allocations and efficient algorithms
-- **Memory Safety**: Guaranteed memory safety through Rust's ownership system
-- **Rich Error Handling**: Detailed error types with context for effective debugging
-- **Async Support**: First-class asynchronous operation support
-- **Flexible Configuration**: Customisable parsing behaviour to match your needs
+- **Zero-copy parsing** for optimal memory efficiency
+- **Multi-format support** (YAML, TOML, JSON)
+- **Type-safe operations** with comprehensive error handling
+- **Secure processing** with input validation and size limits
+- **Async support** with the `ssg` feature flag
+- **Command-line interface** for direct manipulation
 
 ## Available Features 🛠️
 
@@ -72,15 +70,9 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
+# Core library with command-line interface and SSG support
+frontmatter-gen = { version = "0.0.4", features = ["cli", "ssg"] }
 
-# Basic functionality
-frontmatter-gen = "0.0.4"
-
-# With CLI support
-frontmatter-gen = { version = "0.0.4", features = ["cli"] }
-
-# All features (CLI and SSG)
-frontmatter-gen = { version = "0.0.4", features = ["ssg"] }
 ```
 
 ## Basic Usage 🔨
