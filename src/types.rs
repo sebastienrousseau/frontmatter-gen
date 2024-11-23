@@ -107,7 +107,7 @@ impl Value {
     /// let string_value = Value::String("Not a number".to_string());
     /// assert_eq!(string_value.as_f64(), None);
     /// ```
-    pub fn as_f64(&self) -> Option<f64> {
+    pub const fn as_f64(&self) -> Option<f64> {
         if let Value::Number(n) = self {
             Some(*n)
         } else {
@@ -133,7 +133,7 @@ impl Value {
     /// let string_value = Value::String("Not a boolean".to_string());
     /// assert_eq!(string_value.as_bool(), None);
     /// ```
-    pub fn as_bool(&self) -> Option<bool> {
+    pub const fn as_bool(&self) -> Option<bool> {
         if let Value::Boolean(b) = self {
             Some(*b)
         } else {
@@ -160,7 +160,7 @@ impl Value {
     /// let string_value = Value::String("Not an array".to_string());
     /// assert!(string_value.as_array().is_none());
     /// ```
-    pub fn as_array(&self) -> Option<&Vec<Value>> {
+    pub const fn as_array(&self) -> Option<&Vec<Value>> {
         if let Value::Array(arr) = self {
             Some(arr)
         } else {
@@ -239,7 +239,7 @@ impl Value {
     /// let string_value = Value::String("Not null".to_string());
     /// assert!(!string_value.is_null());
     /// ```
-    pub fn is_null(&self) -> bool {
+    pub const fn is_null(&self) -> bool {
         matches!(self, Value::Null)
     }
 
@@ -260,7 +260,7 @@ impl Value {
     /// let number_value = Value::Number(42.0);
     /// assert!(!number_value.is_string());
     /// ```
-    pub fn is_string(&self) -> bool {
+    pub const fn is_string(&self) -> bool {
         matches!(self, Value::String(_))
     }
 
@@ -281,7 +281,7 @@ impl Value {
     /// let string_value = Value::String("Not a number".to_string());
     /// assert!(!string_value.is_number());
     /// ```
-    pub fn is_number(&self) -> bool {
+    pub const fn is_number(&self) -> bool {
         matches!(self, Value::Number(_))
     }
 
@@ -302,7 +302,7 @@ impl Value {
     /// let string_value = Value::String("Not a boolean".to_string());
     /// assert!(!string_value.is_boolean());
     /// ```
-    pub fn is_boolean(&self) -> bool {
+    pub const fn is_boolean(&self) -> bool {
         matches!(self, Value::Boolean(_))
     }
 
@@ -323,7 +323,7 @@ impl Value {
     /// let string_value = Value::String("Not an array".to_string());
     /// assert!(!string_value.is_array());
     /// ```
-    pub fn is_array(&self) -> bool {
+    pub const fn is_array(&self) -> bool {
         matches!(self, Value::Array(_))
     }
 
@@ -344,7 +344,7 @@ impl Value {
     /// let string_value = Value::String("Not an object".to_string());
     /// assert!(!string_value.is_object());
     /// ```
-    pub fn is_object(&self) -> bool {
+    pub const fn is_object(&self) -> bool {
         matches!(self, Value::Object(_))
     }
 
@@ -365,7 +365,7 @@ impl Value {
     /// let string_value = Value::String("Not tagged".to_string());
     /// assert!(!string_value.is_tagged());
     /// ```
-    pub fn is_tagged(&self) -> bool {
+    pub const fn is_tagged(&self) -> bool {
         matches!(self, Value::Tagged(_, _))
     }
 
@@ -813,6 +813,7 @@ impl Frontmatter {
     ///     println!("{}: {:?}", key, value);
     /// }
     /// ```
+    #[must_use]
     pub fn iter(
         &self,
     ) -> std::collections::hash_map::Iter<String, Value> {
@@ -1282,8 +1283,8 @@ mod tests {
                 r#"Hello \"World\""#
             );
             assert_eq!(
-                escape_str(r#"C:\path\to\file"#),
-                r#"C:\\path\\to\\file"#
+                escape_str(r"C:\path\to\file"),
+                r"C:\\path\\to\\file"
             );
         }
 
@@ -1428,10 +1429,10 @@ mod tests {
 
         #[test]
         fn test_escape_str_edge_cases() {
-            let special_chars = r#"Special \chars\n\t"#;
+            let special_chars = r"Special \chars\n\t";
             assert_eq!(
                 escape_str(special_chars),
-                r#"Special \\chars\\n\\t"#
+                r"Special \\chars\\n\\t"
             );
         }
     }

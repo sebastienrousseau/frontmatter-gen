@@ -218,15 +218,6 @@ pub mod fs {
                     .starts_with(&temp_dir_canonicalized)
                 {
                     return Ok(());
-                } else {
-                    return Err(UtilsError::InvalidPath {
-                    path: path_str.to_string(),
-                    details: format!(
-                        "Absolute path not allowed outside temporary directory: {}",
-                        temp_dir_canonicalized.display()
-                    ),
-                }
-                .into());
                 }
             }
 

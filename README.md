@@ -194,15 +194,15 @@ Then visit `http://127.0.0.1:8000` in your favourite browser.
 The library provides comprehensive error handling:
 
 ```rust
-use frontmatter_gen::{extract, error::FrontmatterError};
+use frontmatter_gen::{extract, error::Error};
 
-fn process_content(content: &str) -> Result<(), FrontmatterError> {
+fn process_content(content: &str) -> Result<(), Error> {
     let (frontmatter, _) = extract(content)?;
     
     // Validate required fields
     for field in ["title", "date", "author"].iter() {
         if !frontmatter.contains_key(*field) {
-            return Err(FrontmatterError::ValidationError(
+            return Err(Error::ValidationError(
                 format!("Missing required field: {}", field)
             ));
         }
@@ -331,16 +331,16 @@ RUST_LOG=frontmatter_gen=debug,cli=info frontmatter_gen validate input.md
 The library provides detailed error handling with context:
 
 ```rust
-use frontmatter_gen::{extract, error::FrontmatterError};
+use frontmatter_gen::{extract, error::Error};
 
-fn process_content(content: &str) -> Result<(), FrontmatterError> {
+fn process_content(content: &str) -> Result<(), Error> {
     // Extract frontmatter and content
     let (frontmatter, _) = extract(content)?;
     
     // Validate required fields
     for field in ["title", "date", "author"].iter() {
         if !frontmatter.contains_key(*field) {
-            return Err(FrontmatterError::ValidationError(
+            return Err(Error::ValidationError(
                 format!("Missing required field: {}", field)
             ));
         }
@@ -349,7 +349,7 @@ fn process_content(content: &str) -> Result<(), FrontmatterError> {
     // Validate field types
     if let Some(date) = frontmatter.get("date") {
         if !date.is_string() {
-            return Err(FrontmatterError::ValidationError(
+            return Err(Error::ValidationError(
                 "Date field must be a string".to_string()
             ));
         }

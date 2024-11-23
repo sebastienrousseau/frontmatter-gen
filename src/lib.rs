@@ -46,7 +46,7 @@
 //!     Some("Test Post")
 //! );
 //! assert_eq!(content.trim(), "Content here");
-//! # Ok::<(), frontmatter_gen::FrontmatterError>(())
+//! # Ok::<(), frontmatter_gen::Error>(())
 //! ```
 //!
 //! ## Feature Flags
@@ -60,14 +60,14 @@
 //! All operations return a `Result` type with detailed error information:
 //!
 //! ```rust
-//! use frontmatter_gen::{extract, FrontmatterError};
+//! use frontmatter_gen::{extract, Error};
 //!
-//! fn process_content(content: &str) -> Result<(), FrontmatterError> {
+//! fn process_content(content: &str) -> Result<(), Error> {
 //!     let (frontmatter, _) = extract(content)?;
 //!
 //!     // Validate required fields
 //!     if !frontmatter.contains_key("title") {
-//!         return Err(FrontmatterError::ValidationError(
+//!         return Err(Error::ValidationError(
 //!             "Missing required field: title".to_string()
 //!         ));
 //!     }
@@ -81,7 +81,7 @@ use std::num::NonZeroUsize;
 // Re-export core types and traits
 pub use crate::{
     config::Config,
-    error::FrontmatterError,
+    error::Error,
     extractor::{detect_format, extract_raw_frontmatter},
     parser::{parse, to_string},
     types::{Format, Frontmatter, Value},
@@ -100,19 +100,27 @@ pub mod ssg;
 pub mod types;
 pub mod utils;
 
+macro_rules! non_zero_usize {
+    ($value:expr) => {
+        match NonZeroUsize::new($value) {
+            Some(val) => val,
+            None => panic!("Value must be non-zero"),
+        }
+    };
+}
+
 /// Maximum size allowed for frontmatter content (1MB)
 pub const MAX_FRONTMATTER_SIZE: NonZeroUsize =
-    unsafe { NonZeroUsize::new_unchecked(1024 * 1024) };
+    non_zero_usize!(1024 * 1024);
 
 /// Maximum allowed nesting depth for structured data
-pub const MAX_NESTING_DEPTH: NonZeroUsize =
-    unsafe { NonZeroUsize::new_unchecked(32) };
+pub const MAX_NESTING_DEPTH: NonZeroUsize = non_zero_usize!(32);
 
 /// A specialized Result type for frontmatter operations.
 ///
 /// This type alias provides a consistent error type throughout the crate
 /// and simplifies error handling for library users.
-pub type Result<T> = std::result::Result<T, FrontmatterError>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 /// Prelude module for convenient imports.
 ///
@@ -120,8 +128,8 @@ pub type Result<T> = std::result::Result<T, FrontmatterError>;
 /// Import all contents with `use frontmatter_gen::prelude::*`.
 pub mod prelude {
     pub use crate::{
-        extract, to_format, Config, Format, Frontmatter,
-        FrontmatterError, Result, Value,
+        extract, to_format, Config, Error, Format, Frontmatter, Result,
+        Value,
     };
 }
 
@@ -159,7 +167,7 @@ impl Default for ParseOptions {
 ///
 /// # Errors
 ///
-/// Returns `FrontmatterError` if:
+/// Returns `Error` if:
 /// - Content exceeds maximum size
 /// - Content contains invalid characters
 /// - Content structure is invalid
@@ -167,7 +175,7 @@ impl Default for ParseOptions {
 fn validate_input(content: &str, options: &ParseOptions) -> Result<()> {
     // Size validation
     if content.len() > options.max_size.get() {
-        return Err(FrontmatterError::ContentTooLarge {
+        return Err(Error::ContentTooLarge {
             size: content.len(),
             max: options.max_size.get(),
         });
@@ -175,7 +183,7 @@ fn validate_input(content: &str, options: &ParseOptions) -> Result<()> {
 
     // Character validation
     if content.contains('\0') {
-        return Err(FrontmatterError::ValidationError(
+        return Err(Error::ValidationError(
             "Content contains null bytes".to_string(),
         ));
     }
@@ -185,14 +193,14 @@ fn validate_input(content: &str, options: &ParseOptions) -> Result<()> {
         .chars()
         .any(|c| c.is_control() && !c.is_whitespace())
     {
-        return Err(FrontmatterError::ValidationError(
+        return Err(Error::ValidationError(
             "Content contains invalid control characters".to_string(),
         ));
     }
 
     // Path traversal prevention
     if content.contains("../") || content.contains("..\\") {
-        return Err(FrontmatterError::ValidationError(
+        return Err(Error::ValidationError(
             "Content contains path traversal patterns".to_string(),
         ));
     }
@@ -202,7 +210,7 @@ fn validate_input(content: &str, options: &ParseOptions) -> Result<()> {
         && content.contains('\n')
         && !content.contains("\r\n")
     {
-        return Err(FrontmatterError::ValidationError(
+        return Err(Error::ValidationError(
             "Mixed line endings detected".to_string(),
         ));
     }
@@ -245,12 +253,12 @@ fn validate_input(content: &str, options: &ParseOptions) -> Result<()> {
 /// let (frontmatter, content) = extract(content)?;
 /// assert_eq!(frontmatter.get("title").unwrap().as_str().unwrap(), "My Post");
 /// assert_eq!(content.trim(), "Content here");
-/// # Ok::<(), frontmatter_gen::FrontmatterError>(())
+/// # Ok::<(), frontmatter_gen::Error>(())
 /// ```
 ///
 /// # Errors
 ///
-/// Returns `FrontmatterError` if:
+/// Returns `Error` if:
 /// - Content exceeds size limits
 /// - Content is malformed
 /// - Frontmatter format is invalid
@@ -291,12 +299,12 @@ pub fn extract(content: &str) -> Result<(Frontmatter, &str)> {
 ///
 /// let yaml = to_format(&frontmatter, Format::Yaml)?;
 /// assert!(yaml.contains("title: My Post"));
-/// # Ok::<(), frontmatter_gen::FrontmatterError>(())
+/// # Ok::<(), frontmatter_gen::Error>(())
 /// ```
 ///
 /// # Errors
 ///
-/// Returns `FrontmatterError` if:
+/// Returns `Error` if:
 /// - Serialization fails
 /// - Format conversion fails
 /// - Invalid data types are encountered
@@ -309,16 +317,14 @@ pub fn to_format(
 
 #[cfg(test)]
 mod extractor_tests {
-    use crate::FrontmatterError;
+    use crate::Error;
 
-    fn mock_operation(
-        input: Option<&str>,
-    ) -> Result<String, FrontmatterError> {
+    fn mock_operation(input: Option<&str>) -> Result<String, Error> {
         match input {
             Some(value) => Ok(value.to_uppercase()), // Successful operation
-            None => Err(FrontmatterError::ParseError(
-                "Input is missing".to_string(),
-            )),
+            None => {
+                Err(Error::ParseError("Input is missing".to_string()))
+            }
         }
     }
 
@@ -336,7 +342,7 @@ mod extractor_tests {
         let result = mock_operation(input);
         assert!(matches!(
             result,
-            Err(FrontmatterError::ParseError(ref e)) if e == "Input is missing"
+            Err(Error::ParseError(ref e)) if e == "Input is missing"
         ));
     }
 
@@ -654,10 +660,7 @@ mod validate_input_tests {
         let options = ParseOptions::default();
         let oversized_content = "a".repeat(options.max_size.get() + 1);
         let result = validate_input(&oversized_content, &options);
-        assert!(matches!(
-            result,
-            Err(FrontmatterError::ContentTooLarge { .. })
-        ));
+        assert!(matches!(result, Err(Error::ContentTooLarge { .. })));
     }
 
     #[test]
@@ -667,7 +670,7 @@ mod validate_input_tests {
         let result = validate_input(malicious_content, &options);
         assert!(matches!(
             result,
-            Err(FrontmatterError::ValidationError(ref e)) if e == "Content contains null bytes"
+            Err(Error::ValidationError(ref e)) if e == "Content contains null bytes"
         ));
     }
 
@@ -678,7 +681,7 @@ mod validate_input_tests {
         let result = validate_input(malicious_content, &options);
         assert!(matches!(
             result,
-            Err(FrontmatterError::ValidationError(ref e)) if e == "Content contains path traversal patterns"
+            Err(Error::ValidationError(ref e)) if e == "Content contains path traversal patterns"
         ));
     }
 }

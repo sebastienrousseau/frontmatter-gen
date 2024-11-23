@@ -2,7 +2,7 @@
 //!
 //! It includes functions to extract frontmatter in various formats (YAML, TOML, JSON) from a given string content, as well as utilities to detect the format of the frontmatter.
 
-use crate::error::FrontmatterError;
+use crate::error::Error;
 use crate::types::Format;
 
 /// Extracts raw frontmatter from the content, detecting YAML, TOML, or JSON formats.
@@ -18,12 +18,12 @@ use crate::types::Format;
 /// # Returns
 ///
 /// A `Result` containing a tuple of two `&str` slices: the raw frontmatter and the remaining content.
-/// If no valid frontmatter format is found, it returns `FrontmatterError::InvalidFormat`.
+/// If no valid frontmatter format is found, it returns `Error::InvalidFormat`.
 ///
 /// # Errors
 ///
-/// - `FrontmatterError::InvalidFormat`: When the frontmatter format is not recognized.
-/// - `FrontmatterError::ExtractionError`: When there is an issue extracting frontmatter.
+/// - `Error::InvalidFormat`: When the frontmatter format is not recognized.
+/// - `Error::ExtractionError`: When there is an issue extracting frontmatter.
 ///
 /// # Example
 ///
@@ -36,7 +36,7 @@ use crate::types::Format;
 /// ```
 pub fn extract_raw_frontmatter(
     content: &str,
-) -> Result<(&str, &str), FrontmatterError> {
+) -> Result<(&str, &str), Error> {
     // Extract YAML frontmatter
     if let Some(yaml) =
         extract_delimited_frontmatter(content, "---\n", "\n---")
@@ -79,10 +79,10 @@ pub fn extract_raw_frontmatter(
     if content.starts_with("---\n---")
         || content.starts_with("+++\n+++")
     {
-        return Err(FrontmatterError::InvalidFormat);
+        return Err(Error::InvalidFormat);
     }
 
-    Err(FrontmatterError::InvalidFormat)
+    Err(Error::InvalidFormat)
 }
 
 /// Extracts JSON frontmatter from the content by detecting balanced curly braces (`{}`).
@@ -98,7 +98,13 @@ pub fn extract_raw_frontmatter(
 ///
 /// # Returns
 ///
-/// An `Option` containing the extracted JSON frontmatter string. Returns `None` if no valid JSON frontmatter is detected.
+/// A `Result` containing the extracted JSON frontmatter string slice.
+/// If no valid JSON frontmatter is detected, it returns an `Error`.
+///
+/// # Errors
+///
+/// - `Error::InvalidJson`: If the content does not start with `{` or contains unbalanced braces.
+/// - `Error::JsonDepthLimitExceeded`: If the JSON object exceeds the allowed nesting depth.
 ///
 /// # Example
 ///
@@ -108,15 +114,13 @@ pub fn extract_raw_frontmatter(
 /// let frontmatter = extract_json_frontmatter(content).unwrap();
 /// assert_eq!(frontmatter, "{ \"title\": \"Example\" }");
 /// ```
-pub fn extract_json_frontmatter(
-    content: &str,
-) -> Result<&str, FrontmatterError> {
+pub fn extract_json_frontmatter(content: &str) -> Result<&str, Error> {
     const MAX_DEPTH: usize = 100; // Limit maximum nesting depth
     let trimmed = content.trim_start();
 
     // If the content doesn't start with '{', it's not JSON frontmatter.
     if !trimmed.starts_with('{') {
-        return Err(FrontmatterError::InvalidJson);
+        return Err(Error::InvalidJson);
     }
 
     let mut brace_count = 0;
@@ -140,9 +144,7 @@ pub fn extract_json_frontmatter(
                 depth += 1;
                 // Check if the maximum depth is exceeded
                 if depth > MAX_DEPTH {
-                    return Err(
-                        FrontmatterError::JsonDepthLimitExceeded,
-                    );
+                    return Err(Error::JsonDepthLimitExceeded);
                 }
             }
             '}' if !in_string => {
@@ -161,7 +163,7 @@ pub fn extract_json_frontmatter(
     }
 
     // If no balanced braces are found, return an error.
-    Err(FrontmatterError::InvalidJson)
+    Err(Error::InvalidJson)
 }
 
 /// Detects the format of the extracted frontmatter.
@@ -179,7 +181,7 @@ pub fn extract_json_frontmatter(
 ///
 /// # Errors
 ///
-/// - `FrontmatterError::InvalidFormat`: If the format cannot be determined.
+/// - `Error::InvalidFormat`: If the format cannot be determined.
 ///
 /// # Example
 ///
@@ -190,9 +192,7 @@ pub fn extract_json_frontmatter(
 /// let format = detect_format(raw).unwrap();
 /// assert_eq!(format, Format::Yaml);
 /// ```
-pub fn detect_format(
-    raw_frontmatter: &str,
-) -> Result<Format, FrontmatterError> {
+pub fn detect_format(raw_frontmatter: &str) -> Result<Format, Error> {
     let trimmed = raw_frontmatter.trim_start();
 
     // Check for YAML front matter marker
@@ -216,7 +216,7 @@ pub fn detect_format(
     }
 
     // Default to an error if none of the formats match
-    Err(FrontmatterError::InvalidFormat)
+    Err(Error::InvalidFormat)
 }
 
 /// Extracts frontmatter enclosed by the given start and end delimiters.
@@ -243,6 +243,7 @@ pub fn detect_format(
 /// let frontmatter = extract_delimited_frontmatter(content, "---\n", "\n---\n").unwrap();
 /// assert_eq!(frontmatter, "title: Example");
 /// ```
+#[must_use]
 pub fn extract_delimited_frontmatter<'a>(
     content: &'a str,
     start_delim: &str,
@@ -268,10 +269,10 @@ mod tests {
 
         #[test]
         fn test_extract_yaml() {
-            let content = r#"---
+            let content = r"---
 title: Example
 ---
-Content here"#;
+Content here";
             let result = extract_raw_frontmatter(content).unwrap();
             assert_eq!(result.0, "title: Example");
             assert_eq!(result.1, "Content here");
@@ -301,7 +302,7 @@ Content here"#;
         fn test_invalid_format() {
             let content = "Invalid frontmatter";
             let result = detect_format(content);
-            if let Err(FrontmatterError::InvalidFormat) = result {
+            if let Err(Error::InvalidFormat) = result {
                 // Test passed
             } else {
                 panic!("Expected Err(InvalidFormat), got {:?}", result);
@@ -345,7 +346,7 @@ Content here"#;
             let result = extract_json_frontmatter(&content);
             assert!(matches!(
                 result,
-                Err(FrontmatterError::JsonDepthLimitExceeded)
+                Err(Error::JsonDepthLimitExceeded)
             ));
         }
 
@@ -364,10 +365,7 @@ Actual content starts here"#;
         fn test_invalid_json() {
             let content = "Not a JSON frontmatter";
             let result = extract_json_frontmatter(content);
-            assert!(matches!(
-                result,
-                Err(FrontmatterError::InvalidJson)
-            ));
+            assert!(matches!(result, Err(Error::InvalidJson)));
         }
     }
 
@@ -400,10 +398,7 @@ Actual content starts here"#;
         fn test_invalid_format() {
             let content = "Invalid content";
             let result = detect_format(content);
-            assert!(matches!(
-                result,
-                Err(FrontmatterError::InvalidFormat)
-            ));
+            assert!(matches!(result, Err(Error::InvalidFormat)));
         }
     }
 

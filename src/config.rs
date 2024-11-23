@@ -74,7 +74,7 @@ use crate::utils::fs::validate_path_safety;
 
 /// Errors specific to configuration operations
 #[derive(Error, Debug)]
-pub enum ConfigError {
+pub enum Error {
     /// Invalid site name provided
     #[error("Invalid site name: {0}")]
     InvalidSiteName(String),
@@ -211,7 +211,7 @@ fn default_template_dir() -> PathBuf {
 }
 
 #[cfg(feature = "ssg")]
-fn default_port() -> u16 {
+const fn default_port() -> u16 {
     8000
 }
 
@@ -233,7 +233,7 @@ impl fmt::Display for Config {
 }
 
 impl Config {
-    /// Creates a new ConfigBuilder instance for fluent configuration creation
+    /// Creates a new `Builder` instance for fluent configuration creation
     ///
     /// # Examples
     ///
@@ -258,8 +258,9 @@ impl Config {
     ///     .build()
     ///     .unwrap();
     /// ```
-    pub fn builder() -> ConfigBuilder {
-        ConfigBuilder::default()
+    #[must_use]
+    pub fn builder() -> Builder {
+        Builder::default()
     }
 
     /// Loads configuration from a TOML file
@@ -297,7 +298,7 @@ impl Config {
                 )
             })?;
 
-        let mut config: Config = toml::from_str(&content)
+        let mut config: Self = toml::from_str(&content)
             .context("Failed to parse TOML configuration")?;
 
         // Ensure we have a unique ID
@@ -324,7 +325,7 @@ impl Config {
     /// - Language code format is invalid
     pub fn validate(&self) -> Result<()> {
         if self.site_name.trim().is_empty() {
-            return Err(ConfigError::InvalidSiteName(
+            return Err(Error::InvalidSiteName(
                 "Site name cannot be empty".to_string(),
             )
             .into());
@@ -342,20 +343,20 @@ impl Config {
             }
 
             let _ = Url::parse(&self.base_url).map_err(|_| {
-                ConfigError::InvalidUrl(self.base_url.clone())
+                Error::InvalidUrl(self.base_url.clone())
             })?;
 
             if !self.is_valid_language_code(&self.language) {
-                return Err(ConfigError::InvalidLanguage(
+                return Err(Error::InvalidLanguage(
                     self.language.clone(),
                 )
                 .into());
             }
 
             if self.server_enabled
-                && !self.is_valid_port(self.server_port)
+                && !Self::is_valid_port(self.server_port)
             {
-                return Err(ConfigError::ServerError(format!(
+                return Err(Error::ServerError(format!(
                     "Invalid port number: {}",
                     self.server_port
                 ))
@@ -368,6 +369,7 @@ impl Config {
 
     /// Validates a path for safety and accessibility
     #[cfg(feature = "ssg")]
+    #[allow(clippy::unused_self)]
     fn validate_path(&self, path: &Path, name: &str) -> Result<()> {
         validate_path_safety(path).with_context(|| {
             format!("Invalid {} path: {}", name, path.display())
@@ -375,6 +377,8 @@ impl Config {
     }
 
     #[cfg(feature = "ssg")]
+    #[allow(clippy::unused_self)]
+    #[must_use]
     fn is_valid_language_code(&self, code: &str) -> bool {
         let parts: Vec<&str> = code.split('-').collect();
         if let (Some(&lang), Some(&region)) =
@@ -391,29 +395,34 @@ impl Config {
 
     /// Checks if a port number is valid
     #[cfg(feature = "ssg")]
-    fn is_valid_port(&self, port: u16) -> bool {
+    #[must_use]
+    const fn is_valid_port(port: u16) -> bool {
         port >= 1024
     }
 
     /// Gets the unique identifier for this configuration
-    pub fn id(&self) -> Uuid {
+    #[must_use]
+    pub const fn id(&self) -> Uuid {
         self.id
     }
 
     /// Gets the site name
+    #[must_use]
     pub fn site_name(&self) -> &str {
         &self.site_name
     }
 
     /// Gets whether the development server is enabled
     #[cfg(feature = "ssg")]
-    pub fn server_enabled(&self) -> bool {
+    #[must_use]
+    pub const fn server_enabled(&self) -> bool {
         self.server_enabled
     }
 
     /// Gets the server port if the server is enabled
     #[cfg(feature = "ssg")]
-    pub fn server_port(&self) -> Option<u16> {
+    #[must_use]
+    pub const fn server_port(&self) -> Option<u16> {
         if self.server_enabled {
             Some(self.server_port)
         } else {
@@ -424,7 +433,7 @@ impl Config {
 
 /// Builder for creating Config instances
 #[derive(Default, Debug)]
-pub struct ConfigBuilder {
+pub struct Builder {
     site_name: Option<String>,
     site_title: Option<String>,
     #[cfg(feature = "ssg")]
@@ -447,15 +456,17 @@ pub struct ConfigBuilder {
     server_port: Option<u16>,
 }
 
-impl ConfigBuilder {
+impl Builder {
     // Core builder methods
     /// Sets the site name
+    #[must_use]
     pub fn site_name<S: Into<String>>(mut self, name: S) -> Self {
         self.site_name = Some(name.into());
         self
     }
 
     /// Sets the site title
+    #[must_use]
     pub fn site_title<S: Into<String>>(mut self, title: S) -> Self {
         self.site_title = Some(title.into());
         self
@@ -463,6 +474,7 @@ impl ConfigBuilder {
 
     // SSG-specific builder methods
     #[cfg(feature = "ssg")]
+    #[must_use]
     /// Sets the site description
     pub fn site_description<S: Into<String>>(
         mut self,
@@ -474,6 +486,7 @@ impl ConfigBuilder {
 
     /// Sets the language code
     #[cfg(feature = "ssg")]
+    #[must_use]
     pub fn language<S: Into<String>>(mut self, lang: S) -> Self {
         self.language = Some(lang.into());
         self
@@ -481,6 +494,7 @@ impl ConfigBuilder {
 
     /// Sets the base URL
     #[cfg(feature = "ssg")]
+    #[must_use]
     pub fn base_url<S: Into<String>>(mut self, url: S) -> Self {
         self.base_url = Some(url.into());
         self
@@ -488,6 +502,7 @@ impl ConfigBuilder {
 
     /// Sets the content directory
     #[cfg(feature = "ssg")]
+    #[must_use]
     pub fn content_dir<P: Into<PathBuf>>(mut self, path: P) -> Self {
         self.content_dir = Some(path.into());
         self
@@ -495,6 +510,7 @@ impl ConfigBuilder {
 
     /// Sets the output directory
     #[cfg(feature = "ssg")]
+    #[must_use]
     pub fn output_dir<P: Into<PathBuf>>(mut self, path: P) -> Self {
         self.output_dir = Some(path.into());
         self
@@ -502,6 +518,7 @@ impl ConfigBuilder {
 
     /// Sets the template directory
     #[cfg(feature = "ssg")]
+    #[must_use]
     pub fn template_dir<P: Into<PathBuf>>(mut self, path: P) -> Self {
         self.template_dir = Some(path.into());
         self
@@ -509,6 +526,7 @@ impl ConfigBuilder {
 
     /// Sets the serve directory
     #[cfg(feature = "ssg")]
+    #[must_use]
     pub fn serve_dir<P: Into<PathBuf>>(mut self, path: P) -> Self {
         self.serve_dir = Some(path.into());
         self
@@ -516,14 +534,16 @@ impl ConfigBuilder {
 
     /// Enables or disables the development server
     #[cfg(feature = "ssg")]
-    pub fn server_enabled(mut self, enabled: bool) -> Self {
+    #[must_use]
+    pub const fn server_enabled(mut self, enabled: bool) -> Self {
         self.server_enabled = enabled;
         self
     }
 
     /// Sets the server port
     #[cfg(feature = "ssg")]
-    pub fn server_port(mut self, port: u16) -> Self {
+    #[must_use]
+    pub const fn server_port(mut self, port: u16) -> Self {
         self.server_port = Some(port);
         self
     }
@@ -642,7 +662,7 @@ mod tests {
         }
     }
 
-    /// Tests for the `ConfigBuilder` functionality
+    /// Tests for the `Builder` functionality
     mod builder_tests {
         use super::*;
 
@@ -812,14 +832,14 @@ mod tests {
         }
     }
 
-    /// Tests for `ConfigError` variants
+    /// Tests for `Error` variants
     mod config_error_tests {
         use super::*;
 
         #[test]
         fn test_config_error_display() {
             let error =
-                ConfigError::InvalidSiteName("Empty name".to_string());
+                Error::InvalidSiteName("Empty name".to_string());
             assert_eq!(
                 format!("{}", error),
                 "Invalid site name: Empty name"
@@ -828,7 +848,7 @@ mod tests {
 
         #[test]
         fn test_invalid_path_error() {
-            let error = ConfigError::InvalidPath {
+            let error = Error::InvalidPath {
                 path: "invalid/path".to_string(),
                 details: "Unsafe path detected".to_string(),
             };
@@ -844,7 +864,7 @@ mod tests {
                 std::io::ErrorKind::NotFound,
                 "File not found",
             );
-            let error: ConfigError = io_error.into();
+            let error: Error = io_error.into();
             assert_eq!(
                 format!("{}", error),
                 "Configuration file error: File not found"
@@ -869,10 +889,8 @@ mod tests {
         #[cfg(feature = "ssg")]
         #[test]
         fn test_is_valid_port() {
-            let config =
-                Config::builder().site_name("Test").build().unwrap();
-            assert!(config.is_valid_port(1024));
-            assert!(!config.is_valid_port(1023));
+            assert!(Config::is_valid_port(1024));
+            assert!(!Config::is_valid_port(1023));
         }
     }
 

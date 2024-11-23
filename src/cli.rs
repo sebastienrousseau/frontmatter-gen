@@ -146,10 +146,17 @@ async fn process_extract(
                     output_path.display()
                 )
             })?;
-        println!("Frontmatter extracted to: {}", output_path.display());
+        log::info!(
+            "Frontmatter extracted to `{}`",
+            output_path.display()
+        );
     } else {
-        println!("Extracted Frontmatter:\n{}", formatted);
-        println!("\nRemaining Content:\n{}", remaining);
+        log::info!(
+            "Extracted Frontmatter as {}\n\n{}\n\n",
+            output_format,
+            formatted
+        );
+        log::info!("Remaining Markdown Content\n\n{}\n\n", remaining);
     }
 
     Ok(())
@@ -380,11 +387,11 @@ Content here"#;
             let input_path = dir.path().join("test.md");
 
             // Create test input file
-            let content = r#"---
+            let content = r"---
 title: Test
 date: 2024-01-01
 ---
-Content here"#;
+Content here";
             let mut file = File::create(&input_path)?;
             writeln!(file, "{}", content)?;
 
@@ -704,9 +711,9 @@ Content here"#;
             let output_path = dir.path().join("output.yaml");
 
             // Create test input file with empty frontmatter
-            let content = r#"---
+            let content = r"---
 ---
-Content here"#;
+Content here";
 
             let mut file = File::create(&input_path)?;
             writeln!(file, "{}", content)?;
@@ -733,11 +740,11 @@ Content here"#;
             let input_path = dir.path().join("test.md");
 
             // Create test input file
-            let content = r#"---
+            let content = r"---
 title: Test
 date: 2024-01-01
 ---
-Content here"#;
+Content here";
             let mut file = File::create(&input_path)?;
             writeln!(file, "{}", content)?;
 
@@ -811,11 +818,11 @@ Content here"#;
             let input_path = dir.path().join("test.md");
 
             // Create test input file with invalid frontmatter
-            let content = r#"---
-title: "Test
+            let content = r"---
+title: 'Test
 date: 2024-01-01
 ---
-Content here"#; // Missing closing quote
+Content here";
 
             let mut file = File::create(&input_path)?;
             writeln!(file, "{}", content)?;
@@ -842,11 +849,11 @@ Content here"#; // Missing closing quote
             let input_path = dir.path().join("test.md");
 
             // Create test input file with valid frontmatter
-            let content = r#"---
+            let content = r"---
 title: Test
 date: 2024-01-01
 ---
-Content here"#;
+Content here";
 
             let mut file = File::create(&input_path)?;
             writeln!(file, "{}", content)?;
@@ -932,11 +939,11 @@ Content here"#;
             let output_path = dir.path().join("output.yaml");
 
             // Create test input file with valid frontmatter
-            let content = r#"---
+            let content = r"---
 title: Test
 date: 2024-01-01
 ---
-Content here"#;
+Content here";
 
             let mut file = File::create(&input_path)?;
             writeln!(file, "{}", content)?;
@@ -967,11 +974,11 @@ Content here"#;
             let input_path = dir.path().join("test.md");
 
             // Create test input file
-            let content = r#"---
+            let content = r"---
 title: Test
 date: 2024-01-01
 ---
-Content here"#;
+Content here";
             let mut file = File::create(&input_path)?;
             writeln!(file, "{}", content)?;
 
@@ -995,10 +1002,10 @@ Content here"#;
         let input_path = dir.path().join("test.md");
 
         // Create test input file with valid frontmatter
-        let content = r#"---
-title: "Test"
+        let content = r"---
+title: 'Test'
 ---
-Content here"#;
+Content here";
 
         let mut file = File::create(&input_path)?;
         writeln!(file, "{}", content)?;
@@ -1020,11 +1027,11 @@ Content here"#;
         let input_path = dir.path().join("test.md");
 
         // Create test input file with valid frontmatter
-        let content = r#"---
-title: "Test"
-date: "2024-01-01"
+        let content = r"---
+title: 'Test'
+date: '2024-01-01'
 ---
-Content here"#;
+Content here";
 
         let mut file = File::create(&input_path)?;
         writeln!(file, "{}", content)?;
@@ -1052,11 +1059,11 @@ Content here"#;
         let input_path = dir.path().join("test.md");
 
         // Create test input file with valid frontmatter
-        let content = r#"---
-title: "Test"
-date: "2024-01-01"
+        let content = r"---
+title: 'Test'
+date: '2024-01-01'
 ---
-Content here"#;
+Content here";
 
         let mut file = File::create(&input_path)?;
         writeln!(file, "{}", content)?;
@@ -1079,16 +1086,16 @@ Content here"#;
         let output_path = dir.path().join("output.json");
 
         // Create test input file with complex data types
-        let content = r#"---
-title: "Test"
+        let content = r"---
+title: 'Test'
 tags:
   - rust
   - cli
 nested:
   level1:
-    level2: "deep value"
+    level2: 'deep value'
 ---
-Content here"#;
+Content here";
 
         let mut file = File::create(&input_path)?;
         writeln!(file, "{}", content)?;

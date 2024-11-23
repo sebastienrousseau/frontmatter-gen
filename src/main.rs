@@ -49,6 +49,7 @@
 //! Contributions are welcome. Please open an issue or submit a pull request with your suggestions.
 
 use anyhow::Result;
+use log::LevelFilter;
 use std::env;
 use std::process;
 
@@ -87,8 +88,8 @@ async fn main() -> Result<()> {
 
     // Log startup information
     log::info!("Starting Frontmatter Generator");
-    log::debug!(
-        "Initializing with features: {}",
+    log::info!(
+        "Initializing with features `{}`",
         get_enabled_features()
     );
 
@@ -124,13 +125,22 @@ fn setup_logging() {
     // Get desired log level from RUST_LOG env var, default to "debug"
     let env =
         env::var("RUST_LOG").unwrap_or_else(|_| "debug".to_string());
+
+    // Define the logger level based on the environment variable
     let level = match env.to_lowercase().as_str() {
-        "error" => log::LevelFilter::Error,
-        "warn" => log::LevelFilter::Warn,
-        "info" => log::LevelFilter::Info,
-        "debug" => log::LevelFilter::Debug,
-        "trace" => log::LevelFilter::Trace,
-        _ => log::LevelFilter::Debug,
+        "error" => LevelFilter::Error,
+        "warn" => LevelFilter::Warn,
+        "info" => LevelFilter::Info,
+        "debug" => LevelFilter::Debug,
+        "trace" => LevelFilter::Trace,
+        "off" => LevelFilter::Off,
+        _ => {
+            log::warn!(
+                "Invalid RUST_LOG value '{}', defaulting to 'debug'",
+                env
+            );
+            LevelFilter::Debug
+        }
     };
 
     // Set up the logger
@@ -140,7 +150,9 @@ fn setup_logging() {
             eprintln!("Warning: Failed to initialize logger: {}", e);
         });
 
-    log::debug!("Logging initialized at level: {}", level);
+    if level != LevelFilter::Off {
+        log::info!("Logging initialized at level `{}`", level);
+    }
 }
 
 /// Executes the appropriate command based on enabled features.
@@ -153,14 +165,14 @@ fn setup_logging() {
 async fn execute_command() -> Result<()> {
     #[cfg(all(feature = "ssg", not(feature = "cli")))]
     {
-        log::debug!("Executing in SSG mode");
+        log::info!("Executing in SSG mode");
         let ssg_command = SsgCommand::parse();
         return ssg_command.execute().await;
     }
 
     #[cfg(all(feature = "cli", not(feature = "ssg")))]
     {
-        log::debug!("Executing in CLI mode");
+        log::info!("Executing in CLI mode");
         let cli_command = Cli::parse();
         return cli_command.process().await;
     }
@@ -168,7 +180,7 @@ async fn execute_command() -> Result<()> {
     #[cfg(all(feature = "cli", feature = "ssg"))]
     {
         // Handle both CLI and SSG features
-        log::debug!("Executing with both CLI and SSG features enabled");
+        log::info!("Executing with both CLI and SSG features enabled");
 
         // Use the first positional argument to determine the mode
         let args: Vec<String> = env::args().collect();
@@ -452,20 +464,38 @@ mod tests {
         #[tokio::test]
         async fn test_execute_command_cli() {
             init_logging();
-            // Simulate CLI arguments
+            use std::io::Write;
+            use tempfile::NamedTempFile;
+
+            // Create a temporary file with invalid frontmatter content
+            let mut temp_file = NamedTempFile::new()
+                .expect("Failed to create temp file");
+            writeln!(temp_file, "Invalid frontmatter content")
+                .expect("Failed to write to temp file");
+
+            let file_path = temp_file.path().to_str().unwrap();
+
+            // Simulate CLI arguments using the temporary file path
             let args = vec![
                 "frontmatter-gen",
                 "validate",
-                "input.md",
+                file_path,
                 "--required",
                 "title,date",
             ];
+
             // Parse the arguments using clap
             let cli_command = Cli::try_parse_from(&args)
                 .expect("Failed to parse arguments");
+
+            // Process the command
             let result = cli_command.process().await;
-            // Since we don't have actual file inputs, we expect an error
-            assert!(result.is_err());
+
+            // Since the file has invalid content, we expect an error
+            assert!(
+                result.is_err(),
+                "Expected validation to fail due to invalid content"
+            );
         }
 
         #[test]
@@ -573,8 +603,6 @@ mod tests {
             assert_eq!(features, "cli, ssg");
         }
 
-        // Add the following to your existing test module
-
         /// Tests that an invalid `RUST_LOG` value defaults to the debug level.
         #[test]
         fn test_logging_with_invalid_rust_log_value() {
@@ -582,8 +610,7 @@ mod tests {
             setup_logging();
 
             // Verify that the log level defaults to debug
-            let expected_level = log::LevelFilter::Debug;
-            assert_eq!(log::max_level(), expected_level);
+            assert_eq!(log::max_level(), LevelFilter::Debug);
         }
 
         /// Tests that an empty `RUST_LOG` value defaults to the debug level.
@@ -593,8 +620,7 @@ mod tests {
             setup_logging();
 
             // Verify that the log level defaults to debug
-            let expected_level = log::LevelFilter::Debug;
-            assert_eq!(log::max_level(), expected_level);
+            assert_eq!(log::max_level(), LevelFilter::Debug);
         }
 
         /// Tests that the `Logger::flush()` method can be called without panic.

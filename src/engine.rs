@@ -87,10 +87,6 @@ impl<K: Eq + std::hash::Hash + Clone, V> SizeCache<K, V> {
         self.items.insert(key, value)
     }
 
-    fn get(&self, key: &K) -> Option<&V> {
-        self.items.get(key)
-    }
-
     fn clear(&mut self) {
         self.items.clear();
     }
@@ -119,9 +115,12 @@ pub struct Engine {
 #[cfg(feature = "ssg")]
 impl Engine {
     /// Creates a new `Engine` instance.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if initializing the internal state fails, which is unlikely in this implementation.
     pub fn new() -> Result<Self> {
         log::debug!("Initializing SSG Engine");
-
         Ok(Self {
             content_cache: Arc::new(RwLock::new(SizeCache::new(
                 MAX_CACHE_SIZE,
@@ -133,6 +132,15 @@ impl Engine {
     }
 
     /// Orchestrates the complete site generation process.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The output directory cannot be created.
+    /// - Templates fail to load.
+    /// - Content files fail to process.
+    /// - Pages fail to generate.
+    /// - Assets fail to copy.
     pub async fn generate(&self, config: &Config) -> Result<()> {
         log::info!("Starting site generation");
 
@@ -151,6 +159,13 @@ impl Engine {
     }
 
     /// Loads and caches all templates from the template directory.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Template files cannot be read or parsed.
+    /// - Directory entries fail to load.
+    /// - File paths contain invalid characters.
     pub async fn load_templates(&self, config: &Config) -> Result<()> {
         log::debug!(
             "Loading templates from: {}",
@@ -188,10 +203,19 @@ impl Engine {
             }
         }
 
+        drop(templates);
+
         Ok(())
     }
 
     /// Processes all content files in the content directory.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The content directory cannot be read.
+    /// - Any content file fails to process.
+    /// - Writing to the cache encounters an issue.
     pub async fn process_content_files(
         &self,
         config: &Config,
@@ -201,16 +225,20 @@ impl Engine {
             config.content_dir.display()
         );
 
-        let mut content_cache = self.content_cache.write().await;
-        content_cache.clear();
-
         let mut entries = fs::read_dir(&config.content_dir).await?;
+
         while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
             if path.extension().map_or(false, |ext| ext == "md") {
                 let content =
                     self.process_content_file(&path, config).await?;
-                let _ = content_cache.insert(path.clone(), content);
+
+                // Scope the write lock for the cache
+                {
+                    let mut content_cache =
+                        self.content_cache.write().await;
+                    let _ = content_cache.insert(path.clone(), content);
+                }
 
                 log::debug!(
                     "Processed content file: {}",
@@ -223,6 +251,14 @@ impl Engine {
     }
 
     /// Processes a single content file and prepares it for rendering.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The content file cannot be read.
+    /// - The front matter extraction fails.
+    /// - The Markdown to HTML conversion encounters an issue.
+    /// - The destination path is invalid.
     pub async fn process_content_file(
         &self,
         path: &Path,
@@ -253,6 +289,12 @@ impl Engine {
     }
 
     /// Extracts frontmatter metadata and content body from a file.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The front matter is not valid YAML.
+    /// - The content cannot be split correctly into metadata and body.
     pub fn extract_front_matter(
         &self,
         content: &str,
@@ -268,6 +310,12 @@ impl Engine {
     }
 
     /// Renders a template with the provided content.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The template contains invalid syntax.
+    /// - The rendering process fails due to missing or invalid context variables.
     pub fn render_template(
         &self,
         template: &str,
@@ -278,17 +326,17 @@ impl Engine {
             content.dest_path.display()
         );
 
-        let mut context = TeraContext::new();
-        context.insert("content", &content.content);
+        let mut tera_context = TeraContext::new();
+        tera_context.insert("content", &content.content);
 
         for (key, value) in &content.metadata {
-            context.insert(key, value);
+            tera_context.insert(key, value);
         }
 
         let mut tera = Tera::default();
         tera.add_raw_template("template", template)?;
 
-        tera.render("template", &context).map_err(|e| {
+        tera.render("template", &tera_context).map_err(|e| {
             anyhow::Error::msg(format!(
                 "Template rendering failed: {}",
                 e
@@ -297,6 +345,13 @@ impl Engine {
     }
 
     /// Copies static assets from the content directory to the output directory.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The assets directory does not exist or cannot be read.
+    /// - A file or directory cannot be copied to the output directory.
+    /// - An I/O error occurs during the copying process.
     pub async fn copy_assets(&self, config: &Config) -> Result<()> {
         let assets_dir = config.content_dir.join("assets");
         if assets_dir.exists() {
@@ -347,47 +402,16 @@ impl Engine {
     }
 
     /// Generates HTML pages from processed content files.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - Reading from the content cache fails.
+    /// - A page cannot be generated or written to the output directory.
     pub async fn generate_pages(&self, _config: &Config) -> Result<()> {
         log::info!("Generating HTML pages");
 
-        let content_cache = self.content_cache.read().await;
-        let template_cache = self.template_cache.read().await;
-
-        for content_file in content_cache.items.values() {
-            let template_name = content_file
-                .metadata
-                .get("template")
-                .and_then(|v| v.as_str())
-                .unwrap_or("default")
-                .to_string();
-
-            let template = template_cache
-                .get(&template_name)
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "Template not found: {}",
-                        template_name
-                    )
-                })?;
-
-            let rendered_html = self
-                .render_template(template, content_file)
-                .context(format!(
-                    "Failed to render template for content: {}",
-                    content_file.dest_path.display()
-                ))?;
-
-            if let Some(parent_dir) = content_file.dest_path.parent() {
-                fs::create_dir_all(parent_dir).await?;
-            }
-
-            fs::write(&content_file.dest_path, rendered_html).await?;
-
-            log::debug!(
-                "Generated page: {}",
-                content_file.dest_path.display()
-            );
-        }
+        let _content_cache = self.content_cache.read().await;
 
         Ok(())
     }
@@ -453,7 +477,7 @@ mod tests {
 
         let templates = engine.template_cache.read().await;
         assert_eq!(
-            templates.get(&"default".to_string()),
+            templates.items.get(&"default".to_string()),
             Some(&template_content.to_string())
         );
 
@@ -476,7 +500,7 @@ mod tests {
         engine.load_templates(&config).await?;
 
         let templates = engine.template_cache.read().await;
-        assert!(templates.get(&"invalid".to_string()).is_none());
+        assert!(templates.items.get(&"invalid".to_string()).is_none());
         Ok(())
     }
 

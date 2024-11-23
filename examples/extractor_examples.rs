@@ -11,7 +11,7 @@
 
 #![allow(missing_docs)]
 
-use frontmatter_gen::error::FrontmatterError;
+use frontmatter_gen::error::Error;
 use frontmatter_gen::extractor::{
     detect_format, extract_json_frontmatter, extract_raw_frontmatter,
 };
@@ -43,7 +43,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Demonstrates extracting YAML frontmatter from content.
-fn extract_yaml_example() -> Result<(), FrontmatterError> {
+fn extract_yaml_example() -> Result<(), Error> {
     println!("🦀 YAML Frontmatter Extraction Example");
     println!("---------------------------------------------");
     let content = r#"---
@@ -57,7 +57,7 @@ Content here"#;
 }
 
 /// Demonstrates extracting TOML frontmatter from content.
-fn extract_toml_example() -> Result<(), FrontmatterError> {
+fn extract_toml_example() -> Result<(), Error> {
     println!("\n🦀 TOML Frontmatter Extraction Example");
     println!("---------------------------------------------");
     let content = r#"+++
@@ -71,7 +71,7 @@ Content here"#;
 }
 
 /// Demonstrates extracting JSON frontmatter from content.
-fn extract_json_example() -> Result<(), FrontmatterError> {
+fn extract_json_example() -> Result<(), Error> {
     println!("\n🦀 JSON Frontmatter Extraction Example");
     println!("---------------------------------------------");
     let content = r#"{ "title": "Example" }
@@ -82,8 +82,7 @@ Content here"#;
 }
 
 /// Demonstrates extracting deeply nested JSON frontmatter from content.
-fn extract_json_deeply_nested_example() -> Result<(), FrontmatterError>
-{
+fn extract_json_deeply_nested_example() -> Result<(), Error> {
     println!("\n🦀 Deeply Nested JSON Frontmatter Example");
     println!("---------------------------------------------");
     let content = r#"{ "a": { "b": { "c": { "d": { "e": {} }}}}}
@@ -97,7 +96,7 @@ Content here"#;
 }
 
 /// Demonstrates detecting the format of frontmatter.
-fn detect_format_example() -> Result<(), FrontmatterError> {
+fn detect_format_example() -> Result<(), Error> {
     println!("\n🦀 Frontmatter Format Detection Example");
     println!("---------------------------------------------");
     let yaml = "title: Example";
@@ -120,7 +119,7 @@ fn detect_format_example() -> Result<(), FrontmatterError> {
 
 /// SSG-specific examples that are only available with the "ssg" feature
 #[cfg(feature = "ssg")]
-fn run_ssg_examples() -> Result<(), FrontmatterError> {
+fn run_ssg_examples() -> Result<(), Error> {
     println!("\n🦀 SSG-Specific Examples");
     println!("---------------------------------------------");
 
@@ -146,7 +145,7 @@ mod tests {
 
     // Core functionality tests
     #[test]
-    fn test_yaml_extraction() -> Result<(), FrontmatterError> {
+    fn test_yaml_extraction() -> Result<(), Error> {
         let content = r#"---
 title: Test
 ---
@@ -157,7 +156,7 @@ Content"#;
     }
 
     #[test]
-    fn test_toml_extraction() -> Result<(), FrontmatterError> {
+    fn test_toml_extraction() -> Result<(), Error> {
         let content = r#"+++
 title = "Test"
 +++
@@ -173,7 +172,7 @@ Content"#;
         use super::*;
 
         #[test]
-        fn test_ssg_frontmatter() -> Result<(), FrontmatterError> {
+        fn test_ssg_frontmatter() -> Result<(), Error> {
             let content = r#"---
 title: Test
 template: post

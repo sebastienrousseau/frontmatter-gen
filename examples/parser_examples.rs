@@ -10,7 +10,7 @@
 
 #![allow(missing_docs)]
 
-use frontmatter_gen::error::FrontmatterError;
+use frontmatter_gen::error::Error;
 use frontmatter_gen::{
     parser::parse, parser::to_string, Format, Frontmatter, Value,
 };
@@ -44,7 +44,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Demonstrates parsing YAML frontmatter.
-fn parse_yaml_example() -> Result<(), FrontmatterError> {
+fn parse_yaml_example() -> Result<(), Error> {
     println!("🦀 YAML Parsing Example");
     println!("---------------------------------------------");
 
@@ -61,7 +61,7 @@ fn parse_yaml_example() -> Result<(), FrontmatterError> {
 }
 
 /// Demonstrates parsing TOML frontmatter.
-fn parse_toml_example() -> Result<(), FrontmatterError> {
+fn parse_toml_example() -> Result<(), Error> {
     println!("\n🦀 TOML Parsing Example");
     println!("---------------------------------------------");
 
@@ -78,7 +78,7 @@ fn parse_toml_example() -> Result<(), FrontmatterError> {
 }
 
 /// Demonstrates parsing JSON frontmatter.
-fn parse_json_example() -> Result<(), FrontmatterError> {
+fn parse_json_example() -> Result<(), Error> {
     println!("\n🦀 JSON Parsing Example");
     println!("---------------------------------------------");
 
@@ -109,7 +109,7 @@ fn create_sample_frontmatter() -> Frontmatter {
 }
 
 /// Demonstrates serializing frontmatter to YAML.
-fn serialize_to_yaml_example() -> Result<(), FrontmatterError> {
+fn serialize_to_yaml_example() -> Result<(), Error> {
     println!("\n🦀 YAML Serialization Example");
     println!("---------------------------------------------");
 
@@ -123,7 +123,7 @@ fn serialize_to_yaml_example() -> Result<(), FrontmatterError> {
 }
 
 /// Demonstrates serializing frontmatter to TOML.
-fn serialize_to_toml_example() -> Result<(), FrontmatterError> {
+fn serialize_to_toml_example() -> Result<(), Error> {
     println!("\n🦀 TOML Serialization Example");
     println!("---------------------------------------------");
 
@@ -137,7 +137,7 @@ fn serialize_to_toml_example() -> Result<(), FrontmatterError> {
 }
 
 /// Demonstrates serializing frontmatter to JSON.
-fn serialize_to_json_example() -> Result<(), FrontmatterError> {
+fn serialize_to_json_example() -> Result<(), Error> {
     println!("\n🦀 JSON Serialization Example");
     println!("---------------------------------------------");
 
@@ -152,7 +152,7 @@ fn serialize_to_json_example() -> Result<(), FrontmatterError> {
 
 /// SSG-specific examples that are only available with the "ssg" feature
 #[cfg(feature = "ssg")]
-fn ssg_parser_examples() -> Result<(), FrontmatterError> {
+fn ssg_parser_examples() -> Result<(), Error> {
     println!("\n🦀 SSG-Specific Parser Examples");
     println!("---------------------------------------------");
 
@@ -208,7 +208,7 @@ mod tests {
 
     // Core functionality tests
     #[test]
-    fn test_basic_parsing() -> Result<(), FrontmatterError> {
+    fn test_basic_parsing() -> Result<(), Error> {
         let yaml = "title: Test\n";
         let frontmatter = parse(yaml, Format::Yaml)?;
         assert_eq!(
@@ -219,7 +219,7 @@ mod tests {
     }
 
     #[test]
-    fn test_serialization() -> Result<(), FrontmatterError> {
+    fn test_serialization() -> Result<(), Error> {
         let frontmatter = create_sample_frontmatter();
         let yaml = to_string(&frontmatter, Format::Yaml)?;
         assert!(yaml.contains("title: My Post"));
@@ -232,8 +232,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn test_ssg_complex_frontmatter() -> Result<(), FrontmatterError>
-        {
+        fn test_ssg_complex_frontmatter() -> Result<(), Error> {
             let yaml = r#"
 template: post
 layout: blog

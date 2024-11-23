@@ -1,6 +1,6 @@
-//! # Frontmatter Parser and Serialiser Module
+//! # Front Matter Parser and Serialiser Module
 //!
-//! This module provides robust functionality for parsing and serialising frontmatter
+//! This module provides robust functionality for parsing and serialising front matter
 //! in various formats (YAML, TOML, and JSON). It focuses on:
 //!
 //! - Memory efficiency through pre-allocation and string optimisation
@@ -17,30 +17,46 @@
 //! - Comprehensive validation
 //! - Rich error context
 //!
+//! ## Usage Example
+//!
+//! ```rust
+//! use frontmatter_gen::{Format, parser};
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let yaml = "title: My Post\ndate: 2025-09-09\n";
+//! let front_matter = parser::parse_with_options(
+//!     yaml,
+//!     Format::Yaml,
+//!     None
+//! )?;
+//! # Ok(())
+//! # }
+//! ```
 
 use serde::Serialize;
 use serde_json::Value as JsonValue;
-use serde_yml::Value as YmlValue;
-use std::collections::HashMap;
+use serde_yml::Value as YamlValue;
+use std::{collections::HashMap, sync::Arc};
 use toml::Value as TomlValue;
 
-use crate::{
-    error::FrontmatterError, types::Frontmatter, Format, Value,
-};
+use crate::{error::Error, types::Frontmatter, Format, Value};
 
 // Constants for optimisation and validation
 const SMALL_STRING_SIZE: usize = 24;
 const MAX_NESTING_DEPTH: usize = 32;
 const MAX_KEYS: usize = 1000;
 
-/// Options for controlling parsing behaviour
+/// Options for controlling parsing behaviour.
+///
+/// Provides configuration for maximum allowed nesting depth, maximum number of keys,
+/// and whether to perform validation.
 #[derive(Debug, Clone, Copy)]
 pub struct ParseOptions {
-    /// Maximum allowed nesting depth
+    /// Maximum allowed nesting depth.
     pub max_depth: usize,
-    /// Maximum allowed number of keys
+    /// Maximum allowed number of keys.
     pub max_keys: usize,
-    /// Whether to validate structure
+    /// Whether to validate the structure.
     pub validate: bool,
 }
 
@@ -54,20 +70,20 @@ impl Default for ParseOptions {
     }
 }
 
-/// Optimises string storage based on length
+/// Optimises string storage based on length.
 ///
 /// For strings shorter than `SMALL_STRING_SIZE`, uses standard allocation.
 /// For longer strings, pre-allocates exact capacity to avoid reallocations.
 ///
 /// # Arguments
 ///
-/// * `s` - The input string slice to optimise
+/// * `s` - The input string slice to optimise.
 ///
 /// # Returns
 ///
-/// An optimised owned String
+/// An optimised owned `String`.
 #[inline]
-fn optimize_string(s: &str) -> String {
+fn optimise_string(s: &str) -> String {
     if s.len() <= SMALL_STRING_SIZE {
         s.to_string()
     } else {
@@ -77,7 +93,7 @@ fn optimize_string(s: &str) -> String {
     }
 }
 
-/// Parses raw frontmatter string into a `Frontmatter` object based on the specified format.
+/// Parses raw front matter string into a `Frontmatter` object based on the specified format.
 ///
 /// This function attempts to parse the provided string into a structured `Frontmatter`
 /// object according to the specified format. It performs validation by default
@@ -85,249 +101,305 @@ fn optimize_string(s: &str) -> String {
 ///
 /// # Arguments
 ///
-/// * `raw_frontmatter` - A string slice containing the raw frontmatter content
-/// * `format` - The `Format` enum specifying the desired format
-/// * `options` - Optional parsing options for controlling validation and limits
+/// * `raw_front_matter` - A string slice containing the raw front matter content.
+/// * `format` - The `Format` enum specifying the desired format.
+/// * `options` - Optional parsing options for controlling validation and limits.
 ///
 /// # Returns
 ///
-/// A `Result` containing either the parsed `Frontmatter` object or a `FrontmatterError`
-///
-/// # Examples
-///
-/// ```rust
-/// use frontmatter_gen::{Format, parser};
-///
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let yaml = "title: My Post\ndate: 2025-09-09\n";
-/// let frontmatter = parser::parse_with_options(
-///     yaml,
-///     Format::Yaml,
-///     None
-/// )?;
-/// # Ok(())
-/// # }
-/// ```
+/// A `Result` containing either the parsed `Frontmatter` object or a `Error`.
 ///
 /// # Errors
 ///
-/// Returns `FrontmatterError` if:
-/// - The input is not valid in the specified format
-/// - The structure exceeds configured limits
-/// - The format is unsupported
+/// Returns `Error` if:
+/// - The input is not valid in the specified format.
+/// - The structure exceeds configured limits.
+/// - The format is unsupported.
 pub fn parse_with_options(
-    raw_frontmatter: &str,
+    raw_front_matter: &str,
     format: Format,
     options: Option<ParseOptions>,
-) -> Result<Frontmatter, FrontmatterError> {
+) -> Result<Frontmatter, Error> {
     let options = options.unwrap_or_default();
 
-    // Validate format assumptions against the raw input
-    if format == Format::Yaml && raw_frontmatter.starts_with("---") {
-        eprintln!("Warning: Format set to YAML but input does not start with '---'");
+    // Check for unsupported formats
+    if format == Format::Unsupported {
+        let err_msg = format!(
+        "Unsupported format: {:?}. Supported formats are YAML, TOML, and JSON.",
+        format
+    );
+        log::error!("{}", err_msg);
+        return Err(Error::ConversionError(err_msg));
     }
-    if format == Format::Toml && !raw_frontmatter.contains('=') {
-        return Err(FrontmatterError::ConversionError(
+
+    // Validate format assumptions against the raw input
+    if format == Format::Yaml && !raw_front_matter.starts_with("---") {
+        log::warn!("Warning: Format set to YAML but input does not start with '---'");
+    }
+    if format == Format::Toml && !raw_front_matter.contains('=') {
+        return Err(Error::ConversionError(
             "Format set to TOML but input does not contain '=' signs."
                 .to_string(),
         ));
     }
-    if format == Format::Json && !raw_frontmatter.starts_with('{') {
-        return Err(FrontmatterError::ConversionError(
+    if format == Format::Json && !raw_front_matter.starts_with('{') {
+        return Err(Error::ConversionError(
             "Format set to JSON but input does not start with '{'."
                 .to_string(),
         ));
     }
 
-    let frontmatter = match format {
-        Format::Yaml => parse_yaml(raw_frontmatter).map_err(|e| {
-            eprintln!("YAML parsing failed: {}", e);
+    let front_matter = match format {
+        Format::Yaml => parse_yaml(raw_front_matter).map_err(|e| {
+            log::error!("YAML parsing failed: {}", e);
             e
         })?,
-        Format::Toml => parse_toml(raw_frontmatter).map_err(|e| {
-            eprintln!("TOML parsing failed: {}", e);
+        Format::Toml => parse_toml(raw_front_matter).map_err(|e| {
+            log::error!("TOML parsing failed: {}", e);
             e
         })?,
-        Format::Json => parse_json(raw_frontmatter).map_err(|e| {
-            eprintln!("JSON parsing failed: {}", e);
+        Format::Json => parse_json(raw_front_matter).map_err(|e| {
+            log::error!("JSON parsing failed: {}", e);
             e
         })?,
         Format::Unsupported => {
             let err_msg = "Unsupported format provided".to_string();
-            eprintln!("{}", err_msg);
-            return Err(FrontmatterError::ConversionError(err_msg));
+            log::error!("{}", err_msg);
+            return Err(Error::ConversionError(err_msg));
         }
     };
 
     // Perform validation if the options specify it
     if options.validate {
         log::debug!(
-            "Validating frontmatter with max_depth={} and max_keys={}",
+            "Validating front matter: maximum allowed nesting depth is {}, maximum allowed number of keys is {}.",
             options.max_depth,
             options.max_keys
         );
         validate_frontmatter(
-            &frontmatter,
+            &front_matter,
             options.max_depth,
             options.max_keys,
         )
         .map_err(|e| {
-            eprintln!("Validation failed: {}", e);
+            log::error!("Front matter validation failed: {}", e);
             e
         })?;
     }
 
-    Ok(frontmatter)
+    Ok(front_matter)
 }
 
-/// Convenience wrapper around `parse_with_options` using default options
+/// Convenience wrapper around `parse_with_options` using default options.
 ///
 /// # Arguments
 ///
-/// * `raw_frontmatter` - A string slice containing the raw frontmatter content
-/// * `format` - The `Format` enum specifying the desired format
+/// * `raw_front_matter` - A string slice containing the raw front matter content.
+/// * `format` - The `Format` enum specifying the desired format.
 ///
 /// # Returns
 ///
-/// A `Result` containing either the parsed `Frontmatter` object or a `FrontmatterError`
+/// A `Result` containing either the parsed `Frontmatter` object or a `Error`.
+///
+/// # Errors
+///
+/// Returns an `Error` if:
+/// - The format is invalid or unsupported.
+/// - Parsing fails due to invalid syntax.
+/// - Validation fails if enabled.
 pub fn parse(
-    raw_frontmatter: &str,
+    raw_front_matter: &str,
     format: Format,
-) -> Result<Frontmatter, FrontmatterError> {
-    parse_with_options(raw_frontmatter, format, None)
+) -> Result<Frontmatter, Error> {
+    parse_with_options(raw_front_matter, format, None)
 }
 
 /// Converts a `Frontmatter` object to a string representation in the specified format.
 ///
-/// Performs optimised serialisation with pre-allocated buffers where possible.
-///
 /// # Arguments
 ///
-/// * `frontmatter` - Reference to the `Frontmatter` object to serialise
-/// * `format` - The target format for serialisation
+/// * `front_matter` - Reference to the `Frontmatter` object to serialise.
+/// * `format` - The target format for serialisation.
 ///
 /// # Returns
 ///
-/// A `Result` containing the serialised string or a `FrontmatterError`
+/// A `Result` containing the serialised string or a `Error`.
 ///
+/// # Errors
+///
+/// Returns `Error` if:
+/// - Serialisation fails.
+/// - The specified format is unsupported.
 pub fn to_string(
-    frontmatter: &Frontmatter,
+    front_matter: &Frontmatter,
     format: Format,
-) -> Result<String, FrontmatterError> {
+) -> Result<String, Error> {
     match format {
-        Format::Yaml => to_yaml(frontmatter),
-        Format::Toml => to_toml(frontmatter),
-        Format::Json => to_json_optimized(frontmatter),
-        Format::Unsupported => Err(FrontmatterError::ConversionError(
+        Format::Yaml => to_yaml(front_matter),
+        Format::Toml => to_toml(front_matter),
+        Format::Json => to_json_optimised(front_matter),
+        Format::Unsupported => Err(Error::ConversionError(
             "Unsupported format".to_string(),
         )),
     }
 }
 
 // YAML Implementation
-// -----------------
-fn parse_yaml(raw: &str) -> Result<Frontmatter, FrontmatterError> {
-    // Log the raw input for debugging
-    // eprintln!("Debug: Raw input received by parse_yaml: {}", raw);
+// -------------------
 
-    // Parse the YAML content into a serde_yaml::Value
-    let yml_value: YmlValue = serde_yml::from_str(raw)
-        .map_err(|e| FrontmatterError::YamlParseError { source: e })?;
+/// Parses a YAML string into a `Frontmatter` object.
+///
+/// # Arguments
+///
+/// * `raw` - The raw YAML string.
+///
+/// # Returns
+///
+/// A `Result` containing the parsed `Frontmatter` or a `Error`.
+fn parse_yaml(raw: &str) -> Result<Frontmatter, Error> {
+    // Parse the YAML content into a serde_yml::Value
+    let yaml_value: YamlValue = serde_yml::from_str(raw)
+        .map_err(|e| Error::YamlParseError { source: e.into() })?;
 
-    // Prepare the frontmatter container
-    let capacity = yml_value.as_mapping().map_or(0, |m| m.len());
-    let mut frontmatter = Frontmatter(HashMap::with_capacity(capacity));
+    // Prepare the front matter container
+    let capacity =
+        yaml_value.as_mapping().map_or(0, serde_yml::Mapping::len);
+    let mut front_matter =
+        Frontmatter(HashMap::with_capacity(capacity));
 
-    // Convert the YAML mapping into the frontmatter structure
-    if let YmlValue::Mapping(mapping) = yml_value {
+    // Convert the YAML mapping into the front matter structure
+    if let YamlValue::Mapping(mapping) = yaml_value {
         for (key, value) in mapping {
-            if let YmlValue::String(k) = key {
-                let _ = frontmatter.insert(k, yml_to_value(&value));
+            if let YamlValue::String(k) = key {
+                let _ = front_matter.insert(k, yaml_to_value(&value));
             } else {
                 // Log a warning for non-string keys
-                eprintln!("Warning: Non-string key ignored in YAML frontmatter");
+                log::warn!("Warning: Non-string key ignored in YAML front matter");
             }
         }
     } else {
-        return Err(FrontmatterError::ParseError(
-            "YAML frontmatter is not a valid mapping".to_string(),
+        return Err(Error::ParseError(
+            "YAML front matter is not a valid mapping".to_string(),
         ));
     }
 
-    Ok(frontmatter)
+    Ok(front_matter)
 }
 
-fn yml_to_value(yml: &YmlValue) -> Value {
-    match yml {
-        YmlValue::Null => Value::Null,
-        YmlValue::Bool(b) => Value::Boolean(*b),
-        YmlValue::Number(n) => {
-            if let Some(i) = n.as_i64() {
-                Value::Number(i as f64)
-            } else if let Some(f) = n.as_f64() {
-                Value::Number(f)
-            } else {
-                Value::Number(0.0)
-            }
+/// Converts a `serde_yml::Value` into a `Value`.
+fn yaml_to_value(yaml: &YamlValue) -> Value {
+    match yaml {
+        YamlValue::Null => Value::Null,
+        YamlValue::Bool(b) => Value::Boolean(*b),
+        YamlValue::Number(n) => {
+            n.as_i64()
+                .map_or_else(
+                    || {
+                        n.as_f64().map_or_else(
+                            || {
+                                log::warn!(
+                                    "Invalid or unsupported number encountered in YAML: {:?}",
+                                    n
+                                );
+                                Value::Number(0.0) // Fallback for invalid numbers
+                            },
+                            Value::Number,
+                        )
+                    },
+                    |i| {
+                        if i.abs() < (1_i64 << 52) {
+                            Value::Number(i as f64)
+                        } else {
+                            log::warn!(
+                                "Integer {} exceeds precision of f64. Defaulting to 0.0",
+                                i
+                            );
+                            Value::Number(0.0) // Fallback for large values outside f64 precision
+                        }
+                    },
+                )
         }
-        YmlValue::String(s) => Value::String(optimize_string(s)),
-        YmlValue::Sequence(seq) => {
+        YamlValue::String(s) => Value::String(optimise_string(s)),
+        YamlValue::Sequence(seq) => {
             let mut vec = Vec::with_capacity(seq.len());
-            vec.extend(seq.iter().map(yml_to_value));
+            vec.extend(seq.iter().map(yaml_to_value));
             Value::Array(vec)
         }
-        YmlValue::Mapping(map) => {
+        YamlValue::Mapping(map) => {
             let mut result =
                 Frontmatter(HashMap::with_capacity(map.len()));
             for (k, v) in map {
-                if let YmlValue::String(key) = k {
+                if let YamlValue::String(key) = k {
                     let _ = result
                         .0
-                        .insert(optimize_string(key), yml_to_value(v));
+                        .insert(optimise_string(key), yaml_to_value(v));
+                } else {
+                    log::warn!(
+                        "Non-string key in YAML mapping ignored: {:?}",
+                        k
+                    );
                 }
             }
             Value::Object(Box::new(result))
         }
-        YmlValue::Tagged(tagged) => Value::Tagged(
-            optimize_string(&tagged.tag.to_string()),
-            Box::new(yml_to_value(&tagged.value)),
+        YamlValue::Tagged(tagged) => Value::Tagged(
+            optimise_string(&tagged.tag.to_string()),
+            Box::new(yaml_to_value(&tagged.value)),
         ),
     }
 }
 
-fn to_yaml(
-    frontmatter: &Frontmatter,
-) -> Result<String, FrontmatterError> {
-    serde_yml::to_string(&frontmatter.0)
-        .map_err(|e| FrontmatterError::ConversionError(e.to_string()))
+/// Serialises a `Frontmatter` object into a YAML string.
+///
+/// # Arguments
+///
+/// * `front_matter` - The `Frontmatter` object to serialise.
+///
+/// # Returns
+///
+/// A `Result` containing the serialised YAML string or a `Error`.
+fn to_yaml(front_matter: &Frontmatter) -> Result<String, Error> {
+    serde_yml::to_string(&front_matter.0)
+        .map_err(|e| Error::ConversionError(e.to_string()))
 }
 
 // TOML Implementation
-// -----------------
+// -------------------
 
-fn parse_toml(raw: &str) -> Result<Frontmatter, FrontmatterError> {
+/// Parses a TOML string into a `Frontmatter` object.
+///
+/// # Arguments
+///
+/// * `raw` - The raw TOML string.
+///
+/// # Returns
+///
+/// A `Result` containing the parsed `Frontmatter` or a `Error`.
+fn parse_toml(raw: &str) -> Result<Frontmatter, Error> {
     let toml_value: TomlValue =
-        raw.parse().map_err(FrontmatterError::TomlParseError)?;
+        raw.parse().map_err(Error::TomlParseError)?;
 
     let capacity = match &toml_value {
         TomlValue::Table(table) => table.len(),
         _ => 0,
     };
 
-    let mut frontmatter = Frontmatter(HashMap::with_capacity(capacity));
+    let mut front_matter =
+        Frontmatter(HashMap::with_capacity(capacity));
 
     if let TomlValue::Table(table) = toml_value {
         for (key, value) in table {
-            let _ = frontmatter.0.insert(key, toml_to_value(&value));
+            let _ = front_matter.0.insert(key, toml_to_value(&value));
         }
     }
 
-    Ok(frontmatter)
+    Ok(front_matter)
 }
 
+/// Converts a `toml::Value` into a `Value`.
 fn toml_to_value(toml: &TomlValue) -> Value {
     match toml {
-        TomlValue::String(s) => Value::String(optimize_string(s)),
+        TomlValue::String(s) => Value::String(optimise_string(s)),
         TomlValue::Integer(i) => Value::Number(*i as f64),
         TomlValue::Float(f) => Value::Number(*f),
         TomlValue::Boolean(b) => Value::Boolean(*b),
@@ -342,7 +414,7 @@ fn toml_to_value(toml: &TomlValue) -> Value {
             for (k, v) in table {
                 let _ = result
                     .0
-                    .insert(optimize_string(k), toml_to_value(v));
+                    .insert(optimise_string(k), toml_to_value(v));
             }
             Value::Object(Box::new(result))
         }
@@ -350,50 +422,69 @@ fn toml_to_value(toml: &TomlValue) -> Value {
     }
 }
 
-fn to_toml(
-    frontmatter: &Frontmatter,
-) -> Result<String, FrontmatterError> {
-    toml::to_string(&frontmatter.0)
-        .map_err(|e| FrontmatterError::ConversionError(e.to_string()))
+/// Serialises a `Frontmatter` object into a TOML string.
+///
+/// # Arguments
+///
+/// * `front_matter` - The `Frontmatter` object to serialise.
+///
+/// # Returns
+///
+/// A `Result` containing the serialised TOML string or a `Error`.
+fn to_toml(front_matter: &Frontmatter) -> Result<String, Error> {
+    toml::to_string(&front_matter.0)
+        .map_err(|e| Error::ConversionError(e.to_string()))
 }
 
 // JSON Implementation
-// -----------------
+// -------------------
 
-fn parse_json(raw: &str) -> Result<Frontmatter, FrontmatterError> {
+/// Parses a JSON string into a `Frontmatter` object.
+///
+/// # Arguments
+///
+/// * `raw` - The raw JSON string.
+///
+/// # Returns
+///
+/// A `Result` containing the parsed `Frontmatter` or a `Error`.
+fn parse_json(raw: &str) -> Result<Frontmatter, Error> {
     let json_value: JsonValue = serde_json::from_str(raw)
-        .map_err(FrontmatterError::JsonParseError)?;
+        .map_err(|e| Error::JsonParseError(Arc::new(e)))?;
 
     let capacity = match &json_value {
         JsonValue::Object(obj) => obj.len(),
         _ => 0,
     };
 
-    let mut frontmatter = Frontmatter(HashMap::with_capacity(capacity));
+    let mut front_matter =
+        Frontmatter(HashMap::with_capacity(capacity));
 
     if let JsonValue::Object(obj) = json_value {
         for (key, value) in obj {
-            let _ = frontmatter.0.insert(key, json_to_value(&value));
+            let _ = front_matter.0.insert(key, json_to_value(&value));
         }
     }
 
-    Ok(frontmatter)
+    Ok(front_matter)
 }
 
+/// Converts a `serde_json::Value` into a `Value`.
 fn json_to_value(json: &JsonValue) -> Value {
     match json {
         JsonValue::Null => Value::Null,
         JsonValue::Bool(b) => Value::Boolean(*b),
-        JsonValue::Number(n) => {
-            if let Some(i) = n.as_i64() {
-                Value::Number(i as f64)
-            } else if let Some(f) = n.as_f64() {
-                Value::Number(f)
-            } else {
-                Value::Number(0.0)
-            }
-        }
-        JsonValue::String(s) => Value::String(optimize_string(s)),
+        JsonValue::Number(n) => n.as_i64().map_or_else(
+            || {
+                if let Some(f) = n.as_f64() {
+                    Value::Number(f)
+                } else {
+                    Value::Number(0.0)
+                }
+            },
+            |i| Value::Number(i as f64),
+        ),
+        JsonValue::String(s) => Value::String(optimise_string(s)),
         JsonValue::Array(arr) => {
             let mut vec = Vec::with_capacity(arr.len());
             vec.extend(arr.iter().map(json_to_value));
@@ -405,57 +496,72 @@ fn json_to_value(json: &JsonValue) -> Value {
             for (k, v) in obj {
                 let _ = result
                     .0
-                    .insert(optimize_string(k), json_to_value(v));
+                    .insert(optimise_string(k), json_to_value(v));
             }
             Value::Object(Box::new(result))
         }
     }
 }
 
-/// Optimised JSON serialisation with pre-allocated buffer
-fn to_json_optimized(
-    frontmatter: &Frontmatter,
-) -> Result<String, FrontmatterError> {
-    let estimated_size = estimate_json_size(frontmatter);
+/// Optimised JSON serialisation with pre-allocated buffer.
+///
+/// # Arguments
+///
+/// * `front_matter` - The `Frontmatter` object to serialise.
+///
+/// # Returns
+///
+/// A `Result` containing the serialised JSON string or a `Error`.
+fn to_json_optimised(
+    front_matter: &Frontmatter,
+) -> Result<String, Error> {
+    let estimated_size = estimate_json_size(front_matter);
     let buf = Vec::with_capacity(estimated_size);
     let formatter = serde_json::ser::CompactFormatter;
     let mut ser =
         serde_json::Serializer::with_formatter(buf, formatter);
 
-    frontmatter.0.serialize(&mut ser).map_err(|e| {
-        FrontmatterError::ConversionError(e.to_string())
-    })?;
+    front_matter
+        .0
+        .serialize(&mut ser)
+        .map_err(|e| Error::ConversionError(e.to_string()))?;
 
     String::from_utf8(ser.into_inner())
-        .map_err(|e| FrontmatterError::ConversionError(e.to_string()))
+        .map_err(|e| Error::ConversionError(e.to_string()))
 }
 
 // Validation and Utilities
-// -----------------------
+// ------------------------
 
-/// Validates a frontmatter structure against configured limits.
+/// Validates a front matter structure against configured limits.
 ///
 /// Checks:
-/// - Maximum nesting depth
-/// - Maximum number of keys
-/// - Structure validity
+/// - Maximum nesting depth.
+/// - Maximum number of keys.
+/// - Structure validity.
 ///
 /// # Arguments
 ///
-/// * `fm` - Reference to the frontmatter to validate
-/// * `max_depth` - Maximum allowed nesting depth
-/// * `max_keys` - Maximum allowed number of keys
+/// * `fm` - Reference to the front matter to validate.
+/// * `max_depth` - Maximum allowed nesting depth.
+/// * `max_keys` - Maximum allowed number of keys.
 ///
 /// # Returns
 ///
-/// `Ok(())` if validation passes, `FrontmatterError` otherwise
-fn validate_frontmatter(
+/// `Ok(())` if validation passes, `Error` otherwise.
+///
+/// # Errors
+///
+/// Returns `Error` if:
+/// - The number of keys exceeds `max_keys`.
+/// - The nesting depth exceeds `max_depth`.
+pub fn validate_frontmatter(
     fm: &Frontmatter,
     max_depth: usize,
     max_keys: usize,
-) -> Result<(), FrontmatterError> {
+) -> Result<(), Error> {
     if fm.0.len() > max_keys {
-        return Err(FrontmatterError::ContentTooLarge {
+        return Err(Error::ContentTooLarge {
             size: fm.0.len(),
             max: max_keys,
         });
@@ -463,20 +569,30 @@ fn validate_frontmatter(
 
     // Validate nesting depth
     for value in fm.0.values() {
-        check_depth(value, 0, max_depth)?;
+        check_depth(value, 1, max_depth)?;
     }
 
     Ok(())
 }
 
-/// Recursively checks the nesting depth of a value
+/// Recursively checks the nesting depth of a value.
+///
+/// # Arguments
+///
+/// * `value` - The `Value` to check.
+/// * `current_depth` - The current depth of recursion.
+/// * `max_depth` - The maximum allowed depth.
+///
+/// # Returns
+///
+/// `Ok(())` if the depth is within limits, `Error` otherwise.
 fn check_depth(
     value: &Value,
     current_depth: usize,
     max_depth: usize,
-) -> Result<(), FrontmatterError> {
+) -> Result<(), Error> {
     if current_depth > max_depth {
-        return Err(FrontmatterError::NestingTooDeep {
+        return Err(Error::NestingTooDeep {
             depth: current_depth,
             max: max_depth,
         });
@@ -499,9 +615,17 @@ fn check_depth(
     Ok(())
 }
 
-/// Estimates the JSON string size for a frontmatter object
+/// Estimates the JSON string size for a front matter object.
 ///
-/// Used for pre-allocating buffers in serialisation
+/// Used for pre-allocating buffers in serialisation.
+///
+/// # Arguments
+///
+/// * `fm` - The `Frontmatter` object.
+///
+/// # Returns
+///
+/// An estimated size in bytes.
 fn estimate_json_size(fm: &Frontmatter) -> usize {
     let mut size = 2; // {}
     for (k, v) in &fm.0 {
@@ -512,7 +636,15 @@ fn estimate_json_size(fm: &Frontmatter) -> usize {
     size
 }
 
-/// Estimates the serialised size of a value
+/// Estimates the serialised size of a value.
+///
+/// # Arguments
+///
+/// * `value` - The `Value` to estimate.
+///
+/// # Returns
+///
+/// An estimated size in bytes.
 fn estimate_value_size(value: &Value) -> usize {
     match value {
         Value::Null => 4,                // null
@@ -555,16 +687,16 @@ mod tests {
     }
 
     #[test]
-    fn test_string_optimization() {
+    fn test_string_optimisation() {
         let short_str = "short";
         let long_str = "a".repeat(SMALL_STRING_SIZE + 1);
 
-        let optimized_short = optimize_string(short_str);
-        let optimized_long = optimize_string(&long_str);
+        let optimised_short = optimise_string(short_str);
+        let optimised_long = optimise_string(&long_str);
 
-        assert_eq!(optimized_short, short_str);
-        assert_eq!(optimized_long, long_str);
-        assert!(optimized_long.capacity() >= long_str.len());
+        assert_eq!(optimised_short, short_str);
+        assert_eq!(optimised_long, long_str);
+        assert!(optimised_long.capacity() >= long_str.len());
     }
 
     #[test]
@@ -623,12 +755,12 @@ mod tests {
 
     #[test]
     fn test_parse_options() {
-        let yaml = r#"
+        let yaml = r"
         nested:
           level1:
             level2:
               value: test
-        "#;
+        ";
 
         // Test with default options
         assert!(parse_with_options(yaml, Format::Yaml, None).is_ok());
@@ -653,21 +785,21 @@ mod tests {
         let invalid_yaml = "test: : invalid";
         assert!(matches!(
             parse(invalid_yaml, Format::Yaml),
-            Err(FrontmatterError::YamlParseError { .. })
+            Err(Error::YamlParseError { .. })
         ));
 
         // Test invalid TOML
         let invalid_toml = "test = = invalid";
         assert!(matches!(
             parse(invalid_toml, Format::Toml),
-            Err(FrontmatterError::TomlParseError(_))
+            Err(Error::TomlParseError(_))
         ));
 
         // Test invalid JSON
         let invalid_json = "{invalid}";
         assert!(matches!(
             parse(invalid_json, Format::Json),
-            Err(FrontmatterError::JsonParseError(_))
+            Err(Error::JsonParseError(_))
         ));
     }
 
@@ -680,5 +812,16 @@ mod tests {
         // Estimated size should be reasonably close to actual size
         assert!(estimated_size >= actual_json.len());
         assert!(estimated_size <= actual_json.len() * 2);
+    }
+
+    #[test]
+    fn test_large_integer_conversion() {
+        let large_i64 = 1_i64 << 53;
+        let fallback_value = Value::Number(0.0);
+
+        assert_eq!(
+            yaml_to_value(&YamlValue::Number(large_i64.into())),
+            fallback_value
+        );
     }
 }
