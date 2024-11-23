@@ -477,7 +477,7 @@ mod tests {
 
         let templates = engine.template_cache.read().await;
         assert_eq!(
-            templates.items.get(&"default".to_string()),
+            templates.items.get("default"),
             Some(&template_content.to_string())
         );
 
@@ -500,7 +500,7 @@ mod tests {
         engine.load_templates(&config).await?;
 
         let templates = engine.template_cache.read().await;
-        assert!(templates.items.get(&"invalid".to_string()).is_none());
+        assert!(!templates.items.contains_key("invalid"));
         Ok(())
     }
 
