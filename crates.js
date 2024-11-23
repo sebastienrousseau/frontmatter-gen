@@ -1,2 +1,2 @@
-window.ALL_CRATES = ["frontmatter_gen"];
-//{"start":21,"fragment_lengths":[17]}
+window.ALL_CRATES = ["fmg","frontmatter_gen"];
+//{"start":21,"fragment_lengths":[5,18]}

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/config.rs`."><title>config.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frontmatter_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0-nightly (f2a35426b 2024-11-16)" data-channel="nightly" data-search-js="search-b6b1fcd2.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="icon" href="https://kura.pro/frontmatter-gen/images/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">frontmatter_gen/</div>config.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/config.rs`."><title>config.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frontmatter_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.0-nightly (a47555110 2024-11-22)" data-channel="nightly" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="icon" href="https://kura.pro/frontmatter-gen/images/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">frontmatter_gen/</div>config.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -966,7 +966,40 @@
 <a href="#965" id="965">965</a>
 <a href="#966" id="966">966</a>
 <a href="#967" id="967">967</a>
-<a href="#968" id="968">968</a></pre></div><pre class="rust"><code><span class="comment">// Copyright © 2024 Shokunin Static Site Generator. All rights reserved.
+<a href="#968" id="968">968</a>
+<a href="#969" id="969">969</a>
+<a href="#970" id="970">970</a>
+<a href="#971" id="971">971</a>
+<a href="#972" id="972">972</a>
+<a href="#973" id="973">973</a>
+<a href="#974" id="974">974</a>
+<a href="#975" id="975">975</a>
+<a href="#976" id="976">976</a>
+<a href="#977" id="977">977</a>
+<a href="#978" id="978">978</a>
+<a href="#979" id="979">979</a>
+<a href="#980" id="980">980</a>
+<a href="#981" id="981">981</a>
+<a href="#982" id="982">982</a>
+<a href="#983" id="983">983</a>
+<a href="#984" id="984">984</a>
+<a href="#985" id="985">985</a>
+<a href="#986" id="986">986</a>
+<a href="#987" id="987">987</a>
+<a href="#988" id="988">988</a>
+<a href="#989" id="989">989</a>
+<a href="#990" id="990">990</a>
+<a href="#991" id="991">991</a>
+<a href="#992" id="992">992</a>
+<a href="#993" id="993">993</a>
+<a href="#994" id="994">994</a>
+<a href="#995" id="995">995</a>
+<a href="#996" id="996">996</a>
+<a href="#997" id="997">997</a>
+<a href="#998" id="998">998</a>
+<a href="#999" id="999">999</a>
+<a href="#1000" id="1000">1000</a>
+<a href="#1001" id="1001">1001</a></pre></div><pre class="rust"><code><span class="comment">// Copyright © 2024 Shokunin Static Site Generator. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 </span><span class="doccomment">//! # Configuration Module
@@ -1021,7 +1054,7 @@
 //! To use SSG-specific functionality, enable the "ssg" feature in your Cargo.toml:
 //! ```toml
 //! [dependencies]
-//! frontmatter-gen = { version = "0.0.3", features = ["ssg"] }
+//! frontmatter-gen = { version = "0.0.4", features = ["ssg"] }
 //! ```
 </span><span class="kw">use </span>std::fmt;
 <span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
@@ -1042,7 +1075,7 @@
 
 <span class="doccomment">/// Errors specific to configuration operations
 </span><span class="attr">#[derive(Error, Debug)]
-</span><span class="kw">pub enum </span>ConfigError {
+</span><span class="kw">pub enum </span>Error {
     <span class="doccomment">/// Invalid site name provided
     </span><span class="attr">#[error(<span class="string">"Invalid site name: {0}"</span>)]
     </span>InvalidSiteName(String),
@@ -1179,7 +1212,7 @@
 }
 
 <span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
-</span><span class="kw">fn </span>default_port() -&gt; u16 {
+</span><span class="kw">const fn </span>default_port() -&gt; u16 {
     <span class="number">8000
 </span>}
 
@@ -1201,7 +1234,7 @@
 }
 
 <span class="kw">impl </span>Config {
-    <span class="doccomment">/// Creates a new ConfigBuilder instance for fluent configuration creation
+    <span class="doccomment">/// Creates a new `Builder` instance for fluent configuration creation
     ///
     /// # Examples
     ///
@@ -1226,8 +1259,9 @@
     ///     .build()
     ///     .unwrap();
     /// ```
-    </span><span class="kw">pub fn </span>builder() -&gt; ConfigBuilder {
-        ConfigBuilder::default()
+    </span><span class="attr">#[must_use]
+    </span><span class="kw">pub fn </span>builder() -&gt; Builder {
+        Builder::default()
     }
 
     <span class="doccomment">/// Loads configuration from a TOML file
@@ -1265,7 +1299,7 @@
                 )
             })<span class="question-mark">?</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>config: Config = toml::from_str(<span class="kw-2">&amp;</span>content)
+        <span class="kw">let </span><span class="kw-2">mut </span>config: <span class="self">Self </span>= toml::from_str(<span class="kw-2">&amp;</span>content)
             .context(<span class="string">"Failed to parse TOML configuration"</span>)<span class="question-mark">?</span>;
 
         <span class="comment">// Ensure we have a unique ID
@@ -1292,7 +1326,7 @@
     /// - Language code format is invalid
     </span><span class="kw">pub fn </span>validate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if </span><span class="self">self</span>.site_name.trim().is_empty() {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(ConfigError::InvalidSiteName(
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidSiteName(
                 <span class="string">"Site name cannot be empty"</span>.to_string(),
             )
             .into());
@@ -1310,20 +1344,20 @@
             }
 
             <span class="kw">let _ </span>= Url::parse(<span class="kw-2">&amp;</span><span class="self">self</span>.base_url).map_err(|<span class="kw">_</span>| {
-                ConfigError::InvalidUrl(<span class="self">self</span>.base_url.clone())
+                Error::InvalidUrl(<span class="self">self</span>.base_url.clone())
             })<span class="question-mark">?</span>;
 
             <span class="kw">if </span>!<span class="self">self</span>.is_valid_language_code(<span class="kw-2">&amp;</span><span class="self">self</span>.language) {
-                <span class="kw">return </span><span class="prelude-val">Err</span>(ConfigError::InvalidLanguage(
+                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidLanguage(
                     <span class="self">self</span>.language.clone(),
                 )
                 .into());
             }
 
             <span class="kw">if </span><span class="self">self</span>.server_enabled
-                &amp;&amp; !<span class="self">self</span>.is_valid_port(<span class="self">self</span>.server_port)
+                &amp;&amp; !<span class="self">Self</span>::is_valid_port(<span class="self">self</span>.server_port)
             {
-                <span class="kw">return </span><span class="prelude-val">Err</span>(ConfigError::ServerError(<span class="macro">format!</span>(
+                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ServerError(<span class="macro">format!</span>(
                     <span class="string">"Invalid port number: {}"</span>,
                     <span class="self">self</span>.server_port
                 ))
@@ -1336,52 +1370,60 @@
 
     <span class="doccomment">/// Validates a path for safety and accessibility
     </span><span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
+    #[allow(clippy::unused_self)]
     </span><span class="kw">fn </span>validate_path(<span class="kw-2">&amp;</span><span class="self">self</span>, path: <span class="kw-2">&amp;</span>Path, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         validate_path_safety(path).with_context(|| {
             <span class="macro">format!</span>(<span class="string">"Invalid {} path: {}"</span>, name, path.display())
         })
     }
 
-    <span class="doccomment">/// Checks if a language code is valid (format: xx-XX)
-    </span><span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
+    #[allow(clippy::unused_self)]
+    #[must_use]
     </span><span class="kw">fn </span>is_valid_language_code(<span class="kw-2">&amp;</span><span class="self">self</span>, code: <span class="kw-2">&amp;</span>str) -&gt; bool {
         <span class="kw">let </span>parts: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = code.split(<span class="string">'-'</span>).collect();
-        <span class="kw">if </span>parts.len() != <span class="number">2 </span>{
-            <span class="kw">return </span><span class="bool-val">false</span>;
-        }
-
-        <span class="kw">let </span>(lang, region) = (parts[<span class="number">0</span>], parts[<span class="number">1</span>]);
-        lang.len() == <span class="number">2
-            </span>&amp;&amp; region.len() == <span class="number">2
-            </span>&amp;&amp; lang.chars().all(|c| c.is_ascii_lowercase())
-            &amp;&amp; region.chars().all(|c| c.is_ascii_uppercase())
+        <span class="kw">if let </span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>lang), <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>region)) =
+            (parts.first(), parts.get(<span class="number">1</span>))
+        {
+            lang.len() == <span class="number">2
+                </span>&amp;&amp; region.len() == <span class="number">2
+                </span>&amp;&amp; lang.chars().all(|c| c.is_ascii_lowercase())
+                &amp;&amp; region.chars().all(|c| c.is_ascii_uppercase())
+        } <span class="kw">else </span>{
+            <span class="bool-val">false
+        </span>}
     }
 
     <span class="doccomment">/// Checks if a port number is valid
     </span><span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
-    </span><span class="kw">fn </span>is_valid_port(<span class="kw-2">&amp;</span><span class="self">self</span>, port: u16) -&gt; bool {
+    #[must_use]
+    </span><span class="kw">const fn </span>is_valid_port(port: u16) -&gt; bool {
         port &gt;= <span class="number">1024
     </span>}
 
     <span class="doccomment">/// Gets the unique identifier for this configuration
-    </span><span class="kw">pub fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Uuid {
+    </span><span class="attr">#[must_use]
+    </span><span class="kw">pub const fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Uuid {
         <span class="self">self</span>.id
     }
 
     <span class="doccomment">/// Gets the site name
+    </span><span class="attr">#[must_use]
     </span><span class="kw">pub fn </span>site_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
         <span class="kw-2">&amp;</span><span class="self">self</span>.site_name
     }
 
     <span class="doccomment">/// Gets whether the development server is enabled
     </span><span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
-    </span><span class="kw">pub fn </span>server_enabled(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+    #[must_use]
+    </span><span class="kw">pub const fn </span>server_enabled(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.server_enabled
     }
 
     <span class="doccomment">/// Gets the server port if the server is enabled
     </span><span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
-    </span><span class="kw">pub fn </span>server_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;u16&gt; {
+    #[must_use]
+    </span><span class="kw">pub const fn </span>server_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;u16&gt; {
         <span class="kw">if </span><span class="self">self</span>.server_enabled {
             <span class="prelude-val">Some</span>(<span class="self">self</span>.server_port)
         } <span class="kw">else </span>{
@@ -1392,7 +1434,7 @@
 
 <span class="doccomment">/// Builder for creating Config instances
 </span><span class="attr">#[derive(Default, Debug)]
-</span><span class="kw">pub struct </span>ConfigBuilder {
+</span><span class="kw">pub struct </span>Builder {
     site_name: <span class="prelude-ty">Option</span>&lt;String&gt;,
     site_title: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
@@ -1415,15 +1457,17 @@
     </span>server_port: <span class="prelude-ty">Option</span>&lt;u16&gt;,
 }
 
-<span class="kw">impl </span>ConfigBuilder {
+<span class="kw">impl </span>Builder {
     <span class="comment">// Core builder methods
     </span><span class="doccomment">/// Sets the site name
+    </span><span class="attr">#[must_use]
     </span><span class="kw">pub fn </span>site_name&lt;S: Into&lt;String&gt;&gt;(<span class="kw-2">mut </span><span class="self">self</span>, name: S) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.site_name = <span class="prelude-val">Some</span>(name.into());
         <span class="self">self
     </span>}
 
     <span class="doccomment">/// Sets the site title
+    </span><span class="attr">#[must_use]
     </span><span class="kw">pub fn </span>site_title&lt;S: Into&lt;String&gt;&gt;(<span class="kw-2">mut </span><span class="self">self</span>, title: S) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.site_title = <span class="prelude-val">Some</span>(title.into());
         <span class="self">self
@@ -1431,6 +1475,7 @@
 
     <span class="comment">// SSG-specific builder methods
     </span><span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
+    #[must_use]
     </span><span class="doccomment">/// Sets the site description
     </span><span class="kw">pub fn </span>site_description&lt;S: Into&lt;String&gt;&gt;(
         <span class="kw-2">mut </span><span class="self">self</span>,
@@ -1442,6 +1487,7 @@
 
     <span class="doccomment">/// Sets the language code
     </span><span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
+    #[must_use]
     </span><span class="kw">pub fn </span>language&lt;S: Into&lt;String&gt;&gt;(<span class="kw-2">mut </span><span class="self">self</span>, lang: S) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.language = <span class="prelude-val">Some</span>(lang.into());
         <span class="self">self
@@ -1449,6 +1495,7 @@
 
     <span class="doccomment">/// Sets the base URL
     </span><span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
+    #[must_use]
     </span><span class="kw">pub fn </span>base_url&lt;S: Into&lt;String&gt;&gt;(<span class="kw-2">mut </span><span class="self">self</span>, url: S) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.base_url = <span class="prelude-val">Some</span>(url.into());
         <span class="self">self
@@ -1456,6 +1503,7 @@
 
     <span class="doccomment">/// Sets the content directory
     </span><span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
+    #[must_use]
     </span><span class="kw">pub fn </span>content_dir&lt;P: Into&lt;PathBuf&gt;&gt;(<span class="kw-2">mut </span><span class="self">self</span>, path: P) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.content_dir = <span class="prelude-val">Some</span>(path.into());
         <span class="self">self
@@ -1463,6 +1511,7 @@
 
     <span class="doccomment">/// Sets the output directory
     </span><span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
+    #[must_use]
     </span><span class="kw">pub fn </span>output_dir&lt;P: Into&lt;PathBuf&gt;&gt;(<span class="kw-2">mut </span><span class="self">self</span>, path: P) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.output_dir = <span class="prelude-val">Some</span>(path.into());
         <span class="self">self
@@ -1470,6 +1519,7 @@
 
     <span class="doccomment">/// Sets the template directory
     </span><span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
+    #[must_use]
     </span><span class="kw">pub fn </span>template_dir&lt;P: Into&lt;PathBuf&gt;&gt;(<span class="kw-2">mut </span><span class="self">self</span>, path: P) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.template_dir = <span class="prelude-val">Some</span>(path.into());
         <span class="self">self
@@ -1477,6 +1527,7 @@
 
     <span class="doccomment">/// Sets the serve directory
     </span><span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
+    #[must_use]
     </span><span class="kw">pub fn </span>serve_dir&lt;P: Into&lt;PathBuf&gt;&gt;(<span class="kw-2">mut </span><span class="self">self</span>, path: P) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.serve_dir = <span class="prelude-val">Some</span>(path.into());
         <span class="self">self
@@ -1484,14 +1535,16 @@
 
     <span class="doccomment">/// Enables or disables the development server
     </span><span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
-    </span><span class="kw">pub fn </span>server_enabled(<span class="kw-2">mut </span><span class="self">self</span>, enabled: bool) -&gt; <span class="self">Self </span>{
+    #[must_use]
+    </span><span class="kw">pub const fn </span>server_enabled(<span class="kw-2">mut </span><span class="self">self</span>, enabled: bool) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.server_enabled = enabled;
         <span class="self">self
     </span>}
 
     <span class="doccomment">/// Sets the server port
     </span><span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
-    </span><span class="kw">pub fn </span>server_port(<span class="kw-2">mut </span><span class="self">self</span>, port: u16) -&gt; <span class="self">Self </span>{
+    #[must_use]
+    </span><span class="kw">pub const fn </span>server_port(<span class="kw-2">mut </span><span class="self">self</span>, port: u16) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.server_port = <span class="prelude-val">Some</span>(port);
         <span class="self">self
     </span>}
@@ -1610,7 +1663,7 @@
         }
     }
 
-    <span class="doccomment">/// Tests for the `ConfigBuilder` functionality
+    <span class="doccomment">/// Tests for the `Builder` functionality
     </span><span class="kw">mod </span>builder_tests {
         <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
@@ -1780,14 +1833,14 @@
         }
     }
 
-    <span class="doccomment">/// Tests for `ConfigError` variants
+    <span class="doccomment">/// Tests for `Error` variants
     </span><span class="kw">mod </span>config_error_tests {
         <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
         <span class="attr">#[test]
         </span><span class="kw">fn </span>test_config_error_display() {
             <span class="kw">let </span>error =
-                ConfigError::InvalidSiteName(<span class="string">"Empty name"</span>.to_string());
+                Error::InvalidSiteName(<span class="string">"Empty name"</span>.to_string());
             <span class="macro">assert_eq!</span>(
                 <span class="macro">format!</span>(<span class="string">"{}"</span>, error),
                 <span class="string">"Invalid site name: Empty name"
@@ -1796,7 +1849,7 @@
 
         <span class="attr">#[test]
         </span><span class="kw">fn </span>test_invalid_path_error() {
-            <span class="kw">let </span>error = ConfigError::InvalidPath {
+            <span class="kw">let </span>error = Error::InvalidPath {
                 path: <span class="string">"invalid/path"</span>.to_string(),
                 details: <span class="string">"Unsafe path detected"</span>.to_string(),
             };
@@ -1812,7 +1865,7 @@
                 std::io::ErrorKind::NotFound,
                 <span class="string">"File not found"</span>,
             );
-            <span class="kw">let </span>error: ConfigError = io_error.into();
+            <span class="kw">let </span>error: Error = io_error.into();
             <span class="macro">assert_eq!</span>(
                 <span class="macro">format!</span>(<span class="string">"{}"</span>, error),
                 <span class="string">"Configuration file error: File not found"
@@ -1837,10 +1890,8 @@
         <span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
         #[test]
         </span><span class="kw">fn </span>test_is_valid_port() {
-            <span class="kw">let </span>config =
-                Config::builder().site_name(<span class="string">"Test"</span>).build().unwrap();
-            <span class="macro">assert!</span>(config.is_valid_port(<span class="number">1024</span>));
-            <span class="macro">assert!</span>(!config.is_valid_port(<span class="number">1023</span>));
+            <span class="macro">assert!</span>(Config::is_valid_port(<span class="number">1024</span>));
+            <span class="macro">assert!</span>(!Config::is_valid_port(<span class="number">1023</span>));
         }
     }
 
@@ -1931,6 +1982,21 @@
             <span class="macro">assert_eq!</span>(original.site_title, cloned.site_title);
             <span class="macro">assert_eq!</span>(original.id(), cloned.id());
             <span class="prelude-val">Ok</span>(())
+        }
+
+        <span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
+        #[test]
+        </span><span class="kw">fn </span>test_is_valid_language_code_safe() {
+            <span class="kw">let </span>config =
+                Config::builder().site_name(<span class="string">"Test"</span>).build().unwrap();
+
+            <span class="macro">assert!</span>(config.is_valid_language_code(<span class="string">"en-US"</span>));
+            <span class="macro">assert!</span>(config.is_valid_language_code(<span class="string">"fr-FR"</span>));
+            <span class="macro">assert!</span>(!config.is_valid_language_code(<span class="string">"invalid-code"</span>));
+            <span class="macro">assert!</span>(!config.is_valid_language_code(<span class="string">"en"</span>));
+            <span class="macro">assert!</span>(!config.is_valid_language_code(<span class="string">""</span>));
+            <span class="macro">assert!</span>(!config.is_valid_language_code(<span class="string">"e-US"</span>));
+            <span class="macro">assert!</span>(!config.is_valid_language_code(<span class="string">"en-Us"</span>));
         }
     }
 }

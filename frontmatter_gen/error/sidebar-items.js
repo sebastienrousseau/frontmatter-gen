@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["EngineError","FrontmatterError"]};
+window.SIDEBAR_ITEMS = {"enum":["Category","EngineError","Error"],"struct":["Context"]};

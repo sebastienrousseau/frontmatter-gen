@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["parse","parse_with_options","to_string"],"struct":["ParseOptions"]};
+window.SIDEBAR_ITEMS = {"fn":["parse","parse_with_options","to_string","validate_frontmatter"],"struct":["ParseOptions"]};

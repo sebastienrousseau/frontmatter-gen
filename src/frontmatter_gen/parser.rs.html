@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/parser.rs`."><title>parser.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frontmatter_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0-nightly (f2a35426b 2024-11-16)" data-channel="nightly" data-search-js="search-b6b1fcd2.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="icon" href="https://kura.pro/frontmatter-gen/images/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">frontmatter_gen/</div>parser.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/parser.rs`."><title>parser.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frontmatter_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.0-nightly (a47555110 2024-11-22)" data-channel="nightly" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="icon" href="https://kura.pro/frontmatter-gen/images/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">frontmatter_gen/</div>parser.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -681,9 +681,153 @@
 <a href="#680" id="680">680</a>
 <a href="#681" id="681">681</a>
 <a href="#682" id="682">682</a>
-<a href="#683" id="683">683</a></pre></div><pre class="rust"><code><span class="doccomment">//! # Frontmatter Parser and Serialiser Module
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
+<a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
+<a href="#765" id="765">765</a>
+<a href="#766" id="766">766</a>
+<a href="#767" id="767">767</a>
+<a href="#768" id="768">768</a>
+<a href="#769" id="769">769</a>
+<a href="#770" id="770">770</a>
+<a href="#771" id="771">771</a>
+<a href="#772" id="772">772</a>
+<a href="#773" id="773">773</a>
+<a href="#774" id="774">774</a>
+<a href="#775" id="775">775</a>
+<a href="#776" id="776">776</a>
+<a href="#777" id="777">777</a>
+<a href="#778" id="778">778</a>
+<a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
+<a href="#810" id="810">810</a>
+<a href="#811" id="811">811</a>
+<a href="#812" id="812">812</a>
+<a href="#813" id="813">813</a>
+<a href="#814" id="814">814</a>
+<a href="#815" id="815">815</a>
+<a href="#816" id="816">816</a>
+<a href="#817" id="817">817</a>
+<a href="#818" id="818">818</a>
+<a href="#819" id="819">819</a>
+<a href="#820" id="820">820</a>
+<a href="#821" id="821">821</a>
+<a href="#822" id="822">822</a>
+<a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a></pre></div><pre class="rust"><code><span class="doccomment">//! # Front Matter Parser and Serialiser Module
 //!
-//! This module provides robust functionality for parsing and serialising frontmatter
+//! This module provides robust functionality for parsing and serialising front matter
 //! in various formats (YAML, TOML, and JSON). It focuses on:
 //!
 //! - Memory efficiency through pre-allocation and string optimisation
@@ -700,30 +844,46 @@
 //! - Comprehensive validation
 //! - Rich error context
 //!
+//! ## Usage Example
+//!
+//! ```rust
+//! use frontmatter_gen::{Format, parser};
+//!
+//! # fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
+//! let yaml = "title: My Post\ndate: 2025-09-09\n";
+//! let front_matter = parser::parse_with_options(
+//!     yaml,
+//!     Format::Yaml,
+//!     None
+//! )?;
+//! # Ok(())
+//! # }
+//! ```
 
 </span><span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>serde_json::Value <span class="kw">as </span>JsonValue;
-<span class="kw">use </span>serde_yml::Value <span class="kw">as </span>YmlValue;
-<span class="kw">use </span>std::collections::HashMap;
+<span class="kw">use </span>serde_yml::Value <span class="kw">as </span>YamlValue;
+<span class="kw">use </span>std::{collections::HashMap, sync::Arc};
 <span class="kw">use </span>toml::Value <span class="kw">as </span>TomlValue;
 
-<span class="kw">use crate</span>::{
-    error::FrontmatterError, types::Frontmatter, Format, Value,
-};
+<span class="kw">use crate</span>::{error::Error, types::Frontmatter, Format, Value};
 
 <span class="comment">// Constants for optimisation and validation
 </span><span class="kw">const </span>SMALL_STRING_SIZE: usize = <span class="number">24</span>;
 <span class="kw">const </span>MAX_NESTING_DEPTH: usize = <span class="number">32</span>;
 <span class="kw">const </span>MAX_KEYS: usize = <span class="number">1000</span>;
 
-<span class="doccomment">/// Options for controlling parsing behaviour
+<span class="doccomment">/// Options for controlling parsing behaviour.
+///
+/// Provides configuration for maximum allowed nesting depth, maximum number of keys,
+/// and whether to perform validation.
 </span><span class="attr">#[derive(Debug, Clone, Copy)]
 </span><span class="kw">pub struct </span>ParseOptions {
-    <span class="doccomment">/// Maximum allowed nesting depth
+    <span class="doccomment">/// Maximum allowed nesting depth.
     </span><span class="kw">pub </span>max_depth: usize,
-    <span class="doccomment">/// Maximum allowed number of keys
+    <span class="doccomment">/// Maximum allowed number of keys.
     </span><span class="kw">pub </span>max_keys: usize,
-    <span class="doccomment">/// Whether to validate structure
+    <span class="doccomment">/// Whether to validate the structure.
     </span><span class="kw">pub </span>validate: bool,
 }
 
@@ -737,20 +897,20 @@
     }
 }
 
-<span class="doccomment">/// Optimises string storage based on length
+<span class="doccomment">/// Optimises string storage based on length.
 ///
 /// For strings shorter than `SMALL_STRING_SIZE`, uses standard allocation.
 /// For longer strings, pre-allocates exact capacity to avoid reallocations.
 ///
 /// # Arguments
 ///
-/// * `s` - The input string slice to optimise
+/// * `s` - The input string slice to optimise.
 ///
 /// # Returns
 ///
-/// An optimised owned String
+/// An optimised owned `String`.
 </span><span class="attr">#[inline]
-</span><span class="kw">fn </span>optimize_string(s: <span class="kw-2">&amp;</span>str) -&gt; String {
+</span><span class="kw">fn </span>optimise_string(s: <span class="kw-2">&amp;</span>str) -&gt; String {
     <span class="kw">if </span>s.len() &lt;= SMALL_STRING_SIZE {
         s.to_string()
     } <span class="kw">else </span>{
@@ -760,7 +920,7 @@
     }
 }
 
-<span class="doccomment">/// Parses raw frontmatter string into a `Frontmatter` object based on the specified format.
+<span class="doccomment">/// Parses raw front matter string into a `Frontmatter` object based on the specified format.
 ///
 /// This function attempts to parse the provided string into a structured `Frontmatter`
 /// object according to the specified format. It performs validation by default
@@ -768,248 +928,305 @@
 ///
 /// # Arguments
 ///
-/// * `raw_frontmatter` - A string slice containing the raw frontmatter content
-/// * `format` - The `Format` enum specifying the desired format
-/// * `options` - Optional parsing options for controlling validation and limits
+/// * `raw_front_matter` - A string slice containing the raw front matter content.
+/// * `format` - The `Format` enum specifying the desired format.
+/// * `options` - Optional parsing options for controlling validation and limits.
 ///
 /// # Returns
 ///
-/// A `Result` containing either the parsed `Frontmatter` object or a `FrontmatterError`
-///
-/// # Examples
-///
-/// ```rust
-/// use frontmatter_gen::{Format, parser};
-///
-/// # fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
-/// let yaml = "title: My Post\ndate: 2025-09-09\n";
-/// let frontmatter = parser::parse_with_options(
-///     yaml,
-///     Format::Yaml,
-///     None
-/// )?;
-/// # Ok(())
-/// # }
-/// ```
+/// A `Result` containing either the parsed `Frontmatter` object or a `Error`.
 ///
 /// # Errors
 ///
-/// Returns `FrontmatterError` if:
-/// - The input is not valid in the specified format
-/// - The structure exceeds configured limits
-/// - The format is unsupported
+/// Returns `Error` if:
+/// - The input is not valid in the specified format.
+/// - The structure exceeds configured limits.
+/// - The format is unsupported.
 </span><span class="kw">pub fn </span>parse_with_options(
-    raw_frontmatter: <span class="kw-2">&amp;</span>str,
+    raw_front_matter: <span class="kw-2">&amp;</span>str,
     format: Format,
     options: <span class="prelude-ty">Option</span>&lt;ParseOptions&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;Frontmatter, FrontmatterError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;Frontmatter, Error&gt; {
     <span class="kw">let </span>options = options.unwrap_or_default();
 
-    <span class="comment">// Validate format assumptions against the raw input
-    </span><span class="kw">if </span>format == Format::Yaml &amp;&amp; raw_frontmatter.starts_with(<span class="string">"---"</span>) {
-        <span class="macro">eprintln!</span>(<span class="string">"Warning: Format set to YAML but input does not start with '---'"</span>);
+    <span class="comment">// Check for unsupported formats
+    </span><span class="kw">if </span>format == Format::Unsupported {
+        <span class="kw">let </span>err_msg = <span class="macro">format!</span>(
+        <span class="string">"Unsupported format: {:?}. Supported formats are YAML, TOML, and JSON."</span>,
+        format
+    );
+        <span class="macro">log::error!</span>(<span class="string">"{}"</span>, err_msg);
+        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ConversionError(err_msg));
     }
-    <span class="kw">if </span>format == Format::Toml &amp;&amp; !raw_frontmatter.contains(<span class="string">'='</span>) {
-        <span class="kw">return </span><span class="prelude-val">Err</span>(FrontmatterError::ConversionError(
+
+    <span class="comment">// Validate format assumptions against the raw input
+    </span><span class="kw">if </span>format == Format::Yaml &amp;&amp; !raw_front_matter.starts_with(<span class="string">"---"</span>) {
+        <span class="macro">log::warn!</span>(<span class="string">"Warning: Format set to YAML but input does not start with '---'"</span>);
+    }
+    <span class="kw">if </span>format == Format::Toml &amp;&amp; !raw_front_matter.contains(<span class="string">'='</span>) {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ConversionError(
             <span class="string">"Format set to TOML but input does not contain '=' signs."
                 </span>.to_string(),
         ));
     }
-    <span class="kw">if </span>format == Format::Json &amp;&amp; !raw_frontmatter.starts_with(<span class="string">'{'</span>) {
-        <span class="kw">return </span><span class="prelude-val">Err</span>(FrontmatterError::ConversionError(
+    <span class="kw">if </span>format == Format::Json &amp;&amp; !raw_front_matter.starts_with(<span class="string">'{'</span>) {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ConversionError(
             <span class="string">"Format set to JSON but input does not start with '{'."
                 </span>.to_string(),
         ));
     }
 
-    <span class="kw">let </span>frontmatter = <span class="kw">match </span>format {
-        Format::Yaml =&gt; parse_yaml(raw_frontmatter).map_err(|e| {
-            <span class="macro">eprintln!</span>(<span class="string">"YAML parsing failed: {}"</span>, e);
+    <span class="kw">let </span>front_matter = <span class="kw">match </span>format {
+        Format::Yaml =&gt; parse_yaml(raw_front_matter).map_err(|e| {
+            <span class="macro">log::error!</span>(<span class="string">"YAML parsing failed: {}"</span>, e);
             e
         })<span class="question-mark">?</span>,
-        Format::Toml =&gt; parse_toml(raw_frontmatter).map_err(|e| {
-            <span class="macro">eprintln!</span>(<span class="string">"TOML parsing failed: {}"</span>, e);
+        Format::Toml =&gt; parse_toml(raw_front_matter).map_err(|e| {
+            <span class="macro">log::error!</span>(<span class="string">"TOML parsing failed: {}"</span>, e);
             e
         })<span class="question-mark">?</span>,
-        Format::Json =&gt; parse_json(raw_frontmatter).map_err(|e| {
-            <span class="macro">eprintln!</span>(<span class="string">"JSON parsing failed: {}"</span>, e);
+        Format::Json =&gt; parse_json(raw_front_matter).map_err(|e| {
+            <span class="macro">log::error!</span>(<span class="string">"JSON parsing failed: {}"</span>, e);
             e
         })<span class="question-mark">?</span>,
         Format::Unsupported =&gt; {
             <span class="kw">let </span>err_msg = <span class="string">"Unsupported format provided"</span>.to_string();
-            <span class="macro">eprintln!</span>(<span class="string">"{}"</span>, err_msg);
-            <span class="kw">return </span><span class="prelude-val">Err</span>(FrontmatterError::ConversionError(err_msg));
+            <span class="macro">log::error!</span>(<span class="string">"{}"</span>, err_msg);
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ConversionError(err_msg));
         }
     };
 
     <span class="comment">// Perform validation if the options specify it
     </span><span class="kw">if </span>options.validate {
-        <span class="macro">println!</span>(
-            <span class="string">"Validating frontmatter with max_depth={} and max_keys={}"</span>,
-            options.max_depth, options.max_keys
+        <span class="macro">log::debug!</span>(
+            <span class="string">"Validating front matter: maximum allowed nesting depth is {}, maximum allowed number of keys is {}."</span>,
+            options.max_depth,
+            options.max_keys
         );
         validate_frontmatter(
-            <span class="kw-2">&amp;</span>frontmatter,
+            <span class="kw-2">&amp;</span>front_matter,
             options.max_depth,
             options.max_keys,
         )
         .map_err(|e| {
-            <span class="macro">eprintln!</span>(<span class="string">"Validation failed: {}"</span>, e);
+            <span class="macro">log::error!</span>(<span class="string">"Front matter validation failed: {}"</span>, e);
             e
         })<span class="question-mark">?</span>;
     }
 
-    <span class="prelude-val">Ok</span>(frontmatter)
+    <span class="prelude-val">Ok</span>(front_matter)
 }
 
-<span class="doccomment">/// Convenience wrapper around `parse_with_options` using default options
+<span class="doccomment">/// Convenience wrapper around `parse_with_options` using default options.
 ///
 /// # Arguments
 ///
-/// * `raw_frontmatter` - A string slice containing the raw frontmatter content
-/// * `format` - The `Format` enum specifying the desired format
+/// * `raw_front_matter` - A string slice containing the raw front matter content.
+/// * `format` - The `Format` enum specifying the desired format.
 ///
 /// # Returns
 ///
-/// A `Result` containing either the parsed `Frontmatter` object or a `FrontmatterError`
+/// A `Result` containing either the parsed `Frontmatter` object or a `Error`.
+///
+/// # Errors
+///
+/// Returns an `Error` if:
+/// - The format is invalid or unsupported.
+/// - Parsing fails due to invalid syntax.
+/// - Validation fails if enabled.
 </span><span class="kw">pub fn </span>parse(
-    raw_frontmatter: <span class="kw-2">&amp;</span>str,
+    raw_front_matter: <span class="kw-2">&amp;</span>str,
     format: Format,
-) -&gt; <span class="prelude-ty">Result</span>&lt;Frontmatter, FrontmatterError&gt; {
-    parse_with_options(raw_frontmatter, format, <span class="prelude-val">None</span>)
+) -&gt; <span class="prelude-ty">Result</span>&lt;Frontmatter, Error&gt; {
+    parse_with_options(raw_front_matter, format, <span class="prelude-val">None</span>)
 }
 
 <span class="doccomment">/// Converts a `Frontmatter` object to a string representation in the specified format.
 ///
-/// Performs optimised serialisation with pre-allocated buffers where possible.
-///
 /// # Arguments
 ///
-/// * `frontmatter` - Reference to the `Frontmatter` object to serialise
-/// * `format` - The target format for serialisation
+/// * `front_matter` - Reference to the `Frontmatter` object to serialise.
+/// * `format` - The target format for serialisation.
 ///
 /// # Returns
 ///
-/// A `Result` containing the serialised string or a `FrontmatterError`
+/// A `Result` containing the serialised string or a `Error`.
 ///
+/// # Errors
+///
+/// Returns `Error` if:
+/// - Serialisation fails.
+/// - The specified format is unsupported.
 </span><span class="kw">pub fn </span>to_string(
-    frontmatter: <span class="kw-2">&amp;</span>Frontmatter,
+    front_matter: <span class="kw-2">&amp;</span>Frontmatter,
     format: Format,
-) -&gt; <span class="prelude-ty">Result</span>&lt;String, FrontmatterError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;String, Error&gt; {
     <span class="kw">match </span>format {
-        Format::Yaml =&gt; to_yaml(frontmatter),
-        Format::Toml =&gt; to_toml(frontmatter),
-        Format::Json =&gt; to_json_optimized(frontmatter),
-        Format::Unsupported =&gt; <span class="prelude-val">Err</span>(FrontmatterError::ConversionError(
+        Format::Yaml =&gt; to_yaml(front_matter),
+        Format::Toml =&gt; to_toml(front_matter),
+        Format::Json =&gt; to_json_optimised(front_matter),
+        Format::Unsupported =&gt; <span class="prelude-val">Err</span>(Error::ConversionError(
             <span class="string">"Unsupported format"</span>.to_string(),
         )),
     }
 }
 
 <span class="comment">// YAML Implementation
-// -----------------
-</span><span class="kw">fn </span>parse_yaml(raw: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Frontmatter, FrontmatterError&gt; {
-    <span class="comment">// Log the raw input for debugging
-    // eprintln!("Debug: Raw input received by parse_yaml: {}", raw);
+// -------------------
 
-    // Parse the YAML content into a serde_yaml::Value
-    </span><span class="kw">let </span>yml_value: YmlValue = serde_yml::from_str(raw)
-        .map_err(|e| FrontmatterError::YamlParseError { source: e })<span class="question-mark">?</span>;
+</span><span class="doccomment">/// Parses a YAML string into a `Frontmatter` object.
+///
+/// # Arguments
+///
+/// * `raw` - The raw YAML string.
+///
+/// # Returns
+///
+/// A `Result` containing the parsed `Frontmatter` or a `Error`.
+</span><span class="kw">fn </span>parse_yaml(raw: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Frontmatter, Error&gt; {
+    <span class="comment">// Parse the YAML content into a serde_yml::Value
+    </span><span class="kw">let </span>yaml_value: YamlValue = serde_yml::from_str(raw)
+        .map_err(|e| Error::YamlParseError { source: e.into() })<span class="question-mark">?</span>;
 
-    <span class="comment">// Prepare the frontmatter container
-    </span><span class="kw">let </span>capacity = yml_value.as_mapping().map_or(<span class="number">0</span>, |m| m.len());
-    <span class="kw">let </span><span class="kw-2">mut </span>frontmatter = Frontmatter(HashMap::with_capacity(capacity));
+    <span class="comment">// Prepare the front matter container
+    </span><span class="kw">let </span>capacity =
+        yaml_value.as_mapping().map_or(<span class="number">0</span>, serde_yml::Mapping::len);
+    <span class="kw">let </span><span class="kw-2">mut </span>front_matter =
+        Frontmatter(HashMap::with_capacity(capacity));
 
-    <span class="comment">// Convert the YAML mapping into the frontmatter structure
-    </span><span class="kw">if let </span>YmlValue::Mapping(mapping) = yml_value {
+    <span class="comment">// Convert the YAML mapping into the front matter structure
+    </span><span class="kw">if let </span>YamlValue::Mapping(mapping) = yaml_value {
         <span class="kw">for </span>(key, value) <span class="kw">in </span>mapping {
-            <span class="kw">if let </span>YmlValue::String(k) = key {
-                <span class="kw">let _ </span>= frontmatter.insert(k, yml_to_value(<span class="kw-2">&amp;</span>value));
+            <span class="kw">if let </span>YamlValue::String(k) = key {
+                <span class="kw">let _ </span>= front_matter.insert(k, yaml_to_value(<span class="kw-2">&amp;</span>value));
             } <span class="kw">else </span>{
                 <span class="comment">// Log a warning for non-string keys
-                </span><span class="macro">eprintln!</span>(<span class="string">"Warning: Non-string key ignored in YAML frontmatter"</span>);
+                </span><span class="macro">log::warn!</span>(<span class="string">"Warning: Non-string key ignored in YAML front matter"</span>);
             }
         }
     } <span class="kw">else </span>{
-        <span class="kw">return </span><span class="prelude-val">Err</span>(FrontmatterError::ParseError(
-            <span class="string">"YAML frontmatter is not a valid mapping"</span>.to_string(),
+        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(
+            <span class="string">"YAML front matter is not a valid mapping"</span>.to_string(),
         ));
     }
 
-    <span class="prelude-val">Ok</span>(frontmatter)
+    <span class="prelude-val">Ok</span>(front_matter)
 }
 
-<span class="kw">fn </span>yml_to_value(yml: <span class="kw-2">&amp;</span>YmlValue) -&gt; Value {
-    <span class="kw">match </span>yml {
-        YmlValue::Null =&gt; Value::Null,
-        YmlValue::Bool(b) =&gt; Value::Boolean(<span class="kw-2">*</span>b),
-        YmlValue::Number(n) =&gt; {
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(i) = n.as_i64() {
-                Value::Number(i <span class="kw">as </span>f64)
-            } <span class="kw">else if let </span><span class="prelude-val">Some</span>(f) = n.as_f64() {
-                Value::Number(f)
-            } <span class="kw">else </span>{
-                Value::Number(<span class="number">0.0</span>)
-            }
+<span class="doccomment">/// Converts a `serde_yml::Value` into a `Value`.
+</span><span class="kw">fn </span>yaml_to_value(yaml: <span class="kw-2">&amp;</span>YamlValue) -&gt; Value {
+    <span class="kw">match </span>yaml {
+        YamlValue::Null =&gt; Value::Null,
+        YamlValue::Bool(b) =&gt; Value::Boolean(<span class="kw-2">*</span>b),
+        YamlValue::Number(n) =&gt; {
+            n.as_i64()
+                .map_or_else(
+                    || {
+                        n.as_f64().map_or_else(
+                            || {
+                                <span class="macro">log::warn!</span>(
+                                    <span class="string">"Invalid or unsupported number encountered in YAML: {:?}"</span>,
+                                    n
+                                );
+                                Value::Number(<span class="number">0.0</span>) <span class="comment">// Fallback for invalid numbers
+                            </span>},
+                            Value::Number,
+                        )
+                    },
+                    |i| {
+                        <span class="kw">if </span>i.abs() &lt; (<span class="number">1_i64 </span>&lt;&lt; <span class="number">52</span>) {
+                            Value::Number(i <span class="kw">as </span>f64)
+                        } <span class="kw">else </span>{
+                            <span class="macro">log::warn!</span>(
+                                <span class="string">"Integer {} exceeds precision of f64. Defaulting to 0.0"</span>,
+                                i
+                            );
+                            Value::Number(<span class="number">0.0</span>) <span class="comment">// Fallback for large values outside f64 precision
+                        </span>}
+                    },
+                )
         }
-        YmlValue::String(s) =&gt; Value::String(optimize_string(s)),
-        YmlValue::Sequence(seq) =&gt; {
+        YamlValue::String(s) =&gt; Value::String(optimise_string(s)),
+        YamlValue::Sequence(seq) =&gt; {
             <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::with_capacity(seq.len());
-            vec.extend(seq.iter().map(yml_to_value));
+            vec.extend(seq.iter().map(yaml_to_value));
             Value::Array(vec)
         }
-        YmlValue::Mapping(map) =&gt; {
+        YamlValue::Mapping(map) =&gt; {
             <span class="kw">let </span><span class="kw-2">mut </span>result =
                 Frontmatter(HashMap::with_capacity(map.len()));
             <span class="kw">for </span>(k, v) <span class="kw">in </span>map {
-                <span class="kw">if let </span>YmlValue::String(key) = k {
+                <span class="kw">if let </span>YamlValue::String(key) = k {
                     <span class="kw">let _ </span>= result
                         .<span class="number">0
-                        </span>.insert(optimize_string(key), yml_to_value(v));
+                        </span>.insert(optimise_string(key), yaml_to_value(v));
+                } <span class="kw">else </span>{
+                    <span class="macro">log::warn!</span>(
+                        <span class="string">"Non-string key in YAML mapping ignored: {:?}"</span>,
+                        k
+                    );
                 }
             }
             Value::Object(Box::new(result))
         }
-        YmlValue::Tagged(tagged) =&gt; Value::Tagged(
-            optimize_string(<span class="kw-2">&amp;</span>tagged.tag.to_string()),
-            Box::new(yml_to_value(<span class="kw-2">&amp;</span>tagged.value)),
+        YamlValue::Tagged(tagged) =&gt; Value::Tagged(
+            optimise_string(<span class="kw-2">&amp;</span>tagged.tag.to_string()),
+            Box::new(yaml_to_value(<span class="kw-2">&amp;</span>tagged.value)),
         ),
     }
 }
 
-<span class="kw">fn </span>to_yaml(
-    frontmatter: <span class="kw-2">&amp;</span>Frontmatter,
-) -&gt; <span class="prelude-ty">Result</span>&lt;String, FrontmatterError&gt; {
-    serde_yml::to_string(<span class="kw-2">&amp;</span>frontmatter.<span class="number">0</span>)
-        .map_err(|e| FrontmatterError::ConversionError(e.to_string()))
+<span class="doccomment">/// Serialises a `Frontmatter` object into a YAML string.
+///
+/// # Arguments
+///
+/// * `front_matter` - The `Frontmatter` object to serialise.
+///
+/// # Returns
+///
+/// A `Result` containing the serialised YAML string or a `Error`.
+</span><span class="kw">fn </span>to_yaml(front_matter: <span class="kw-2">&amp;</span>Frontmatter) -&gt; <span class="prelude-ty">Result</span>&lt;String, Error&gt; {
+    serde_yml::to_string(<span class="kw-2">&amp;</span>front_matter.<span class="number">0</span>)
+        .map_err(|e| Error::ConversionError(e.to_string()))
 }
 
 <span class="comment">// TOML Implementation
-// -----------------
+// -------------------
 
-</span><span class="kw">fn </span>parse_toml(raw: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Frontmatter, FrontmatterError&gt; {
+</span><span class="doccomment">/// Parses a TOML string into a `Frontmatter` object.
+///
+/// # Arguments
+///
+/// * `raw` - The raw TOML string.
+///
+/// # Returns
+///
+/// A `Result` containing the parsed `Frontmatter` or a `Error`.
+</span><span class="kw">fn </span>parse_toml(raw: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Frontmatter, Error&gt; {
     <span class="kw">let </span>toml_value: TomlValue =
-        raw.parse().map_err(FrontmatterError::TomlParseError)<span class="question-mark">?</span>;
+        raw.parse().map_err(Error::TomlParseError)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>capacity = <span class="kw">match </span><span class="kw-2">&amp;</span>toml_value {
         TomlValue::Table(table) =&gt; table.len(),
         <span class="kw">_ </span>=&gt; <span class="number">0</span>,
     };
 
-    <span class="kw">let </span><span class="kw-2">mut </span>frontmatter = Frontmatter(HashMap::with_capacity(capacity));
+    <span class="kw">let </span><span class="kw-2">mut </span>front_matter =
+        Frontmatter(HashMap::with_capacity(capacity));
 
     <span class="kw">if let </span>TomlValue::Table(table) = toml_value {
         <span class="kw">for </span>(key, value) <span class="kw">in </span>table {
-            <span class="kw">let _ </span>= frontmatter.<span class="number">0</span>.insert(key, toml_to_value(<span class="kw-2">&amp;</span>value));
+            <span class="kw">let _ </span>= front_matter.<span class="number">0</span>.insert(key, toml_to_value(<span class="kw-2">&amp;</span>value));
         }
     }
 
-    <span class="prelude-val">Ok</span>(frontmatter)
+    <span class="prelude-val">Ok</span>(front_matter)
 }
 
-<span class="kw">fn </span>toml_to_value(toml: <span class="kw-2">&amp;</span>TomlValue) -&gt; Value {
+<span class="doccomment">/// Converts a `toml::Value` into a `Value`.
+</span><span class="kw">fn </span>toml_to_value(toml: <span class="kw-2">&amp;</span>TomlValue) -&gt; Value {
     <span class="kw">match </span>toml {
-        TomlValue::String(s) =&gt; Value::String(optimize_string(s)),
+        TomlValue::String(s) =&gt; Value::String(optimise_string(s)),
         TomlValue::Integer(i) =&gt; Value::Number(<span class="kw-2">*</span>i <span class="kw">as </span>f64),
         TomlValue::Float(f) =&gt; Value::Number(<span class="kw-2">*</span>f),
         TomlValue::Boolean(b) =&gt; Value::Boolean(<span class="kw-2">*</span>b),
@@ -1024,7 +1241,7 @@
             <span class="kw">for </span>(k, v) <span class="kw">in </span>table {
                 <span class="kw">let _ </span>= result
                     .<span class="number">0
-                    </span>.insert(optimize_string(k), toml_to_value(v));
+                    </span>.insert(optimise_string(k), toml_to_value(v));
             }
             Value::Object(Box::new(result))
         }
@@ -1032,50 +1249,69 @@
     }
 }
 
-<span class="kw">fn </span>to_toml(
-    frontmatter: <span class="kw-2">&amp;</span>Frontmatter,
-) -&gt; <span class="prelude-ty">Result</span>&lt;String, FrontmatterError&gt; {
-    toml::to_string(<span class="kw-2">&amp;</span>frontmatter.<span class="number">0</span>)
-        .map_err(|e| FrontmatterError::ConversionError(e.to_string()))
+<span class="doccomment">/// Serialises a `Frontmatter` object into a TOML string.
+///
+/// # Arguments
+///
+/// * `front_matter` - The `Frontmatter` object to serialise.
+///
+/// # Returns
+///
+/// A `Result` containing the serialised TOML string or a `Error`.
+</span><span class="kw">fn </span>to_toml(front_matter: <span class="kw-2">&amp;</span>Frontmatter) -&gt; <span class="prelude-ty">Result</span>&lt;String, Error&gt; {
+    toml::to_string(<span class="kw-2">&amp;</span>front_matter.<span class="number">0</span>)
+        .map_err(|e| Error::ConversionError(e.to_string()))
 }
 
 <span class="comment">// JSON Implementation
-// -----------------
+// -------------------
 
-</span><span class="kw">fn </span>parse_json(raw: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Frontmatter, FrontmatterError&gt; {
+</span><span class="doccomment">/// Parses a JSON string into a `Frontmatter` object.
+///
+/// # Arguments
+///
+/// * `raw` - The raw JSON string.
+///
+/// # Returns
+///
+/// A `Result` containing the parsed `Frontmatter` or a `Error`.
+</span><span class="kw">fn </span>parse_json(raw: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Frontmatter, Error&gt; {
     <span class="kw">let </span>json_value: JsonValue = serde_json::from_str(raw)
-        .map_err(FrontmatterError::JsonParseError)<span class="question-mark">?</span>;
+        .map_err(|e| Error::JsonParseError(Arc::new(e)))<span class="question-mark">?</span>;
 
     <span class="kw">let </span>capacity = <span class="kw">match </span><span class="kw-2">&amp;</span>json_value {
         JsonValue::Object(obj) =&gt; obj.len(),
         <span class="kw">_ </span>=&gt; <span class="number">0</span>,
     };
 
-    <span class="kw">let </span><span class="kw-2">mut </span>frontmatter = Frontmatter(HashMap::with_capacity(capacity));
+    <span class="kw">let </span><span class="kw-2">mut </span>front_matter =
+        Frontmatter(HashMap::with_capacity(capacity));
 
     <span class="kw">if let </span>JsonValue::Object(obj) = json_value {
         <span class="kw">for </span>(key, value) <span class="kw">in </span>obj {
-            <span class="kw">let _ </span>= frontmatter.<span class="number">0</span>.insert(key, json_to_value(<span class="kw-2">&amp;</span>value));
+            <span class="kw">let _ </span>= front_matter.<span class="number">0</span>.insert(key, json_to_value(<span class="kw-2">&amp;</span>value));
         }
     }
 
-    <span class="prelude-val">Ok</span>(frontmatter)
+    <span class="prelude-val">Ok</span>(front_matter)
 }
 
-<span class="kw">fn </span>json_to_value(json: <span class="kw-2">&amp;</span>JsonValue) -&gt; Value {
+<span class="doccomment">/// Converts a `serde_json::Value` into a `Value`.
+</span><span class="kw">fn </span>json_to_value(json: <span class="kw-2">&amp;</span>JsonValue) -&gt; Value {
     <span class="kw">match </span>json {
         JsonValue::Null =&gt; Value::Null,
         JsonValue::Bool(b) =&gt; Value::Boolean(<span class="kw-2">*</span>b),
-        JsonValue::Number(n) =&gt; {
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(i) = n.as_i64() {
-                Value::Number(i <span class="kw">as </span>f64)
-            } <span class="kw">else if let </span><span class="prelude-val">Some</span>(f) = n.as_f64() {
-                Value::Number(f)
-            } <span class="kw">else </span>{
-                Value::Number(<span class="number">0.0</span>)
-            }
-        }
-        JsonValue::String(s) =&gt; Value::String(optimize_string(s)),
+        JsonValue::Number(n) =&gt; n.as_i64().map_or_else(
+            || {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(f) = n.as_f64() {
+                    Value::Number(f)
+                } <span class="kw">else </span>{
+                    Value::Number(<span class="number">0.0</span>)
+                }
+            },
+            |i| Value::Number(i <span class="kw">as </span>f64),
+        ),
+        JsonValue::String(s) =&gt; Value::String(optimise_string(s)),
         JsonValue::Array(arr) =&gt; {
             <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::with_capacity(arr.len());
             vec.extend(arr.iter().map(json_to_value));
@@ -1087,57 +1323,72 @@
             <span class="kw">for </span>(k, v) <span class="kw">in </span>obj {
                 <span class="kw">let _ </span>= result
                     .<span class="number">0
-                    </span>.insert(optimize_string(k), json_to_value(v));
+                    </span>.insert(optimise_string(k), json_to_value(v));
             }
             Value::Object(Box::new(result))
         }
     }
 }
 
-<span class="doccomment">/// Optimised JSON serialisation with pre-allocated buffer
-</span><span class="kw">fn </span>to_json_optimized(
-    frontmatter: <span class="kw-2">&amp;</span>Frontmatter,
-) -&gt; <span class="prelude-ty">Result</span>&lt;String, FrontmatterError&gt; {
-    <span class="kw">let </span>estimated_size = estimate_json_size(frontmatter);
+<span class="doccomment">/// Optimised JSON serialisation with pre-allocated buffer.
+///
+/// # Arguments
+///
+/// * `front_matter` - The `Frontmatter` object to serialise.
+///
+/// # Returns
+///
+/// A `Result` containing the serialised JSON string or a `Error`.
+</span><span class="kw">fn </span>to_json_optimised(
+    front_matter: <span class="kw-2">&amp;</span>Frontmatter,
+) -&gt; <span class="prelude-ty">Result</span>&lt;String, Error&gt; {
+    <span class="kw">let </span>estimated_size = estimate_json_size(front_matter);
     <span class="kw">let </span>buf = Vec::with_capacity(estimated_size);
     <span class="kw">let </span>formatter = serde_json::ser::CompactFormatter;
     <span class="kw">let </span><span class="kw-2">mut </span>ser =
         serde_json::Serializer::with_formatter(buf, formatter);
 
-    frontmatter.<span class="number">0</span>.serialize(<span class="kw-2">&amp;mut </span>ser).map_err(|e| {
-        FrontmatterError::ConversionError(e.to_string())
-    })<span class="question-mark">?</span>;
+    front_matter
+        .<span class="number">0
+        </span>.serialize(<span class="kw-2">&amp;mut </span>ser)
+        .map_err(|e| Error::ConversionError(e.to_string()))<span class="question-mark">?</span>;
 
     String::from_utf8(ser.into_inner())
-        .map_err(|e| FrontmatterError::ConversionError(e.to_string()))
+        .map_err(|e| Error::ConversionError(e.to_string()))
 }
 
 <span class="comment">// Validation and Utilities
-// -----------------------
+// ------------------------
 
-</span><span class="doccomment">/// Validates a frontmatter structure against configured limits.
+</span><span class="doccomment">/// Validates a front matter structure against configured limits.
 ///
 /// Checks:
-/// - Maximum nesting depth
-/// - Maximum number of keys
-/// - Structure validity
+/// - Maximum nesting depth.
+/// - Maximum number of keys.
+/// - Structure validity.
 ///
 /// # Arguments
 ///
-/// * `fm` - Reference to the frontmatter to validate
-/// * `max_depth` - Maximum allowed nesting depth
-/// * `max_keys` - Maximum allowed number of keys
+/// * `fm` - Reference to the front matter to validate.
+/// * `max_depth` - Maximum allowed nesting depth.
+/// * `max_keys` - Maximum allowed number of keys.
 ///
 /// # Returns
 ///
-/// `Ok(())` if validation passes, `FrontmatterError` otherwise
-</span><span class="kw">fn </span>validate_frontmatter(
+/// `Ok(())` if validation passes, `Error` otherwise.
+///
+/// # Errors
+///
+/// Returns `Error` if:
+/// - The number of keys exceeds `max_keys`.
+/// - The nesting depth exceeds `max_depth`.
+</span><span class="kw">pub fn </span>validate_frontmatter(
     fm: <span class="kw-2">&amp;</span>Frontmatter,
     max_depth: usize,
     max_keys: usize,
-) -&gt; <span class="prelude-ty">Result</span>&lt;(), FrontmatterError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
     <span class="kw">if </span>fm.<span class="number">0</span>.len() &gt; max_keys {
-        <span class="kw">return </span><span class="prelude-val">Err</span>(FrontmatterError::ContentTooLarge {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ContentTooLarge {
             size: fm.<span class="number">0</span>.len(),
             max: max_keys,
         });
@@ -1145,20 +1396,30 @@
 
     <span class="comment">// Validate nesting depth
     </span><span class="kw">for </span>value <span class="kw">in </span>fm.<span class="number">0</span>.values() {
-        check_depth(value, <span class="number">0</span>, max_depth)<span class="question-mark">?</span>;
+        check_depth(value, <span class="number">1</span>, max_depth)<span class="question-mark">?</span>;
     }
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="doccomment">/// Recursively checks the nesting depth of a value
+<span class="doccomment">/// Recursively checks the nesting depth of a value.
+///
+/// # Arguments
+///
+/// * `value` - The `Value` to check.
+/// * `current_depth` - The current depth of recursion.
+/// * `max_depth` - The maximum allowed depth.
+///
+/// # Returns
+///
+/// `Ok(())` if the depth is within limits, `Error` otherwise.
 </span><span class="kw">fn </span>check_depth(
     value: <span class="kw-2">&amp;</span>Value,
     current_depth: usize,
     max_depth: usize,
-) -&gt; <span class="prelude-ty">Result</span>&lt;(), FrontmatterError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
     <span class="kw">if </span>current_depth &gt; max_depth {
-        <span class="kw">return </span><span class="prelude-val">Err</span>(FrontmatterError::NestingTooDeep {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::NestingTooDeep {
             depth: current_depth,
             max: max_depth,
         });
@@ -1181,9 +1442,17 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="doccomment">/// Estimates the JSON string size for a frontmatter object
+<span class="doccomment">/// Estimates the JSON string size for a front matter object.
 ///
-/// Used for pre-allocating buffers in serialisation
+/// Used for pre-allocating buffers in serialisation.
+///
+/// # Arguments
+///
+/// * `fm` - The `Frontmatter` object.
+///
+/// # Returns
+///
+/// An estimated size in bytes.
 </span><span class="kw">fn </span>estimate_json_size(fm: <span class="kw-2">&amp;</span>Frontmatter) -&gt; usize {
     <span class="kw">let </span><span class="kw-2">mut </span>size = <span class="number">2</span>; <span class="comment">// {}
     </span><span class="kw">for </span>(k, v) <span class="kw">in </span><span class="kw-2">&amp;</span>fm.<span class="number">0 </span>{
@@ -1194,7 +1463,15 @@
     size
 }
 
-<span class="doccomment">/// Estimates the serialised size of a value
+<span class="doccomment">/// Estimates the serialised size of a value.
+///
+/// # Arguments
+///
+/// * `value` - The `Value` to estimate.
+///
+/// # Returns
+///
+/// An estimated size in bytes.
 </span><span class="kw">fn </span>estimate_value_size(value: <span class="kw-2">&amp;</span>Value) -&gt; usize {
     <span class="kw">match </span>value {
         Value::Null =&gt; <span class="number">4</span>,                <span class="comment">// null
@@ -1237,16 +1514,16 @@
     }
 
     <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_string_optimization() {
+    </span><span class="kw">fn </span>test_string_optimisation() {
         <span class="kw">let </span>short_str = <span class="string">"short"</span>;
         <span class="kw">let </span>long_str = <span class="string">"a"</span>.repeat(SMALL_STRING_SIZE + <span class="number">1</span>);
 
-        <span class="kw">let </span>optimized_short = optimize_string(short_str);
-        <span class="kw">let </span>optimized_long = optimize_string(<span class="kw-2">&amp;</span>long_str);
+        <span class="kw">let </span>optimised_short = optimise_string(short_str);
+        <span class="kw">let </span>optimised_long = optimise_string(<span class="kw-2">&amp;</span>long_str);
 
-        <span class="macro">assert_eq!</span>(optimized_short, short_str);
-        <span class="macro">assert_eq!</span>(optimized_long, long_str);
-        <span class="macro">assert!</span>(optimized_long.capacity() &gt;= long_str.len());
+        <span class="macro">assert_eq!</span>(optimised_short, short_str);
+        <span class="macro">assert_eq!</span>(optimised_long, long_str);
+        <span class="macro">assert!</span>(optimised_long.capacity() &gt;= long_str.len());
     }
 
     <span class="attr">#[test]
@@ -1305,12 +1582,12 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_parse_options() {
-        <span class="kw">let </span>yaml = <span class="string">r#"
+        <span class="kw">let </span>yaml = <span class="string">r"
         nested:
           level1:
             level2:
               value: test
-        "#</span>;
+        "</span>;
 
         <span class="comment">// Test with default options
         </span><span class="macro">assert!</span>(parse_with_options(yaml, Format::Yaml, <span class="prelude-val">None</span>).is_ok());
@@ -1335,21 +1612,21 @@
         </span><span class="kw">let </span>invalid_yaml = <span class="string">"test: : invalid"</span>;
         <span class="macro">assert!</span>(<span class="macro">matches!</span>(
             parse(invalid_yaml, Format::Yaml),
-            <span class="prelude-val">Err</span>(FrontmatterError::YamlParseError { .. })
+            <span class="prelude-val">Err</span>(Error::YamlParseError { .. })
         ));
 
         <span class="comment">// Test invalid TOML
         </span><span class="kw">let </span>invalid_toml = <span class="string">"test = = invalid"</span>;
         <span class="macro">assert!</span>(<span class="macro">matches!</span>(
             parse(invalid_toml, Format::Toml),
-            <span class="prelude-val">Err</span>(FrontmatterError::TomlParseError(<span class="kw">_</span>))
+            <span class="prelude-val">Err</span>(Error::TomlParseError(<span class="kw">_</span>))
         ));
 
         <span class="comment">// Test invalid JSON
         </span><span class="kw">let </span>invalid_json = <span class="string">"{invalid}"</span>;
         <span class="macro">assert!</span>(<span class="macro">matches!</span>(
             parse(invalid_json, Format::Json),
-            <span class="prelude-val">Err</span>(FrontmatterError::JsonParseError(<span class="kw">_</span>))
+            <span class="prelude-val">Err</span>(Error::JsonParseError(<span class="kw">_</span>))
         ));
     }
 
@@ -1362,6 +1639,17 @@
         <span class="comment">// Estimated size should be reasonably close to actual size
         </span><span class="macro">assert!</span>(estimated_size &gt;= actual_json.len());
         <span class="macro">assert!</span>(estimated_size &lt;= actual_json.len() * <span class="number">2</span>);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_large_integer_conversion() {
+        <span class="kw">let </span>large_i64 = <span class="number">1_i64 </span>&lt;&lt; <span class="number">53</span>;
+        <span class="kw">let </span>fallback_value = Value::Number(<span class="number">0.0</span>);
+
+        <span class="macro">assert_eq!</span>(
+            yaml_to_value(<span class="kw-2">&amp;</span>YamlValue::Number(large_i64.into())),
+            fallback_value
+        );
     }
 }
 </code></pre></div></section></main></body></html>

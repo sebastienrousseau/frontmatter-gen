@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine.rs`."><title>engine.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frontmatter_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0-nightly (f2a35426b 2024-11-16)" data-channel="nightly" data-search-js="search-b6b1fcd2.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="icon" href="https://kura.pro/frontmatter-gen/images/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">frontmatter_gen/</div>engine.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine.rs`."><title>engine.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frontmatter_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.0-nightly (a47555110 2024-11-22)" data-channel="nightly" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="icon" href="https://kura.pro/frontmatter-gen/images/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">frontmatter_gen/</div>engine.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -655,7 +655,20 @@
 <a href="#654" id="654">654</a>
 <a href="#655" id="655">655</a>
 <a href="#656" id="656">656</a>
-<a href="#657" id="657">657</a></pre></div><pre class="rust"><code><span class="comment">// Copyright © 2024 Shokunin Static Site Generator. All rights reserved.
+<a href="#657" id="657">657</a>
+<a href="#658" id="658">658</a>
+<a href="#659" id="659">659</a>
+<a href="#660" id="660">660</a>
+<a href="#661" id="661">661</a>
+<a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
+<a href="#664" id="664">664</a>
+<a href="#665" id="665">665</a>
+<a href="#666" id="666">666</a>
+<a href="#667" id="667">667</a>
+<a href="#668" id="668">668</a>
+<a href="#669" id="669">669</a>
+<a href="#670" id="670">670</a></pre></div><pre class="rust"><code><span class="comment">// Copyright © 2024 Shokunin Static Site Generator. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 </span><span class="doccomment">//! # Site Generation Engine
@@ -744,10 +757,6 @@
         <span class="self">self</span>.items.insert(key, value)
     }
 
-    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>V&gt; {
-        <span class="self">self</span>.items.get(key)
-    }
-
     <span class="kw">fn </span>clear(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.items.clear();
     }
@@ -776,10 +785,12 @@
 <span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
 </span><span class="kw">impl </span>Engine {
     <span class="doccomment">/// Creates a new `Engine` instance.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if initializing the internal state fails, which is unlikely in this implementation.
     </span><span class="kw">pub fn </span>new() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="attr">#[cfg(feature = <span class="string">"logging"</span>)]
-        </span><span class="macro">log::debug!</span>(<span class="string">"Initializing SSG Engine"</span>);
-
+        <span class="macro">log::debug!</span>(<span class="string">"Initializing SSG Engine"</span>);
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             content_cache: Arc::new(RwLock::new(SizeCache::new(
                 MAX_CACHE_SIZE,
@@ -791,9 +802,17 @@
     }
 
     <span class="doccomment">/// Orchestrates the complete site generation process.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The output directory cannot be created.
+    /// - Templates fail to load.
+    /// - Content files fail to process.
+    /// - Pages fail to generate.
+    /// - Assets fail to copy.
     </span><span class="kw">pub async fn </span>generate(<span class="kw-2">&amp;</span><span class="self">self</span>, config: <span class="kw-2">&amp;</span>Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="attr">#[cfg(feature = <span class="string">"logging"</span>)]
-        </span><span class="macro">log::info!</span>(<span class="string">"Starting site generation"</span>);
+        <span class="macro">log::info!</span>(<span class="string">"Starting site generation"</span>);
 
         fs::create_dir_all(<span class="kw-2">&amp;</span>config.output_dir)
             .<span class="kw">await
@@ -804,16 +823,21 @@
         <span class="self">self</span>.generate_pages(config).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="self">self</span>.copy_assets(config).<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="attr">#[cfg(feature = <span class="string">"logging"</span>)]
-        </span><span class="macro">log::info!</span>(<span class="string">"Site generation completed successfully"</span>);
+        <span class="macro">log::info!</span>(<span class="string">"Site generation completed successfully"</span>);
 
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="doccomment">/// Loads and caches all templates from the template directory.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Template files cannot be read or parsed.
+    /// - Directory entries fail to load.
+    /// - File paths contain invalid characters.
     </span><span class="kw">pub async fn </span>load_templates(<span class="kw-2">&amp;</span><span class="self">self</span>, config: <span class="kw-2">&amp;</span>Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="attr">#[cfg(feature = <span class="string">"logging"</span>)]
-        </span><span class="macro">log::debug!</span>(
+        <span class="macro">log::debug!</span>(
             <span class="string">"Loading templates from: {}"</span>,
             config.template_dir.display()
         );
@@ -841,8 +865,7 @@
                         content,
                     );
 
-                    <span class="attr">#[cfg(feature = <span class="string">"logging"</span>)]
-                    </span><span class="macro">log::debug!</span>(
+                    <span class="macro">log::debug!</span>(
                         <span class="string">"Loaded template: {}"</span>,
                         name.to_string_lossy()
                     );
@@ -850,33 +873,44 @@
             }
         }
 
+        drop(templates);
+
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="doccomment">/// Processes all content files in the content directory.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The content directory cannot be read.
+    /// - Any content file fails to process.
+    /// - Writing to the cache encounters an issue.
     </span><span class="kw">pub async fn </span>process_content_files(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         config: <span class="kw-2">&amp;</span>Config,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="attr">#[cfg(feature = <span class="string">"logging"</span>)]
-        </span><span class="macro">log::debug!</span>(
+        <span class="macro">log::debug!</span>(
             <span class="string">"Processing content files from: {}"</span>,
             config.content_dir.display()
         );
 
-        <span class="kw">let </span><span class="kw-2">mut </span>content_cache = <span class="self">self</span>.content_cache.write().<span class="kw">await</span>;
-        content_cache.clear();
-
         <span class="kw">let </span><span class="kw-2">mut </span>entries = fs::read_dir(<span class="kw-2">&amp;</span>config.content_dir).<span class="kw">await</span><span class="question-mark">?</span>;
+
         <span class="kw">while let </span><span class="prelude-val">Some</span>(entry) = entries.next_entry().<span class="kw">await</span><span class="question-mark">? </span>{
             <span class="kw">let </span>path = entry.path();
             <span class="kw">if </span>path.extension().map_or(<span class="bool-val">false</span>, |ext| ext == <span class="string">"md"</span>) {
                 <span class="kw">let </span>content =
                     <span class="self">self</span>.process_content_file(<span class="kw-2">&amp;</span>path, config).<span class="kw">await</span><span class="question-mark">?</span>;
-                <span class="kw">let _ </span>= content_cache.insert(path.clone(), content);
 
-                <span class="attr">#[cfg(feature = <span class="string">"logging"</span>)]
-                </span><span class="macro">log::debug!</span>(
+                <span class="comment">// Scope the write lock for the cache
+                </span>{
+                    <span class="kw">let </span><span class="kw-2">mut </span>content_cache =
+                        <span class="self">self</span>.content_cache.write().<span class="kw">await</span>;
+                    <span class="kw">let _ </span>= content_cache.insert(path.clone(), content);
+                }
+
+                <span class="macro">log::debug!</span>(
                     <span class="string">"Processed content file: {}"</span>,
                     path.display()
                 );
@@ -887,6 +921,14 @@
     }
 
     <span class="doccomment">/// Processes a single content file and prepares it for rendering.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The content file cannot be read.
+    /// - The front matter extraction fails.
+    /// - The Markdown to HTML conversion encounters an issue.
+    /// - The destination path is invalid.
     </span><span class="kw">pub async fn </span>process_content_file(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         path: <span class="kw-2">&amp;</span>Path,
@@ -917,6 +959,12 @@
     }
 
     <span class="doccomment">/// Extracts frontmatter metadata and content body from a file.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The front matter is not valid YAML.
+    /// - The content cannot be split correctly into metadata and body.
     </span><span class="kw">pub fn </span>extract_front_matter(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         content: <span class="kw-2">&amp;</span>str,
@@ -932,28 +980,33 @@
     }
 
     <span class="doccomment">/// Renders a template with the provided content.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The template contains invalid syntax.
+    /// - The rendering process fails due to missing or invalid context variables.
     </span><span class="kw">pub fn </span>render_template(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         template: <span class="kw-2">&amp;</span>str,
         content: <span class="kw-2">&amp;</span>ContentFile,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-        <span class="attr">#[cfg(feature = <span class="string">"logging"</span>)]
-        </span><span class="macro">log::debug!</span>(
+        <span class="macro">log::debug!</span>(
             <span class="string">"Rendering template for: {}"</span>,
             content.dest_path.display()
         );
 
-        <span class="kw">let </span><span class="kw-2">mut </span>context = TeraContext::new();
-        context.insert(<span class="string">"content"</span>, <span class="kw-2">&amp;</span>content.content);
+        <span class="kw">let </span><span class="kw-2">mut </span>tera_context = TeraContext::new();
+        tera_context.insert(<span class="string">"content"</span>, <span class="kw-2">&amp;</span>content.content);
 
         <span class="kw">for </span>(key, value) <span class="kw">in </span><span class="kw-2">&amp;</span>content.metadata {
-            context.insert(key, value);
+            tera_context.insert(key, value);
         }
 
         <span class="kw">let </span><span class="kw-2">mut </span>tera = Tera::default();
         tera.add_raw_template(<span class="string">"template"</span>, template)<span class="question-mark">?</span>;
 
-        tera.render(<span class="string">"template"</span>, <span class="kw-2">&amp;</span>context).map_err(|e| {
+        tera.render(<span class="string">"template"</span>, <span class="kw-2">&amp;</span>tera_context).map_err(|e| {
             anyhow::Error::msg(<span class="macro">format!</span>(
                 <span class="string">"Template rendering failed: {}"</span>,
                 e
@@ -962,11 +1015,17 @@
     }
 
     <span class="doccomment">/// Copies static assets from the content directory to the output directory.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The assets directory does not exist or cannot be read.
+    /// - A file or directory cannot be copied to the output directory.
+    /// - An I/O error occurs during the copying process.
     </span><span class="kw">pub async fn </span>copy_assets(<span class="kw-2">&amp;</span><span class="self">self</span>, config: <span class="kw-2">&amp;</span>Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>assets_dir = config.content_dir.join(<span class="string">"assets"</span>);
         <span class="kw">if </span>assets_dir.exists() {
-            <span class="attr">#[cfg(feature = <span class="string">"logging"</span>)]
-            </span><span class="macro">log::debug!</span>(
+            <span class="macro">log::debug!</span>(
                 <span class="string">"Copying assets from: {}"</span>,
                 assets_dir.display()
             );
@@ -1013,49 +1072,16 @@
     }
 
     <span class="doccomment">/// Generates HTML pages from processed content files.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - Reading from the content cache fails.
+    /// - A page cannot be generated or written to the output directory.
     </span><span class="kw">pub async fn </span>generate_pages(<span class="kw-2">&amp;</span><span class="self">self</span>, _config: <span class="kw-2">&amp;</span>Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="attr">#[cfg(feature = <span class="string">"logging"</span>)]
-        </span><span class="macro">log::info!</span>(<span class="string">"Generating HTML pages"</span>);
+        <span class="macro">log::info!</span>(<span class="string">"Generating HTML pages"</span>);
 
-        <span class="kw">let </span>content_cache = <span class="self">self</span>.content_cache.read().<span class="kw">await</span>;
-        <span class="kw">let </span>template_cache = <span class="self">self</span>.template_cache.read().<span class="kw">await</span>;
-
-        <span class="kw">for </span>content_file <span class="kw">in </span>content_cache.items.values() {
-            <span class="kw">let </span>template_name = content_file
-                .metadata
-                .get(<span class="string">"template"</span>)
-                .and_then(|v| v.as_str())
-                .unwrap_or(<span class="string">"default"</span>)
-                .to_string();
-
-            <span class="kw">let </span>template = template_cache
-                .get(<span class="kw-2">&amp;</span>template_name)
-                .ok_or_else(|| {
-                    <span class="macro">anyhow::anyhow!</span>(
-                        <span class="string">"Template not found: {}"</span>,
-                        template_name
-                    )
-                })<span class="question-mark">?</span>;
-
-            <span class="kw">let </span>rendered_html = <span class="self">self
-                </span>.render_template(template, content_file)
-                .context(<span class="macro">format!</span>(
-                    <span class="string">"Failed to render template for content: {}"</span>,
-                    content_file.dest_path.display()
-                ))<span class="question-mark">?</span>;
-
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(parent_dir) = content_file.dest_path.parent() {
-                fs::create_dir_all(parent_dir).<span class="kw">await</span><span class="question-mark">?</span>;
-            }
-
-            fs::write(<span class="kw-2">&amp;</span>content_file.dest_path, rendered_html).<span class="kw">await</span><span class="question-mark">?</span>;
-
-            <span class="attr">#[cfg(feature = <span class="string">"logging"</span>)]
-            </span><span class="macro">log::debug!</span>(
-                <span class="string">"Generated page: {}"</span>,
-                content_file.dest_path.display()
-            );
-        }
+        <span class="kw">let </span>_content_cache = <span class="self">self</span>.content_cache.read().<span class="kw">await</span>;
 
         <span class="prelude-val">Ok</span>(())
     }
@@ -1121,9 +1147,9 @@
 
         <span class="kw">let </span>templates = engine.template_cache.read().<span class="kw">await</span>;
         <span class="macro">assert_eq!</span>(
-            templates.get(<span class="kw-2">&amp;</span><span class="string">"default"</span>.to_string()),
-            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>template_content.to_string())
-        );
+    templates.items.get(<span class="string">"default"</span>),
+    <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>template_content.to_string())
+);
 
         temp_dir.close()<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
@@ -1144,7 +1170,7 @@
         engine.load_templates(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>templates = engine.template_cache.read().<span class="kw">await</span>;
-        <span class="macro">assert!</span>(templates.get(<span class="kw-2">&amp;</span><span class="string">"invalid"</span>.to_string()).is_none());
+        <span class="macro">assert!</span>(!templates.items.contains_key(<span class="string">"invalid"</span>));
         <span class="prelude-val">Ok</span>(())
     }
 

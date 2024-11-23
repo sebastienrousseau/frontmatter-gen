@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/types.rs`."><title>types.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frontmatter_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0-nightly (f2a35426b 2024-11-16)" data-channel="nightly" data-search-js="search-b6b1fcd2.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="icon" href="https://kura.pro/frontmatter-gen/images/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">frontmatter_gen/</div>types.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/types.rs`."><title>types.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frontmatter_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.0-nightly (a47555110 2024-11-22)" data-channel="nightly" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="icon" href="https://kura.pro/frontmatter-gen/images/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">frontmatter_gen/</div>types.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -1436,7 +1436,8 @@
 <a href="#1435" id="1435">1435</a>
 <a href="#1436" id="1436">1436</a>
 <a href="#1437" id="1437">1437</a>
-<a href="#1438" id="1438">1438</a></pre></div><pre class="rust"><code><span class="comment">// types.rs
+<a href="#1438" id="1438">1438</a>
+<a href="#1439" id="1439">1439</a></pre></div><pre class="rust"><code><span class="comment">// types.rs
 
 </span><span class="doccomment">//! This module defines the core types used throughout the frontmatter-gen crate.
 //! It includes the `Format` enum for representing different frontmatter formats, the `Value` enum for representing various data types that can be stored in frontmatter, and the `Frontmatter` struct which is the main container for frontmatter data.
@@ -1545,7 +1546,7 @@
     /// let string_value = Value::String("Not a number".to_string());
     /// assert_eq!(string_value.as_f64(), None);
     /// ```
-    </span><span class="kw">pub fn </span>as_f64(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;f64&gt; {
+    </span><span class="kw">pub const fn </span>as_f64(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;f64&gt; {
         <span class="kw">if let </span>Value::Number(n) = <span class="self">self </span>{
             <span class="prelude-val">Some</span>(<span class="kw-2">*</span>n)
         } <span class="kw">else </span>{
@@ -1571,7 +1572,7 @@
     /// let string_value = Value::String("Not a boolean".to_string());
     /// assert_eq!(string_value.as_bool(), None);
     /// ```
-    </span><span class="kw">pub fn </span>as_bool(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;bool&gt; {
+    </span><span class="kw">pub const fn </span>as_bool(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;bool&gt; {
         <span class="kw">if let </span>Value::Boolean(b) = <span class="self">self </span>{
             <span class="prelude-val">Some</span>(<span class="kw-2">*</span>b)
         } <span class="kw">else </span>{
@@ -1598,7 +1599,7 @@
     /// let string_value = Value::String("Not an array".to_string());
     /// assert!(string_value.as_array().is_none());
     /// ```
-    </span><span class="kw">pub fn </span>as_array(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Vec&lt;Value&gt;&gt; {
+    </span><span class="kw">pub const fn </span>as_array(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Vec&lt;Value&gt;&gt; {
         <span class="kw">if let </span>Value::Array(arr) = <span class="self">self </span>{
             <span class="prelude-val">Some</span>(arr)
         } <span class="kw">else </span>{
@@ -1677,7 +1678,7 @@
     /// let string_value = Value::String("Not null".to_string());
     /// assert!(!string_value.is_null());
     /// ```
-    </span><span class="kw">pub fn </span>is_null(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+    </span><span class="kw">pub const fn </span>is_null(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="macro">matches!</span>(<span class="self">self</span>, Value::Null)
     }
 
@@ -1698,7 +1699,7 @@
     /// let number_value = Value::Number(42.0);
     /// assert!(!number_value.is_string());
     /// ```
-    </span><span class="kw">pub fn </span>is_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+    </span><span class="kw">pub const fn </span>is_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="macro">matches!</span>(<span class="self">self</span>, Value::String(<span class="kw">_</span>))
     }
 
@@ -1719,7 +1720,7 @@
     /// let string_value = Value::String("Not a number".to_string());
     /// assert!(!string_value.is_number());
     /// ```
-    </span><span class="kw">pub fn </span>is_number(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+    </span><span class="kw">pub const fn </span>is_number(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="macro">matches!</span>(<span class="self">self</span>, Value::Number(<span class="kw">_</span>))
     }
 
@@ -1740,7 +1741,7 @@
     /// let string_value = Value::String("Not a boolean".to_string());
     /// assert!(!string_value.is_boolean());
     /// ```
-    </span><span class="kw">pub fn </span>is_boolean(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+    </span><span class="kw">pub const fn </span>is_boolean(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="macro">matches!</span>(<span class="self">self</span>, Value::Boolean(<span class="kw">_</span>))
     }
 
@@ -1761,7 +1762,7 @@
     /// let string_value = Value::String("Not an array".to_string());
     /// assert!(!string_value.is_array());
     /// ```
-    </span><span class="kw">pub fn </span>is_array(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+    </span><span class="kw">pub const fn </span>is_array(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="macro">matches!</span>(<span class="self">self</span>, Value::Array(<span class="kw">_</span>))
     }
 
@@ -1782,7 +1783,7 @@
     /// let string_value = Value::String("Not an object".to_string());
     /// assert!(!string_value.is_object());
     /// ```
-    </span><span class="kw">pub fn </span>is_object(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+    </span><span class="kw">pub const fn </span>is_object(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="macro">matches!</span>(<span class="self">self</span>, Value::Object(<span class="kw">_</span>))
     }
 
@@ -1803,7 +1804,7 @@
     /// let string_value = Value::String("Not tagged".to_string());
     /// assert!(!string_value.is_tagged());
     /// ```
-    </span><span class="kw">pub fn </span>is_tagged(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+    </span><span class="kw">pub const fn </span>is_tagged(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="macro">matches!</span>(<span class="self">self</span>, Value::Tagged(<span class="kw">_</span>, <span class="kw">_</span>))
     }
 
@@ -2251,6 +2252,7 @@
     ///     println!("{}: {:?}", key, value);
     /// }
     /// ```
+    </span><span class="attr">#[must_use]
     </span><span class="kw">pub fn </span>iter(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
     ) -&gt; std::collections::hash_map::Iter&lt;String, Value&gt; {
@@ -2720,8 +2722,8 @@
                 <span class="string">r#"Hello \"World\""#
             </span>);
             <span class="macro">assert_eq!</span>(
-                escape_str(<span class="string">r#"C:\path\to\file"#</span>),
-                <span class="string">r#"C:\\path\\to\\file"#
+                escape_str(<span class="string">r"C:\path\to\file"</span>),
+                <span class="string">r"C:\\path\\to\\file"
             </span>);
         }
 
@@ -2866,10 +2868,10 @@
 
         <span class="attr">#[test]
         </span><span class="kw">fn </span>test_escape_str_edge_cases() {
-            <span class="kw">let </span>special_chars = <span class="string">r#"Special \chars\n\t"#</span>;
+            <span class="kw">let </span>special_chars = <span class="string">r"Special \chars\n\t"</span>;
             <span class="macro">assert_eq!</span>(
                 escape_str(special_chars),
-                <span class="string">r#"Special \\chars\\n\\t"#
+                <span class="string">r"Special \\chars\\n\\t"
             </span>);
         }
     }
