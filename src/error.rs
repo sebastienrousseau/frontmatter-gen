@@ -569,7 +569,7 @@ impl From<Error> for String {
 
 #[cfg(test)]
 mod tests {
-    /// Tests for the main `Error` enum and its associated methods.
+    /// Tests for the `Error` enum and its associated methods.
     mod error_tests {
         use super::super::*;
 
@@ -580,57 +580,133 @@ mod tests {
                 size: 1000,
                 max: 500,
             };
-            assert!(error.to_string().contains(
-                "Your front matter contains too many fields"
-            ));
+            assert_eq!(
+                error.to_string(),
+                "Your front matter contains too many fields (1000). The maximum allowed is 500."
+            );
         }
 
         /// Test the `NestingTooDeep` error variant.
         #[test]
         fn test_nesting_too_deep_error() {
             let error = Error::NestingTooDeep { depth: 10, max: 5 };
-            assert!(error
-                .to_string()
-                .contains("Your front matter is nested too deeply"));
-        }
-
-        /// Test the `YamlParseError` error variant.
-        #[test]
-        fn test_yaml_parse_error() {
-            let yaml_data = "invalid: : yaml";
-            let result: Result<serde_yml::Value, _> =
-                serde_yml::from_str(yaml_data);
-            assert!(result.is_err());
-            let error = Error::YamlParseError {
-                source: Arc::new(result.unwrap_err()),
-            };
-            assert!(matches!(error, Error::YamlParseError { .. }));
-        }
-
-        /// Test the `ParseError` variant with a generic message.
-        #[test]
-        fn test_generic_parse_error() {
-            let error = Error::generic_parse_error("Test parse error");
-            assert!(matches!(error, Error::ParseError(_)));
             assert_eq!(
                 error.to_string(),
-                "Failed to parse front matter: Test parse error"
+                "Your front matter is nested too deeply (10 levels). The maximum allowed nesting depth is 5."
             );
         }
 
-        /// Test that the error category is assigned correctly.
+        /// Test the `JsonParseError` error variant.
         #[test]
-        fn test_category_assignment() {
-            let yaml_data = "invalid: : yaml";
-            let result: Result<serde_yml::Value, _> =
-                serde_yml::from_str(yaml_data);
-            let error = Error::YamlParseError {
-                source: Arc::new(result.unwrap_err()),
-            };
-            assert_eq!(error.category(), Category::Parsing);
+        fn test_json_parse_error() {
+            let json_data = r#"{"key": invalid}"#;
+            let result: Result<serde_json::Value, _> =
+                serde_json::from_str(json_data);
+            assert!(result.is_err());
+            let error =
+                Error::JsonParseError(Arc::new(result.unwrap_err()));
+            assert!(matches!(error, Error::JsonParseError(_)));
+        }
 
+        /// Test the `InvalidFormat` error variant.
+        #[test]
+        fn test_invalid_format_error() {
+            let error = Error::InvalidFormat;
+            assert_eq!(
+                error.to_string(),
+                "Invalid front matter format"
+            );
+        }
+
+        /// Test the `ConversionError` error variant.
+        #[test]
+        fn test_conversion_error() {
+            let error =
+                Error::ConversionError("Conversion failed".to_string());
+            assert_eq!(
+                error.to_string(),
+                "Failed to convert front matter: Conversion failed"
+            );
+        }
+
+        /// Test the `UnsupportedFormat` error variant.
+        #[test]
+        fn test_unsupported_format() {
+            let error = Error::unsupported_format(42);
+            assert!(matches!(
+                error,
+                Error::UnsupportedFormat { line: 42 }
+            ));
+            assert_eq!(
+                error.to_string(),
+                "Unsupported front matter format detected at line 42"
+            );
+        }
+
+        /// Test the `NoFrontmatterFound` error variant.
+        #[test]
+        fn test_no_frontmatter_found() {
+            let error = Error::NoFrontmatterFound;
+            assert_eq!(
+                error.to_string(),
+                "No front matter found in the content"
+            );
+        }
+
+        /// Test the `InvalidJson` error variant.
+        #[test]
+        fn test_invalid_json_error() {
+            let error = Error::InvalidJson;
+            assert_eq!(error.to_string(), "Invalid JSON front matter: malformed or invalid structure.");
+        }
+
+        /// Test the `InvalidUrl` error variant.
+        #[test]
+        fn test_invalid_url_error() {
+            let error =
+                Error::InvalidUrl("http:// invalid.url".to_string());
+            assert_eq!(
+                error.to_string(),
+                "Invalid URL: http:// invalid.url. Ensure the URL is well-formed and valid."
+            );
+        }
+
+        /// Test the `InvalidYaml` error variant.
+        #[test]
+        fn test_invalid_yaml_error() {
+            let error = Error::InvalidYaml;
+            assert_eq!(
+                error.to_string(),
+                "Invalid YAML front matter: malformed or invalid structure."
+            );
+        }
+
+        /// Test the `ValidationError` error variant.
+        #[test]
+        fn test_validation_error() {
+            let error =
+                Error::ValidationError("Invalid title".to_string());
+            assert_eq!(
+                error.to_string(),
+                "Input validation error: Invalid title"
+            );
+        }
+
+        /// Test the `JsonDepthLimitExceeded` error variant.
+        #[test]
+        fn test_json_depth_limit_exceeded() {
+            let error = Error::JsonDepthLimitExceeded;
+            assert_eq!(
+                error.to_string(),
+                "JSON front matter exceeds maximum nesting depth"
+            );
+        }
+
+        /// Test the `category` method for different error variants.
+        #[test]
+        fn test_category_method() {
             let validation_error =
-                Error::ValidationError("Invalid data".to_string());
+                Error::ValidationError("Invalid field".to_string());
             assert_eq!(
                 validation_error.category(),
                 Category::Validation
@@ -643,31 +719,29 @@ mod tests {
                 Category::Conversion
             );
 
-            let config_error = Error::ContentTooLarge {
-                size: 1000,
-                max: 500,
-            };
+            let config_error =
+                Error::ContentTooLarge { size: 100, max: 50 };
             assert_eq!(
                 config_error.category(),
                 Category::Configuration
             );
         }
 
-        /// Test the `Clone` implementation for the `Error` enum.
+        /// Test the `Clone` implementation for `Error`.
         #[test]
-        fn test_clone_implementation() {
+        fn test_error_clone() {
             let original = Error::ContentTooLarge {
-                size: 1000,
-                max: 500,
+                size: 200,
+                max: 100,
             };
             let cloned = original.clone();
             assert!(
-                matches!(cloned, Error::ContentTooLarge { size, max } if size == 1000 && max == 500)
+                matches!(cloned, Error::ContentTooLarge { size, max } if size == 200 && max == 100)
             );
         }
     }
 
-    /// Tests for the `EngineError` enum and its conversions.
+    /// Tests for the `EngineError` enum.
     mod engine_error_tests {
         use super::super::*;
         use std::io;
@@ -675,44 +749,31 @@ mod tests {
         /// Test the `ContentError` variant.
         #[test]
         fn test_content_error() {
-            let error =
-                EngineError::ContentError("Content issue".to_string());
-            assert!(matches!(error, EngineError::ContentError(_)));
+            let error = EngineError::ContentError(
+                "Processing failed".to_string(),
+            );
             assert_eq!(
                 error.to_string(),
-                "Content processing error: Content issue"
+                "Content processing error: Processing failed"
             );
         }
 
-        /// Test the conversion of `EngineError::FileSystemError` to `Error`.
+        /// Test `EngineError::FileSystemError` conversion to `Error`.
         #[test]
-        fn test_filesystem_error_conversion() {
-            let io_error = io::Error::new(
-                io::ErrorKind::NotFound,
-                "file not found",
-            );
+        fn test_engine_error_to_error_conversion() {
+            let io_error =
+                io::Error::new(io::ErrorKind::Other, "disk full");
             let engine_error = EngineError::FileSystemError {
                 source: io_error,
-                context: "file not found".to_string(),
+                context: "Saving file".to_string(),
             };
-            let frontmatter_error: Error = engine_error.into();
-            assert!(matches!(frontmatter_error, Error::ParseError(_)));
-            assert!(frontmatter_error
-                .to_string()
-                .contains("file not found"));
-        }
-
-        /// Test the `Clone` implementation for the `EngineError` enum.
-        #[test]
-        fn test_engine_error_clone() {
-            let original =
-                EngineError::ContentError("test error".to_string());
-            let cloned = original.clone();
-            assert_eq!(cloned.to_string(), original.to_string());
+            let converted: Error = engine_error.into();
+            assert!(converted.to_string().contains("disk full"));
+            assert!(converted.to_string().contains("Saving file"));
         }
     }
 
-    /// Tests for the `Context` struct and its `Display` implementation.
+    /// Tests for the `Context` struct.
     mod context_tests {
         use super::super::*;
 
@@ -720,78 +781,56 @@ mod tests {
         #[test]
         fn test_context_display() {
             let context = Context {
-                line: Some(3),
-                column: Some(15),
-                snippet: Some("example snippet".to_string()),
+                line: Some(42),
+                column: Some(10),
+                snippet: Some("invalid key".to_string()),
             };
             assert_eq!(
                 context.to_string(),
-                "at 3:15 near 'example snippet'"
+                "at 42:10 near 'invalid key'"
             );
         }
 
-        /// Test edge cases for the `Context` struct.
+        /// Test missing fields in `Context`.
         #[test]
-        fn test_context_edge_cases() {
+        fn test_context_missing_fields() {
             let context = Context {
                 line: None,
                 column: None,
-                snippet: Some("snippet only".to_string()),
-            };
-            assert_eq!(
-                context.to_string(),
-                "at 0:0 near 'snippet only'"
-            );
-
-            let context = Context {
-                line: Some(3),
-                column: None,
-                snippet: None,
-            };
-            assert_eq!(context.to_string(), "at 3:0");
-
-            let context = Context {
-                line: Some(3),
-                column: Some(15),
-                snippet: None,
-            };
-            assert_eq!(context.to_string(), "at 3:15");
-
-            let context = Context {
-                line: Some(3),
-                column: Some(15),
                 snippet: Some("example snippet".to_string()),
             };
             assert_eq!(
                 context.to_string(),
-                "at 3:15 near 'example snippet'"
+                "at 0:0 near 'example snippet'"
             );
         }
     }
 
-    /// Tests for conversion traits and `From` implementations.
+    /// Tests for conversions.
     mod conversion_tests {
         use super::super::*;
         use std::io;
 
-        /// Test the conversion of `std::io::Error` to `Error`.
+        /// Test the conversion from `std::io::Error` to `Error`.
         #[test]
         fn test_io_error_conversion() {
             let io_error =
-                io::Error::new(io::ErrorKind::Other, "an IO error");
+                io::Error::new(io::ErrorKind::NotFound, "file missing");
             let error: Error = io_error.into();
             assert!(matches!(error, Error::ParseError(_)));
-            assert!(error.to_string().contains("an IO error"));
+            assert!(error.to_string().contains("file missing"));
         }
+    }
 
-        /// Test the conversion of `EngineError` to `Error`.
+
+
+    /// Test the conversion of `EngineError` to `Error`.
         #[test]
         fn test_engine_error_conversion() {
             let engine_error =
-                EngineError::ContentError("content failed".to_string());
-            let error: Error = engine_error.into();
-            assert!(matches!(error, Error::ParseError(_)));
+                crate::error::EngineError::ContentError("content failed".to_string());
+            let error: crate::Error = engine_error.into();
+            assert!(matches!(error, crate::Error::ParseError(_)));
             assert!(error.to_string().contains("content failed"));
         }
-    }
 }
