@@ -477,9 +477,9 @@ mod tests {
 
         let templates = engine.template_cache.read().await;
         assert_eq!(
-    templates.items.get("default"),
-    Some(&template_content.to_string())
-);
+            templates.items.get("default"),
+            Some(&template_content.to_string())
+        );
 
         temp_dir.close()?;
         Ok(())

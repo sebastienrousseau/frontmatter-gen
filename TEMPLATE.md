@@ -5,7 +5,7 @@
 alt="FrontMatter Gen logo" height="66" align="right" />
 <!-- markdownlint-enable MD033 MD041 -->
 
-A high-performance Rust library for parsing and serialising frontmatter in YAML, TOML, and JSON formats. Built for safety, efficiency, and ease of use.
+A high-performance Rust library for parsing and serialising frontmatter in YAML, TOML, and JSON formats. Engineered for safety, efficiency, and ease of use.
 
 <!-- markdownlint-disable MD033 MD041 -->
 <center>
@@ -21,18 +21,19 @@ A high-performance Rust library for parsing and serialising frontmatter in YAML,
 
 ## Overview 🚀
 
-`frontmatter-gen` is a comprehensive Rust library that provides robust handling of frontmatter in content files. It delivers a type-safe, efficient solution for extracting, parsing, and serialising frontmatter in multiple formats. Whether you're building a static site generator, content management system, or any application requiring structured metadata, `frontmatter-gen` offers the tools you need.
+`frontmatter-gen` is a robust Rust library that provides comprehensive handling of frontmatter in content files. It delivers a type-safe, efficient solution for extracting, parsing, and serialising frontmatter in multiple formats. Whether you're building a static site generator, content management system, or any application requiring structured metadata, `frontmatter-gen` offers the tools you need with performance and safety at its core.
 
-### Key Features 🎯
+## Key Features 🎯
 
-- **Zero-Copy Parsing**: Parse YAML, TOML, and JSON frontmatter efficiently with zero memory copying
-- **Safe Extraction**: Extract frontmatter using standard delimiters (`---` for YAML, `+++` for TOML) with comprehensive error handling
-- **Type Safety**: Leverage Rust's type system with the `Value` enum for safe frontmatter manipulation
-- **High Performance**: Optimised for speed with minimal allocations and efficient algorithms
-- **Memory Safety**: Guaranteed memory safety through Rust's ownership system
-- **Rich Error Handling**: Detailed error types with context for effective debugging
-- **Async Support**: First-class asynchronous operation support
-- **Flexible Configuration**: Customisable parsing behaviour to match your needs
+- **Zero-copy parsing**: Optimised for memory efficiency
+- **Multi-format support**: Parse and serialise YAML, TOML, and JSON
+- **Type-safe operations**: Comprehensive error handling with `Result` types
+- **Secure processing**: Input validation and size limits
+- **Async support**: Full asynchronous operations via the `ssg` feature flag
+- **Command-line interface**: Direct frontmatter manipulation tools
+- **Memory safety**: Guaranteed memory safety through Rust's ownership system
+- **Comprehensive testing**: Extensive test coverage and validation
+- **Rich documentation**: Detailed guides and examples
 
 [00]: https://frontmatter-gen.com
 [01]: https://lib.rs/crates/frontmatter-gen
@@ -44,12 +45,12 @@ A high-performance Rust library for parsing and serialising frontmatter in YAML,
 [07]: https://github.com/sebastienrousseau/frontmatter-gen/actions?query=branch%3Amain
 [08]: https://www.rust-lang.org/
 
-[build-badge]: https://img.shields.io/github/actions/workflow/status/sebastienrousseau/frontmatter--gen/release.yml?branch=main&style=for-the-badge&logo=github
+[build-badge]: https://img.shields.io/github/actions/workflow/status/sebastienrousseau/frontmatter-gen/release.yml?branch=main&style=for-the-badge&logo=github
 [codecov-badge]: https://img.shields.io/codecov/c/github/sebastienrousseau/frontmatter-gen?style=for-the-badge&token=Q9KJ6XXL67&logo=codecov
 [crates-badge]: https://img.shields.io/crates/v/frontmatter-gen.svg?style=for-the-badge&color=fc8d62&logo=rust
 [docs-badge]: https://img.shields.io/badge/docs.rs-frontmatter--gen-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs
 [github-badge]: https://img.shields.io/badge/github-sebastienrousseau/frontmatter--gen-8da0cb?style=for-the-badge&labelColor=555555&logo=github
-[libs-badge]: https://img.shields.io/badge/lib.rs-v0.0.4-orange.svg?style=for-the-badge
+[libs-badge]: https://img.shields.io/badge/lib.rs-v0.0.5-orange.svg?style=for-the-badge
 [made-with-rust]: https://img.shields.io/badge/rust-f04041?style=for-the-badge&labelColor=c0282d&logo=rust
 
 ## Changelog 📚

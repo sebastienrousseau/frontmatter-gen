@@ -4,7 +4,7 @@
 
 [package]
 name = "frontmatter-gen"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2021"
 rust-version = "1.56.0"
 license = "MIT OR Apache-2.0"
@@ -80,10 +80,8 @@ ssg = [                                 # Full SSG functionality
     "dep:pulldown-cmark",
     "dep:tokio",
     "dep:dtt",
-    # "dep:log",
     "dep:url",
 ]
-# logging = ["dep:log"]   # Optional logging feature
 
 # -----------------------------------------------------------------------------
 # Dependencies
@@ -112,8 +110,10 @@ simple_logger = "5.0.0"
 tempfile = "3.14.0"
 tera = { version = "1.20.0", optional = true }
 tokio = { version = "1.41.1", features = ["full"], optional = true }
-url = { version = "2.5.3", optional = true }
+url = { version = "2.5.4", optional = true }
 
+# Examples development dependencies
+env_logger = "0.11.5"
 # -----------------------------------------------------------------------------
 # Build Dependencies
 # -----------------------------------------------------------------------------

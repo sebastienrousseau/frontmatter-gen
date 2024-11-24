@@ -5,7 +5,7 @@
 alt="FrontMatter Gen logo" height="66" align="right" />
 <!-- markdownlint-enable MD033 MD041 -->
 
-A high-performance Rust library for parsing and serialising frontmatter in YAML, TOML, and JSON formats. Built for safety, efficiency, and ease of use.
+A high-performance Rust library for parsing and serialising frontmatter in YAML, TOML, and JSON formats. Engineered for safety, efficiency, and ease of use.
 
 <!-- markdownlint-disable MD033 MD041 -->
 <center>
@@ -21,38 +21,40 @@ A high-performance Rust library for parsing and serialising frontmatter in YAML,
 
 ## Overview 🚀
 
-`frontmatter-gen` is a comprehensive Rust library that provides robust handling of frontmatter in content files. It delivers a type-safe, efficient solution for extracting, parsing, and serialising frontmatter in multiple formats. Whether you're building a static site generator, content management system, or any application requiring structured metadata, `frontmatter-gen` offers the tools you need.
+`frontmatter-gen` is a robust Rust library that provides comprehensive handling of frontmatter in content files. It delivers a type-safe, efficient solution for extracting, parsing, and serialising frontmatter in multiple formats. Whether you're building a static site generator, content management system, or any application requiring structured metadata, `frontmatter-gen` offers the tools you need with performance and safety at its core.
 
 ## Key Features 🎯
 
-- **Zero-copy parsing** for optimal memory efficiency
-- **Multi-format support** (YAML, TOML, JSON)
-- **Type-safe operations** with comprehensive error handling
-- **Secure processing** with input validation and size limits
-- **Async support** with the `ssg` feature flag
-- **Command-line interface** for direct manipulation
+- **Zero-copy parsing**: Optimised for memory efficiency
+- **Multi-format support**: Parse and serialise YAML, TOML, and JSON
+- **Type-safe operations**: Comprehensive error handling with `Result` types
+- **Secure processing**: Input validation and size limits
+- **Async support**: Full asynchronous operations via the `ssg` feature flag
+- **Command-line interface**: Direct frontmatter manipulation tools
+- **Memory safety**: Guaranteed memory safety through Rust's ownership system
+- **Comprehensive testing**: Extensive test coverage and validation
+- **Rich documentation**: Detailed guides and examples
 
 ## Available Features 🛠️
 
 This crate provides several feature flags to customise its functionality:
 
-- **default**: Core frontmatter parsing functionality only
-- **cli**: Command-line interface tools for quick operations
+- **default**: Core frontmatter parsing functionality
+- **cli**: Command-line interface tools for validation and extraction
 - **ssg**: Static Site Generator functionality (includes CLI features)
 
 Configure features in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-
 # Enable CLI support for validation and extraction
-frontmatter-gen = { version = "0.0.4", features = ["cli"] }
+frontmatter-gen = { version = "0.0.5", features = ["cli"] }
 
 # Enable all features (validation, extraction and static site generation)
-frontmatter-gen = { version = "0.0.4", features = ["ssg"] }
+frontmatter-gen = { version = "0.0.5", features = ["ssg"] }
 ```
 
-Installation via cargo:
+Installation via Cargo:
 
 ```bash
 # Install with CLI support
@@ -71,8 +73,7 @@ Add this to your `Cargo.toml`:
 ```toml
 [dependencies]
 # Core library with command-line interface and SSG support
-frontmatter-gen = { version = "0.0.4", features = ["cli", "ssg"] }
-
+frontmatter-gen = { version = "0.0.5", features = ["cli", "ssg"] }
 ```
 
 ## Basic Usage 🔨
@@ -94,6 +95,7 @@ tags:
 
     let (frontmatter, content) = extract(content)?;
 
+    // Access frontmatter fields safely
     if let Some(title) = frontmatter.get("title").and_then(|v| v.as_str()) {
         println!("Title: {}", title);
     }
@@ -110,11 +112,19 @@ use frontmatter_gen::{Frontmatter, Format, Value, to_format};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut frontmatter = Frontmatter::new();
-    frontmatter.insert("title".to_string(), Value::String("My Document".to_string()));
+    frontmatter.insert(
+        "title".to_string(), 
+        Value::String("My Document".to_string())
+    );
 
+    // Convert to different formats
+    let yaml = to_format(&frontmatter, Format::Yaml)?;
     let json = to_format(&frontmatter, Format::Json)?;
-    println!("JSON output: {}", json);
-    assert!(json.contains(r#""title":"My Document""#));
+    let toml = to_format(&frontmatter, Format::Toml)?;
+
+    println!("YAML output:\n{}", yaml);
+    println!("JSON output:\n{}", json);
+    println!("TOML output:\n{}", toml);
 
     Ok(())
 }
@@ -147,6 +157,9 @@ cargo run --features="cli" extract input.md --format json
 
 # Save extracted frontmatter
 cargo run --features="cli" extract input.md --format yaml --output frontmatter.yaml
+
+# Validate frontmatter
+cargo run --features="cli" validate input.md --required title,date,author
 ```
 
 ## Static Site Generation 🌐
@@ -154,179 +167,39 @@ cargo run --features="cli" extract input.md --format yaml --output frontmatter.y
 Build and serve your static site:
 
 ```bash
-# Generate a static site with the fmg CLI
+# Generate a static site
 fmg build \
     --content-dir content \
     --output-dir public \
     --template-dir templates
 
-or from the source code:
-
-# Generate a static site using cargo
+# Or using cargo
 cargo run --features="ssg" -- build \
     --content-dir content \
     --output-dir public \
     --template-dir templates
 ```
 
-### Serve locally (using Python for demonstration)
+### Local Development Server
 
 ```bash
 # Change to the output directory
 cd public
 
-# Serve the site
+# Start a local server (using Python for demonstration)
 python -m http.server 8000 --bind 127.0.0.1
 ```
 
-Then visit `http://127.0.0.1:8000` in your favourite browser.
+Visit `http://127.0.0.1:8000` in your browser to view the site.
 
 ## Error Handling 🚨
 
-The library provides comprehensive error handling:
+The library provides comprehensive error handling with context:
 
 ```rust
 use frontmatter_gen::{extract, error::Error};
 
 fn process_content(content: &str) -> Result<(), Error> {
-    let (frontmatter, _) = extract(content)?;
-    
-    // Validate required fields
-    for field in ["title", "date", "author"].iter() {
-        if !frontmatter.contains_key(*field) {
-            return Err(Error::ValidationError(
-                format!("Missing required field: {}", field)
-            ));
-        }
-    }
-    
-    Ok(())
-}
-```
-
-## Logging Support 📝
-
-When the `logging` feature is enabled, the library integrates with Rust's `log` crate for detailed debug output. You can use any compatible logger implementation (e.g., `env_logger`, `simple_logger`).
-
-### Basic Logging Setup
-
-```rust
-use frontmatter_gen::extract;
-use log::{debug, info, Level, Metadata, Record, set_logger, set_max_level};
-
-struct SimpleLogger;
-
-impl log::Log for SimpleLogger {
-    fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= Level::Debug
-    }
-
-    fn log(&self, record: &Record) {
-        if self.enabled(record.metadata()) {
-            println!(
-                "{} [{}] - {}",
-                record.target(),
-                record.level(),
-                record.args()
-            );
-        }
-    }
-
-    fn flush(&self) {}
-}
-
-static LOGGER: SimpleLogger = SimpleLogger;
-
-fn init_logger() {
-    // Explicitly handle logger initialization error
-    if let Err(e) = set_logger(&LOGGER).map(|()| set_max_level(Level::Debug.to_level_filter())) {
-        eprintln!("Failed to initialize logger: {}", e);
-    }
-}
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize the custom logger
-    init_logger();
-    info!("Starting frontmatter extraction");
-
-    let content = r#"---
-title: My Document
-date: 2025-09-09
----
-# Content"#;
-
-    // Extract frontmatter and remaining content
-    let (frontmatter, content) = extract(content)?;
-    debug!("Extracted frontmatter: {:?}", frontmatter);
-    debug!("Remaining content: {:?}", content);
-
-    Ok(())
-}
-```
-
-#### Advanced Logging Configuration
-
-For more control over logging:
-
-```rust
-use frontmatter_gen::{parser, Format};
-use log::{debug, info, Level, Metadata, Record, set_logger, set_max_level};
-
-struct SimpleLogger;
-
-impl log::Log for SimpleLogger {
-    fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= Level::Debug
-    }
-
-    fn log(&self, record: &Record) {
-        if self.enabled(record.metadata()) {
-            println!("[{}] - {}", record.level(), record.args());
-        }
-    }
-
-    fn flush(&self) {}
-}
-
-static LOGGER: SimpleLogger = SimpleLogger;
-
-fn init_logger() {
-    set_logger(&LOGGER).expect("Failed to set logger");
-    set_max_level(Level::Debug.to_level_filter());
-}
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize the custom logger
-    init_logger();
-    info!("Starting frontmatter processing");
-
-    let yaml = r#"title: Test Document"#;
-    let frontmatter = parser::parse(yaml, Format::Yaml)?;
-    debug!("Parsed frontmatter: {:?}", frontmatter);
-
-    Ok(())
-}
-```
-
-## CLI Logging 📝
-
-When using the CLI with logging enabled:
-
-```bash
-# Set log level via environment variable
-RUST_LOG=debug frontmatter_gen extract input.md --format yaml
-
-# Or for more specific control
-RUST_LOG=frontmatter_gen=debug,cli=info frontmatter_gen validate input.md
-```
-
-The library provides detailed error handling with context:
-
-```rust
-use frontmatter_gen::{extract, error::Error};
-
-fn process_content(content: &str) -> Result<(), Error> {
-    // Extract frontmatter and content
     let (frontmatter, _) = extract(content)?;
     
     // Validate required fields
@@ -351,29 +224,71 @@ fn process_content(content: &str) -> Result<(), Error> {
 }
 ```
 
+## Logging Support 📝
+
+Enable detailed logging with the standard Rust logging facade:
+
+```rust
+use frontmatter_gen::extract;
+use log::{debug, info, Level};
+use simple_logger::SimpleLogger;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Initialise logging
+    SimpleLogger::new()
+        .with_level(Level::Debug.to_level_filter())
+        .init()?;
+
+    let content = r#"---
+title: My Document
+date: 2025-09-09
+---
+# Content"#;
+
+    info!("Processing frontmatter");
+    let (frontmatter, content) = extract(content)?;
+    debug!("Extracted frontmatter: {:?}", frontmatter);
+    debug!("Content: {:?}", content);
+
+    Ok(())
+}
+```
+
+### CLI Logging Configuration
+
+Control logging levels via environment variables:
+
+```bash
+# Set log level for CLI operations
+RUST_LOG=debug fmg extract input.md --format yaml
+
+# Configure specific component logging
+RUST_LOG=frontmatter_gen=debug,cli=info fmg validate input.md
+```
+
 ## Documentation 📚
 
-For comprehensive API documentation and examples, visit:
+Comprehensive documentation is available at:
 
-- [API Documentation on docs.rs][04]
-- [User Guide and Tutorials][00]
-- [Example Code Repository][02]
+- [API Documentation][04]
+- [User Guide and Examples][00]
+- [Source Code and Examples][09]
 
 ## Contributing 🤝
 
-We welcome contributions! Please see our [Contributing Guidelines][05] for details on:
+We welcome contributions! Please see our [Contributing Guidelines][05] for:
 
 - Code of Conduct
 - Development Process
-- Submitting Pull Requests
-- Reporting Issues
+- Pull Request Guidelines
+- Issue Reporting
 
 ## Licence 📝
 
 This project is dual-licensed under either:
 
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
-- MIT licence ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
+- [Apache License, Version 2.0](LICENSE-APACHE) ([http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0))
+- [MIT Licence](LICENSE-MIT) ([http://opensource.org/licenses/MIT](http://opensource.org/licenses/MIT))
 
 at your option.
 
@@ -390,11 +305,12 @@ Special thanks to all contributors and the Rust community for their invaluable s
 [06]: https://codecov.io/gh/sebastienrousseau/frontmatter-gen
 [07]: https://github.com/sebastienrousseau/frontmatter-gen/actions?query=branch%3Amain
 [08]: https://www.rust-lang.org/
+[09]: https://github.com/sebastienrousseau/frontmatter-gen/
 
 [build-badge]: https://img.shields.io/github/actions/workflow/status/sebastienrousseau/frontmatter-gen/release.yml?branch=main&style=for-the-badge&logo=github
 [codecov-badge]: https://img.shields.io/codecov/c/github/sebastienrousseau/frontmatter-gen?style=for-the-badge&token=Q9KJ6XXL67&logo=codecov
 [crates-badge]: https://img.shields.io/crates/v/frontmatter-gen.svg?style=for-the-badge&color=fc8d62&logo=rust
 [docs-badge]: https://img.shields.io/badge/docs.rs-frontmatter--gen-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs
 [github-badge]: https://img.shields.io/badge/github-sebastienrousseau/frontmatter--gen-8da0cb?style=for-the-badge&labelColor=555555&logo=github
-[libs-badge]: https://img.shields.io/badge/lib.rs-v0.0.4-orange.svg?style=for-the-badge
+[libs-badge]: https://img.shields.io/badge/lib.rs-v0.0.5-orange.svg?style=for-the-badge
 [made-with-rust]: https://img.shields.io/badge/rust-f04041?style=for-the-badge&labelColor=c0282d&logo=rust

@@ -112,9 +112,9 @@ fn optimise_string(s: &str) -> String {
 /// # Errors
 ///
 /// Returns `Error` if:
-/// - The input is not valid in the specified format.
-/// - The structure exceeds configured limits.
-/// - The format is unsupported.
+/// - The input is not valid in the specified format
+/// - The structure exceeds configured limits
+/// - The format is unsupported
 pub fn parse_with_options(
     raw_front_matter: &str,
     format: Format,
@@ -125,57 +125,65 @@ pub fn parse_with_options(
     // Check for unsupported formats
     if format == Format::Unsupported {
         let err_msg = format!(
-        "Unsupported format: {:?}. Supported formats are YAML, TOML, and JSON.",
-        format
-    );
+            "Unsupported format: {:?}. Supported formats are YAML, TOML, and JSON.",
+            format
+        );
         log::error!("{}", err_msg);
         return Err(Error::ConversionError(err_msg));
     }
 
-    // Validate format assumptions against the raw input
-    if format == Format::Yaml && !raw_front_matter.starts_with("---") {
-        log::warn!("Warning: Format set to YAML but input does not start with '---'");
-    }
-    if format == Format::Toml && !raw_front_matter.contains('=') {
-        return Err(Error::ConversionError(
-            "Format set to TOML but input does not contain '=' signs."
-                .to_string(),
-        ));
-    }
-    if format == Format::Json && !raw_front_matter.starts_with('{') {
-        return Err(Error::ConversionError(
-            "Format set to JSON but input does not start with '{'."
-                .to_string(),
-        ));
-    }
+    // Trim the input and validate format assumptions
+    let trimmed_content = raw_front_matter.trim();
+
+    // Format-specific validation
+    match format {
+        Format::Yaml => {
+            if !trimmed_content.starts_with("---") {
+                log::debug!("YAML front matter validation: Content structure appears non-standard");
+            }
+        }
+        Format::Toml => {
+            if !trimmed_content.contains('=') {
+                return Err(Error::ConversionError(
+                    "Format set to TOML but input does not contain '=' signs.".to_string(),
+                ));
+            }
+        }
+        Format::Json => {
+            if !trimmed_content.starts_with('{') {
+                return Err(Error::ConversionError(
+                    "Format set to JSON but input does not start with '{'."
+                        .to_string(),
+                ));
+            }
+        }
+        Format::Unsupported => unreachable!(), // We've already handled this case above
+    };
 
     let front_matter = match format {
-        Format::Yaml => parse_yaml(raw_front_matter).map_err(|e| {
+        Format::Yaml => parse_yaml(trimmed_content).map_err(|e| {
             log::error!("YAML parsing failed: {}", e);
             e
         })?,
-        Format::Toml => parse_toml(raw_front_matter).map_err(|e| {
+        Format::Toml => parse_toml(trimmed_content).map_err(|e| {
             log::error!("TOML parsing failed: {}", e);
             e
         })?,
-        Format::Json => parse_json(raw_front_matter).map_err(|e| {
+        Format::Json => parse_json(trimmed_content).map_err(|e| {
             log::error!("JSON parsing failed: {}", e);
             e
         })?,
-        Format::Unsupported => {
-            let err_msg = "Unsupported format provided".to_string();
-            log::error!("{}", err_msg);
-            return Err(Error::ConversionError(err_msg));
-        }
+        Format::Unsupported => unreachable!(),
     };
 
-    // Perform validation if the options specify it
+    // Perform validation if specified in options
     if options.validate {
         log::debug!(
-            "Validating front matter: maximum allowed nesting depth is {}, maximum allowed number of keys is {}.",
+            "Validating front matter: maximum allowed nesting depth is {}, maximum allowed number of keys is {}",
             options.max_depth,
             options.max_keys
         );
+
         validate_frontmatter(
             &front_matter,
             options.max_depth,
