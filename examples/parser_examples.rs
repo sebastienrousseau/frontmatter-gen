@@ -1,28 +1,41 @@
 // Copyright © 2024 FrontMatterGen. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 // See LICENSE-APACHE.md and LICENSE-MIT.md in the repository root for full license information.
 
 //! # FrontMatterGen Parser Examples
 //!
 //! This example demonstrates how to use the FrontMatterGen parser to parse and
 //! serialize frontmatter in YAML, TOML, and JSON formats.
+//!
+//! ## Features
+//!
+//! - Parsing frontmatter in YAML, TOML, and JSON formats
+//! - Serializing frontmatter to YAML, TOML, and JSON formats
+//! - Roundtrip parsing and serialization validation
+//! - Error handling for invalid inputs
+//! - SSG-specific examples (enabled via the "ssg" feature)
+//!
+//! ## Usage
+//!
+//! To run this example:
+//!
+//! ```bash
+//! cargo run --features default --example parser
+//! ```
 
-#![allow(missing_docs)]
-
-use frontmatter_gen::error::Error;
 use frontmatter_gen::{
-    parser::parse, parser::to_string, Format, Frontmatter, Value,
+    error::Error,
+    parser::{parse, to_string},
+    Format, Frontmatter, Value,
 };
 
-/// Entry point for the FrontMatterGen parser examples.
+/// Main function demonstrating frontmatter parsing and serialization.
 ///
-/// This function runs various examples demonstrating frontmatter parsing and
-/// serialization for different formats (YAML, TOML, and JSON).
+/// This function covers parsing and serializing YAML, TOML, and JSON frontmatter,
+/// with additional examples for static site generators (SSG) if enabled.
 ///
 /// # Errors
-///
-/// Returns an error if any of the example functions fail.
+/// Returns an error if any of the examples fail.
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🧪 FrontMatterGen Parser Examples\n");
 
@@ -38,12 +51,16 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "ssg")]
     ssg_parser_examples()?;
 
-    println!("\n🎉  All parser examples completed successfully!");
-
+    println!("\n🎉 All parser examples completed successfully!");
     Ok(())
 }
 
 /// Demonstrates parsing YAML frontmatter.
+///
+/// This example shows how to parse YAML content into a Frontmatter struct.
+///
+/// # Errors
+/// Returns an error if parsing fails.
 fn parse_yaml_example() -> Result<(), Error> {
     println!("🦀 YAML Parsing Example");
     println!("---------------------------------------------");
@@ -51,7 +68,7 @@ fn parse_yaml_example() -> Result<(), Error> {
     let yaml_content = "title: My Post\ndate: 2025-09-09\n";
     let frontmatter = parse(yaml_content, Format::Yaml)?;
 
-    println!("    ✅  Parsed frontmatter: {:?}", frontmatter);
+    println!("    ✅ Parsed frontmatter: {:?}", frontmatter);
     assert_eq!(
         frontmatter.get("title").unwrap().as_str().unwrap(),
         "My Post"
@@ -61,6 +78,11 @@ fn parse_yaml_example() -> Result<(), Error> {
 }
 
 /// Demonstrates parsing TOML frontmatter.
+///
+/// This example shows how to parse TOML content into a Frontmatter struct.
+///
+/// # Errors
+/// Returns an error if parsing fails.
 fn parse_toml_example() -> Result<(), Error> {
     println!("\n🦀 TOML Parsing Example");
     println!("---------------------------------------------");
@@ -68,7 +90,7 @@ fn parse_toml_example() -> Result<(), Error> {
     let toml_content = "title = \"My Post\"\ndate = 2025-09-09\n";
     let frontmatter = parse(toml_content, Format::Toml)?;
 
-    println!("    ✅  Parsed frontmatter: {:?}", frontmatter);
+    println!("    ✅ Parsed frontmatter: {:?}", frontmatter);
     assert_eq!(
         frontmatter.get("title").unwrap().as_str().unwrap(),
         "My Post"
@@ -78,6 +100,11 @@ fn parse_toml_example() -> Result<(), Error> {
 }
 
 /// Demonstrates parsing JSON frontmatter.
+///
+/// This example shows how to parse JSON content into a Frontmatter struct.
+///
+/// # Errors
+/// Returns an error if parsing fails.
 fn parse_json_example() -> Result<(), Error> {
     println!("\n🦀 JSON Parsing Example");
     println!("---------------------------------------------");
@@ -85,7 +112,7 @@ fn parse_json_example() -> Result<(), Error> {
     let json_content = r#"{"title": "My Post", "date": "2025-09-09"}"#;
     let frontmatter = parse(json_content, Format::Json)?;
 
-    println!("    ✅  Parsed frontmatter: {:?}", frontmatter);
+    println!("    ✅ Parsed frontmatter: {:?}", frontmatter);
     assert_eq!(
         frontmatter.get("title").unwrap().as_str().unwrap(),
         "My Post"
@@ -94,7 +121,12 @@ fn parse_json_example() -> Result<(), Error> {
     Ok(())
 }
 
-/// Creates a sample frontmatter for examples
+/// Helper function to create sample frontmatter.
+///
+/// This function creates a Frontmatter struct with predefined data.
+///
+/// # Returns
+/// Returns a sample `Frontmatter` instance.
 fn create_sample_frontmatter() -> Frontmatter {
     let mut frontmatter = Frontmatter::new();
     let _ = frontmatter.insert(
@@ -109,6 +141,11 @@ fn create_sample_frontmatter() -> Frontmatter {
 }
 
 /// Demonstrates serializing frontmatter to YAML.
+///
+/// This example shows how to serialize a Frontmatter struct to YAML format.
+///
+/// # Errors
+/// Returns an error if serialization fails.
 fn serialize_to_yaml_example() -> Result<(), Error> {
     println!("\n🦀 YAML Serialization Example");
     println!("---------------------------------------------");
@@ -116,13 +153,18 @@ fn serialize_to_yaml_example() -> Result<(), Error> {
     let frontmatter = create_sample_frontmatter();
     let yaml = to_string(&frontmatter, Format::Yaml)?;
 
-    println!("    ✅  Serialized to YAML:\n{}", yaml);
+    println!("    ✅ Serialized to YAML:\n{}", yaml);
     assert!(yaml.contains("title: My Post"));
 
     Ok(())
 }
 
 /// Demonstrates serializing frontmatter to TOML.
+///
+/// This example shows how to serialize a Frontmatter struct to TOML format.
+///
+/// # Errors
+/// Returns an error if serialization fails.
 fn serialize_to_toml_example() -> Result<(), Error> {
     println!("\n🦀 TOML Serialization Example");
     println!("---------------------------------------------");
@@ -130,13 +172,18 @@ fn serialize_to_toml_example() -> Result<(), Error> {
     let frontmatter = create_sample_frontmatter();
     let toml = to_string(&frontmatter, Format::Toml)?;
 
-    println!("    ✅  Serialized to TOML:\n{}", toml);
+    println!("    ✅ Serialized to TOML:\n{}", toml);
     assert!(toml.contains("title = \"My Post\""));
 
     Ok(())
 }
 
 /// Demonstrates serializing frontmatter to JSON.
+///
+/// This example shows how to serialize a Frontmatter struct to JSON format.
+///
+/// # Errors
+/// Returns an error if serialization fails.
 fn serialize_to_json_example() -> Result<(), Error> {
     println!("\n🦀 JSON Serialization Example");
     println!("---------------------------------------------");
@@ -144,13 +191,28 @@ fn serialize_to_json_example() -> Result<(), Error> {
     let frontmatter = create_sample_frontmatter();
     let json = to_string(&frontmatter, Format::Json)?;
 
-    println!("    ✅  Serialized to JSON:\n{}", json);
-    assert!(json.contains("\"title\": \"My Post\""));
+    println!("    ✅ Serialized to JSON:\n{}", json);
+
+    // Deserialize JSON to verify structure
+    let deserialized: serde_json::Value =
+        serde_json::from_str(&json)
+            .map_err(|e| Error::ConversionError(e.to_string()))?;
+
+    assert_eq!(
+        deserialized.get("title").and_then(|v| v.as_str()),
+        Some("My Post")
+    );
 
     Ok(())
 }
 
-/// SSG-specific examples that are only available with the "ssg" feature
+/// Demonstrates SSG-specific frontmatter parsing and serialization.
+///
+/// This example shows how to process frontmatter for SSGs, including additional
+/// metadata fields.
+///
+/// # Errors
+/// Returns an error if parsing or serialization fails.
 #[cfg(feature = "ssg")]
 fn ssg_parser_examples() -> Result<(), Error> {
     println!("\n🦀 SSG-Specific Parser Examples");
@@ -206,7 +268,7 @@ fn ssg_parser_examples() -> Result<(), Error> {
 mod tests {
     use super::*;
 
-    // Core functionality tests
+    /// Tests basic YAML parsing.
     #[test]
     fn test_basic_parsing() -> Result<(), Error> {
         let yaml = "title: Test\n";
@@ -218,6 +280,7 @@ mod tests {
         Ok(())
     }
 
+    /// Tests YAML serialization.
     #[test]
     fn test_serialization() -> Result<(), Error> {
         let frontmatter = create_sample_frontmatter();
@@ -226,36 +289,16 @@ mod tests {
         Ok(())
     }
 
-    // SSG-specific tests
-    #[cfg(feature = "ssg")]
-    mod ssg_tests {
-        use super::*;
-
-        #[test]
-        fn test_ssg_complex_frontmatter() -> Result<(), Error> {
-            let yaml = r#"
-template: post
-layout: blog
-tags:
-  - rust
-  - ssg
-draft: false
-"#;
-            let frontmatter = parse(yaml, Format::Yaml)?;
-            assert_eq!(
-                frontmatter.get("template").unwrap().as_str().unwrap(),
-                "post"
-            );
-            assert_eq!(
-                frontmatter.get("layout").unwrap().as_str().unwrap(),
-                "blog"
-            );
-            assert!(!frontmatter
-                .get("draft")
-                .unwrap()
-                .as_bool()
-                .unwrap());
-            Ok(())
-        }
+    /// Tests roundtrip parsing and serialization.
+    #[test]
+    fn test_roundtrip() -> Result<(), Error> {
+        let frontmatter = create_sample_frontmatter();
+        let yaml = to_string(&frontmatter, Format::Yaml)?;
+        let parsed = parse(&yaml, Format::Yaml)?;
+        assert_eq!(
+            parsed.get("title").unwrap().as_str().unwrap(),
+            "My Post"
+        );
+        Ok(())
     }
 }

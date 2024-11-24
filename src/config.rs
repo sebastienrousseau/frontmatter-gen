@@ -53,7 +53,7 @@
 //! To use SSG-specific functionality, enable the "ssg" feature in your Cargo.toml:
 //! ```toml
 //! [dependencies]
-//! frontmatter-gen = { version = "0.0.4", features = ["ssg"] }
+//! frontmatter-gen = { version = "0.0.5", features = ["ssg"] }
 //! ```
 use std::fmt;
 #[cfg(feature = "ssg")]

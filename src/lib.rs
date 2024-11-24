@@ -162,57 +162,65 @@ impl Default for ParseOptions {
 ///
 /// This function helps prevent denial of service attacks by:
 /// - Limiting the maximum size of frontmatter content
-/// - Validating content structure
+/// - Skipping validation for fenced code blocks
 /// - Checking for malicious patterns
 ///
-/// # Errors
+/// # Examples
 ///
-/// Returns `Error` if:
-/// - Content exceeds maximum size
-/// - Content contains invalid characters
-/// - Content structure is invalid
+/// ```rust
+/// use frontmatter_gen::{validate_input, ParseOptions};
+///
+/// let content = "---\ntitle: Example\n---\nBody content";
+/// let options = ParseOptions::default();
+/// assert!(validate_input(content, &options).is_ok());
+/// ```
 #[inline]
-fn validate_input(content: &str, options: &ParseOptions) -> Result<()> {
-    // Size validation
+pub fn validate_input(
+    content: &str,
+    options: &ParseOptions,
+) -> Result<()> {
+    let mut inside_fenced_code = false;
+
+    for line in content.lines() {
+        if line.trim_start().starts_with("```")
+            || line.trim_start().starts_with("~~~")
+        {
+            inside_fenced_code = !inside_fenced_code;
+            continue; // Skip validation for this line
+        }
+
+        if inside_fenced_code {
+            continue; // Skip validation inside fenced code blocks
+        }
+
+        // Path traversal detection
+        if line.contains("../") || line.contains("..\\") {
+            log::warn!("Potential path traversal detected: {}", line);
+            return Err(Error::ValidationError(
+                "Content contains path traversal patterns".to_string(),
+            ));
+        }
+
+        // Null byte validation
+        if line.contains('\0') {
+            log::warn!("Null byte detected in content");
+            return Err(Error::ValidationError(
+                "Content contains null bytes".to_string(),
+            ));
+        }
+    }
+
+    // Check size limit
     if content.len() > options.max_size.get() {
+        log::warn!(
+            "Content exceeds maximum size: {} > {}",
+            content.len(),
+            options.max_size.get()
+        );
         return Err(Error::ContentTooLarge {
             size: content.len(),
             max: options.max_size.get(),
         });
-    }
-
-    // Character validation
-    if content.contains('\0') {
-        return Err(Error::ValidationError(
-            "Content contains null bytes".to_string(),
-        ));
-    }
-
-    // Control character validation (except whitespace)
-    if content
-        .chars()
-        .any(|c| c.is_control() && !c.is_whitespace())
-    {
-        return Err(Error::ValidationError(
-            "Content contains invalid control characters".to_string(),
-        ));
-    }
-
-    // Path traversal prevention
-    if content.contains("../") || content.contains("..\\") {
-        return Err(Error::ValidationError(
-            "Content contains path traversal patterns".to_string(),
-        ));
-    }
-
-    // Line ending validation
-    if content.contains("\r\n")
-        && content.contains('\n')
-        && !content.contains("\r\n")
-    {
-        return Err(Error::ValidationError(
-            "Mixed line endings detected".to_string(),
-        ));
     }
 
     Ok(())
@@ -264,7 +272,7 @@ fn validate_input(content: &str, options: &ParseOptions) -> Result<()> {
 /// - Frontmatter format is invalid
 /// - Parsing fails
 pub fn extract(content: &str) -> Result<(Frontmatter, &str)> {
-    let options = ParseOptions::default();
+    let options = ParseOptions::from_env();
     validate_input(content, &options)?;
 
     let (raw_frontmatter, remaining_content) =
@@ -313,6 +321,46 @@ pub fn to_format(
     format: Format,
 ) -> Result<String> {
     to_string(frontmatter, format)
+}
+
+impl ParseOptions {
+    /// Load options from environment variables or use defaults.
+    ///
+    /// Reads the following environment variables:
+    /// - `MAX_FRONTMATTER_SIZE`: Maximum size for frontmatter content.
+    /// - `MAX_NESTING_DEPTH`: Maximum allowed nesting depth.
+    /// - `VALIDATE_STRUCTURE`: Enable or disable structure validation (default: `true`).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use frontmatter_gen::ParseOptions;
+    /// std::env::set_var("MAX_FRONTMATTER_SIZE", "2048");
+    /// std::env::set_var("MAX_NESTING_DEPTH", "64");
+    ///
+    /// let options = ParseOptions::from_env();
+    /// assert_eq!(options.max_size.get(), 2048);
+    /// assert_eq!(options.max_depth.get(), 64);
+    /// assert!(options.validate);
+    /// ```
+    pub fn from_env() -> Self {
+        let max_size = std::env::var("MAX_FRONTMATTER_SIZE")
+            .ok()
+            .and_then(|val| val.parse::<usize>().ok())
+            .map_or(MAX_FRONTMATTER_SIZE, |size| non_zero_usize!(size));
+
+        let max_depth = std::env::var("MAX_NESTING_DEPTH")
+            .ok()
+            .and_then(|val| val.parse::<usize>().ok())
+            .map_or(MAX_NESTING_DEPTH, |depth| non_zero_usize!(depth));
+
+        Self {
+            max_size,
+            max_depth,
+            validate: std::env::var("VALIDATE_STRUCTURE")
+                .map_or(true, |val| val.eq_ignore_ascii_case("true")),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -656,6 +704,51 @@ mod validate_input_tests {
     use super::*;
 
     #[test]
+    fn test_skip_validation_in_fenced_code_blocks() {
+        let options = ParseOptions::default();
+        let content = r#"
+        ---
+        title: Example
+        ---
+        ```
+        ../example/path
+        ```
+        Valid content here.
+        "#;
+
+        let result = validate_input(content, &options);
+        assert!(
+            result.is_ok(),
+            "Validation should skip fenced code blocks."
+        );
+    }
+
+    #[test]
+    fn test_detect_path_traversal_outside_code_blocks() {
+        let options = ParseOptions::default();
+        let content = r#"
+        ---
+        title: Example
+        ---
+        ../malicious/path
+        "#;
+
+        let result = validate_input(content, &options);
+        assert!(result.is_err(), "Validation should detect path traversal outside fenced code blocks.");
+    }
+
+    #[test]
+    fn test_validate_input_null_bytes() {
+        let options = ParseOptions::default();
+        let malicious_content = "title: Valid\0Post";
+        let result = validate_input(malicious_content, &options);
+        assert!(matches!(
+            result,
+            Err(Error::ValidationError(ref e)) if e == "Content contains null bytes"
+        ));
+    }
+
+    #[test]
     fn test_validate_input_exceeds_max_size() {
         let options = ParseOptions::default();
         let oversized_content = "a".repeat(options.max_size.get() + 1);
@@ -683,5 +776,34 @@ mod validate_input_tests {
             result,
             Err(Error::ValidationError(ref e)) if e == "Content contains path traversal patterns"
         ));
+    }
+}
+
+#[cfg(test)]
+mod parse_options_tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_options_default() {
+        let options = ParseOptions::default();
+        assert_eq!(options.max_size.get(), 1024 * 1024);
+        assert_eq!(options.max_depth.get(), 32);
+        assert!(options.validate);
+    }
+
+    #[test]
+    fn test_parse_options_from_env() {
+        std::env::set_var("MAX_FRONTMATTER_SIZE", "524288");
+        std::env::set_var("MAX_NESTING_DEPTH", "20");
+        std::env::set_var("VALIDATE_STRUCTURE", "false");
+
+        let options = ParseOptions::from_env();
+        assert_eq!(options.max_size.get(), 524288);
+        assert_eq!(options.max_depth.get(), 20);
+        assert!(!options.validate);
+
+        std::env::remove_var("MAX_FRONTMATTER_SIZE");
+        std::env::remove_var("MAX_NESTING_DEPTH");
+        std::env::remove_var("VALIDATE_STRUCTURE");
     }
 }
