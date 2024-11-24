@@ -822,15 +822,14 @@ mod tests {
         }
     }
 
-
-
     /// Test the conversion of `EngineError` to `Error`.
-        #[test]
-        fn test_engine_error_conversion() {
-            let engine_error =
-                crate::error::EngineError::ContentError("content failed".to_string());
-            let error: crate::Error = engine_error.into();
-            assert!(matches!(error, crate::Error::ParseError(_)));
-            assert!(error.to_string().contains("content failed"));
-        }
+    #[test]
+    fn test_engine_error_conversion() {
+        let engine_error = crate::error::EngineError::ContentError(
+            "content failed".to_string(),
+        );
+        let error: crate::Error = engine_error.into();
+        assert!(matches!(error, crate::Error::ParseError(_)));
+        assert!(error.to_string().contains("content failed"));
+    }
 }

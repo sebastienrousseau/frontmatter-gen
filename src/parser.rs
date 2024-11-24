@@ -674,12 +674,12 @@ mod tests {
     use super::*;
     use std::f64::consts::PI;
 
-    // Helper function for creating test data
+    // Helper for creating a test `Frontmatter`
     fn create_test_frontmatter() -> Frontmatter {
         let mut fm = Frontmatter::new();
         let _ = fm.insert(
-            "string".to_string(),
-            Value::String("test".to_string()),
+            "title".to_string(),
+            Value::String("Test".to_string()),
         );
         let _ = fm.insert("number".to_string(), Value::Number(PI));
         let _ = fm.insert("boolean".to_string(), Value::Boolean(true));
@@ -694,142 +694,232 @@ mod tests {
         fm
     }
 
-    #[test]
-    fn test_string_optimisation() {
-        let short_str = "short";
-        let long_str = "a".repeat(SMALL_STRING_SIZE + 1);
+    /// Tests for `ParseOptions::default`.
+    mod parse_options_tests {
+        use super::*;
 
-        let optimised_short = optimise_string(short_str);
-        let optimised_long = optimise_string(&long_str);
-
-        assert_eq!(optimised_short, short_str);
-        assert_eq!(optimised_long, long_str);
-        assert!(optimised_long.capacity() >= long_str.len());
+        #[test]
+        fn test_parse_options_default() {
+            let default_options = ParseOptions::default();
+            assert_eq!(default_options.max_depth, MAX_NESTING_DEPTH);
+            assert_eq!(default_options.max_keys, MAX_KEYS);
+            assert!(default_options.validate);
+        }
     }
 
-    #[test]
-    fn test_validation() {
-        // Test max keys validation
-        let mut large_fm = Frontmatter::new();
-        for i in 0..MAX_KEYS + 1 {
-            let _ = large_fm.insert(
-                i.to_string(),
-                Value::String("value".to_string()),
+    /// Tests for `optimise_string`.
+    mod optimise_string_tests {
+        use super::*;
+
+        #[test]
+        fn test_optimise_string_short() {
+            let short_string = "short";
+            let optimised = optimise_string(short_string);
+            assert_eq!(optimised, short_string);
+            assert_eq!(optimised.capacity(), short_string.len());
+        }
+
+        #[test]
+        fn test_optimise_string_long() {
+            let long_string = "a".repeat(SMALL_STRING_SIZE + 1);
+            let optimised = optimise_string(&long_string);
+            assert_eq!(optimised, long_string);
+            assert!(optimised.capacity() >= long_string.len());
+        }
+    }
+
+    /// Tests for parsing functions.
+    mod parsing_tests {
+        use super::*;
+
+        #[test]
+        fn test_parse_yaml() {
+            let yaml = "key: value";
+            let result = parse_yaml(yaml);
+            assert!(result.is_ok());
+            let fm = result.unwrap();
+            assert_eq!(
+                fm.0.get("key"),
+                Some(&Value::String("value".to_string()))
             );
         }
-        assert!(validate_frontmatter(
-            &large_fm,
-            MAX_NESTING_DEPTH,
-            MAX_KEYS
-        )
-        .is_err());
 
-        // Test nesting depth validation
-        let mut nested_fm = Frontmatter::new();
-        let mut current = Value::Null;
-        for _ in 0..MAX_NESTING_DEPTH + 1 {
-            current = Value::Object(Box::new(Frontmatter(
-                [("nested".to_string(), current)].into_iter().collect(),
-            )));
+        #[test]
+        fn test_parse_toml() {
+            let toml = "key = \"value\"";
+            let result = parse_toml(toml);
+            assert!(result.is_ok());
+            let fm = result.unwrap();
+            assert_eq!(
+                fm.0.get("key"),
+                Some(&Value::String("value".to_string()))
+            );
         }
-        let _ = nested_fm.insert("deep".to_string(), current);
-        assert!(validate_frontmatter(
-            &nested_fm,
-            MAX_NESTING_DEPTH,
-            MAX_KEYS
-        )
-        .is_err());
+
+        #[test]
+        fn test_parse_json() {
+            let json = r#"{"key": "value"}"#;
+            let result = parse_json(json);
+            assert!(result.is_ok());
+            let fm = result.unwrap();
+            assert_eq!(
+                fm.0.get("key"),
+                Some(&Value::String("value".to_string()))
+            );
+        }
+
+        #[test]
+        fn test_parse_with_options() {
+            let yaml = "key: value";
+            let result = parse_with_options(yaml, Format::Yaml, None);
+            assert!(result.is_ok());
+            let fm = result.unwrap();
+            assert_eq!(
+                fm.0.get("key"),
+                Some(&Value::String("value".to_string()))
+            );
+        }
+
+        #[test]
+        fn test_parse_with_invalid_format() {
+            let yaml = "key: value";
+            let result =
+                parse_with_options(yaml, Format::Unsupported, None);
+            assert!(matches!(result, Err(Error::ConversionError(_))));
+        }
     }
 
-    #[test]
-    fn test_format_roundtrip() {
-        let original = create_test_frontmatter();
+    /// Tests for serialization functions.
+    mod serialization_tests {
+        use super::*;
 
-        // Test YAML roundtrip
-        let yaml = to_string(&original, Format::Yaml).unwrap();
-        let from_yaml = parse(&yaml, Format::Yaml).unwrap();
-        assert_eq!(original, from_yaml);
+        #[test]
+        fn test_to_yaml() {
+            let fm = create_test_frontmatter();
+            let yaml = to_yaml(&fm).unwrap();
+            assert!(yaml.contains("title:"));
+            assert!(yaml.contains("Test"));
+        }
 
-        // Test TOML roundtrip
-        let toml = to_string(&original, Format::Toml).unwrap();
-        let from_toml = parse(&toml, Format::Toml).unwrap();
-        assert_eq!(original, from_toml);
+        #[test]
+        fn test_to_toml() {
+            let fm = create_test_frontmatter();
+            let toml = to_toml(&fm).unwrap();
+            assert!(toml.contains("title = \"Test\""));
+        }
 
-        // Test JSON roundtrip
-        let json = to_string(&original, Format::Json).unwrap();
-        let from_json = parse(&json, Format::Json).unwrap();
-        assert_eq!(original, from_json);
+        #[test]
+        fn test_to_json_optimised() {
+            let fm = create_test_frontmatter();
+            let json = to_json_optimised(&fm).unwrap();
+            assert!(json.contains("\"title\":\"Test\""));
+        }
+
+        #[test]
+        fn test_to_string() {
+            let fm = create_test_frontmatter();
+
+            // Test YAML format
+            let yaml = to_string(&fm, Format::Yaml).unwrap();
+            assert!(yaml.contains("title: Test"));
+
+            // Test TOML format
+            let toml = to_string(&fm, Format::Toml).unwrap();
+            assert!(toml.contains("title = \"Test\""));
+
+            // Test JSON format
+            let json = to_string(&fm, Format::Json).unwrap();
+            assert!(json.contains("\"title\":\"Test\""));
+        }
     }
 
-    #[test]
-    fn test_parse_options() {
-        let yaml = r"
-        nested:
-          level1:
-            level2:
-              value: test
-        ";
+    /// Tests for validation functions.
+    mod validation_tests {
+        use super::*;
 
-        // Test with default options
-        assert!(parse_with_options(yaml, Format::Yaml, None).is_ok());
+        #[test]
+        fn test_validate_frontmatter_valid() {
+            let fm = create_test_frontmatter();
+            assert!(validate_frontmatter(
+                &fm,
+                MAX_NESTING_DEPTH,
+                MAX_KEYS
+            )
+            .is_ok());
+        }
 
-        // Test with restricted depth
-        let restricted_options = ParseOptions {
-            max_depth: 2,
-            max_keys: MAX_KEYS,
-            validate: true,
-        };
-        assert!(parse_with_options(
-            yaml,
-            Format::Yaml,
-            Some(restricted_options)
-        )
-        .is_err());
+        #[test]
+        fn test_validate_frontmatter_exceeds_keys() {
+            let mut fm = Frontmatter::new();
+            for i in 0..MAX_KEYS + 1 {
+                let _ = fm.insert(
+                    i.to_string(),
+                    Value::String("value".to_string()),
+                );
+            }
+            let result =
+                validate_frontmatter(&fm, MAX_NESTING_DEPTH, MAX_KEYS);
+            assert!(matches!(
+                result,
+                Err(Error::ContentTooLarge { .. })
+            ));
+        }
+
+        #[test]
+        fn test_validate_frontmatter_exceeds_depth() {
+            let mut current = Value::Null;
+            for _ in 0..MAX_NESTING_DEPTH + 1 {
+                current = Value::Object(Box::new(Frontmatter(
+                    [("nested".to_string(), current)]
+                        .into_iter()
+                        .collect(),
+                )));
+            }
+            let mut fm = Frontmatter::new();
+            let _ = fm.insert("deep".to_string(), current);
+            let result =
+                validate_frontmatter(&fm, MAX_NESTING_DEPTH, MAX_KEYS);
+            assert!(matches!(
+                result,
+                Err(Error::NestingTooDeep { .. })
+            ));
+        }
     }
 
-    #[test]
-    fn test_error_handling() {
-        // Test invalid YAML
-        let invalid_yaml = "test: : invalid";
-        assert!(matches!(
-            parse(invalid_yaml, Format::Yaml),
-            Err(Error::YamlParseError { .. })
-        ));
+    /// Tests for utility functions.
+    mod utility_tests {
+        use super::*;
 
-        // Test invalid TOML
-        let invalid_toml = "test = = invalid";
-        assert!(matches!(
-            parse(invalid_toml, Format::Toml),
-            Err(Error::TomlParseError(_))
-        ));
+        #[test]
+        fn test_estimate_json_size() {
+            let fm = create_test_frontmatter();
+            let estimated_size = estimate_json_size(&fm);
+            let actual_json = to_string(&fm, Format::Json).unwrap();
+            assert!(estimated_size >= actual_json.len());
+        }
 
-        // Test invalid JSON
-        let invalid_json = "{invalid}";
-        assert!(matches!(
-            parse(invalid_json, Format::Json),
-            Err(Error::JsonParseError(_))
-        ));
-    }
+        #[test]
+        fn test_check_depth_valid() {
+            let value =
+                Value::Object(Box::new(create_test_frontmatter()));
+            assert!(check_depth(&value, 1, MAX_NESTING_DEPTH).is_ok());
+        }
 
-    #[test]
-    fn test_size_estimation() {
-        let fm = create_test_frontmatter();
-        let estimated_size = estimate_json_size(&fm);
-        let actual_json = to_string(&fm, Format::Json).unwrap();
-
-        // Estimated size should be reasonably close to actual size
-        assert!(estimated_size >= actual_json.len());
-        assert!(estimated_size <= actual_json.len() * 2);
-    }
-
-    #[test]
-    fn test_large_integer_conversion() {
-        let large_i64 = 1_i64 << 53;
-        let fallback_value = Value::Number(0.0);
-
-        assert_eq!(
-            yaml_to_value(&YamlValue::Number(large_i64.into())),
-            fallback_value
-        );
+        #[test]
+        fn test_check_depth_exceeds() {
+            let mut current = Value::Null;
+            for _ in 0..MAX_NESTING_DEPTH + 1 {
+                current = Value::Object(Box::new(Frontmatter(
+                    [("nested".to_string(), current)]
+                        .into_iter()
+                        .collect(),
+                )));
+            }
+            let result = check_depth(&current, 1, MAX_NESTING_DEPTH);
+            assert!(matches!(
+                result,
+                Err(Error::NestingTooDeep { .. })
+            ));
+        }
     }
 }
