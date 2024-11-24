@@ -1147,9 +1147,9 @@
 
         <span class="kw">let </span>templates = engine.template_cache.read().<span class="kw">await</span>;
         <span class="macro">assert_eq!</span>(
-    templates.items.get(<span class="string">"default"</span>),
-    <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>template_content.to_string())
-);
+            templates.items.get(<span class="string">"default"</span>),
+            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>template_content.to_string())
+        );
 
         temp_dir.close()<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())

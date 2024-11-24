@@ -795,7 +795,45 @@
 <a href="#794" id="794">794</a>
 <a href="#795" id="795">795</a>
 <a href="#796" id="796">796</a>
-<a href="#797" id="797">797</a></pre></div><pre class="rust"><code><span class="doccomment">//! Error handling for the frontmatter-gen crate.
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
+<a href="#810" id="810">810</a>
+<a href="#811" id="811">811</a>
+<a href="#812" id="812">812</a>
+<a href="#813" id="813">813</a>
+<a href="#814" id="814">814</a>
+<a href="#815" id="815">815</a>
+<a href="#816" id="816">816</a>
+<a href="#817" id="817">817</a>
+<a href="#818" id="818">818</a>
+<a href="#819" id="819">819</a>
+<a href="#820" id="820">820</a>
+<a href="#821" id="821">821</a>
+<a href="#822" id="822">822</a>
+<a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
+<a href="#829" id="829">829</a>
+<a href="#830" id="830">830</a>
+<a href="#831" id="831">831</a>
+<a href="#832" id="832">832</a>
+<a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a></pre></div><pre class="rust"><code><span class="doccomment">//! Error handling for the frontmatter-gen crate.
 //!
 //! This module provides a comprehensive set of error types to handle various
 //! failure scenarios that may occur during front matter parsing, conversion,
@@ -1366,7 +1404,7 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="doccomment">/// Tests for the main `Error` enum and its associated methods.
+    <span class="doccomment">/// Tests for the `Error` enum and its associated methods.
     </span><span class="kw">mod </span>error_tests {
         <span class="kw">use </span><span class="kw">super</span>::<span class="kw">super</span>::<span class="kw-2">*</span>;
 
@@ -1377,57 +1415,133 @@
                 size: <span class="number">1000</span>,
                 max: <span class="number">500</span>,
             };
-            <span class="macro">assert!</span>(error.to_string().contains(
-                <span class="string">"Your front matter contains too many fields"
-            </span>));
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Your front matter contains too many fields (1000). The maximum allowed is 500."
+            </span>);
         }
 
         <span class="doccomment">/// Test the `NestingTooDeep` error variant.
         </span><span class="attr">#[test]
         </span><span class="kw">fn </span>test_nesting_too_deep_error() {
             <span class="kw">let </span>error = Error::NestingTooDeep { depth: <span class="number">10</span>, max: <span class="number">5 </span>};
-            <span class="macro">assert!</span>(error
-                .to_string()
-                .contains(<span class="string">"Your front matter is nested too deeply"</span>));
-        }
-
-        <span class="doccomment">/// Test the `YamlParseError` error variant.
-        </span><span class="attr">#[test]
-        </span><span class="kw">fn </span>test_yaml_parse_error() {
-            <span class="kw">let </span>yaml_data = <span class="string">"invalid: : yaml"</span>;
-            <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;serde_yml::Value, <span class="kw">_</span>&gt; =
-                serde_yml::from_str(yaml_data);
-            <span class="macro">assert!</span>(result.is_err());
-            <span class="kw">let </span>error = Error::YamlParseError {
-                source: Arc::new(result.unwrap_err()),
-            };
-            <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, Error::YamlParseError { .. }));
-        }
-
-        <span class="doccomment">/// Test the `ParseError` variant with a generic message.
-        </span><span class="attr">#[test]
-        </span><span class="kw">fn </span>test_generic_parse_error() {
-            <span class="kw">let </span>error = Error::generic_parse_error(<span class="string">"Test parse error"</span>);
-            <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, Error::ParseError(<span class="kw">_</span>)));
             <span class="macro">assert_eq!</span>(
                 error.to_string(),
-                <span class="string">"Failed to parse front matter: Test parse error"
+                <span class="string">"Your front matter is nested too deeply (10 levels). The maximum allowed nesting depth is 5."
             </span>);
         }
 
-        <span class="doccomment">/// Test that the error category is assigned correctly.
+        <span class="doccomment">/// Test the `JsonParseError` error variant.
         </span><span class="attr">#[test]
-        </span><span class="kw">fn </span>test_category_assignment() {
-            <span class="kw">let </span>yaml_data = <span class="string">"invalid: : yaml"</span>;
-            <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;serde_yml::Value, <span class="kw">_</span>&gt; =
-                serde_yml::from_str(yaml_data);
-            <span class="kw">let </span>error = Error::YamlParseError {
-                source: Arc::new(result.unwrap_err()),
-            };
-            <span class="macro">assert_eq!</span>(error.category(), Category::Parsing);
+        </span><span class="kw">fn </span>test_json_parse_error() {
+            <span class="kw">let </span>json_data = <span class="string">r#"{"key": invalid}"#</span>;
+            <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;serde_json::Value, <span class="kw">_</span>&gt; =
+                serde_json::from_str(json_data);
+            <span class="macro">assert!</span>(result.is_err());
+            <span class="kw">let </span>error =
+                Error::JsonParseError(Arc::new(result.unwrap_err()));
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, Error::JsonParseError(<span class="kw">_</span>)));
+        }
 
+        <span class="doccomment">/// Test the `InvalidFormat` error variant.
+        </span><span class="attr">#[test]
+        </span><span class="kw">fn </span>test_invalid_format_error() {
+            <span class="kw">let </span>error = Error::InvalidFormat;
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Invalid front matter format"
+            </span>);
+        }
+
+        <span class="doccomment">/// Test the `ConversionError` error variant.
+        </span><span class="attr">#[test]
+        </span><span class="kw">fn </span>test_conversion_error() {
+            <span class="kw">let </span>error =
+                Error::ConversionError(<span class="string">"Conversion failed"</span>.to_string());
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Failed to convert front matter: Conversion failed"
+            </span>);
+        }
+
+        <span class="doccomment">/// Test the `UnsupportedFormat` error variant.
+        </span><span class="attr">#[test]
+        </span><span class="kw">fn </span>test_unsupported_format() {
+            <span class="kw">let </span>error = Error::unsupported_format(<span class="number">42</span>);
+            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                error,
+                Error::UnsupportedFormat { line: <span class="number">42 </span>}
+            ));
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Unsupported front matter format detected at line 42"
+            </span>);
+        }
+
+        <span class="doccomment">/// Test the `NoFrontmatterFound` error variant.
+        </span><span class="attr">#[test]
+        </span><span class="kw">fn </span>test_no_frontmatter_found() {
+            <span class="kw">let </span>error = Error::NoFrontmatterFound;
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"No front matter found in the content"
+            </span>);
+        }
+
+        <span class="doccomment">/// Test the `InvalidJson` error variant.
+        </span><span class="attr">#[test]
+        </span><span class="kw">fn </span>test_invalid_json_error() {
+            <span class="kw">let </span>error = Error::InvalidJson;
+            <span class="macro">assert_eq!</span>(error.to_string(), <span class="string">"Invalid JSON front matter: malformed or invalid structure."</span>);
+        }
+
+        <span class="doccomment">/// Test the `InvalidUrl` error variant.
+        </span><span class="attr">#[test]
+        </span><span class="kw">fn </span>test_invalid_url_error() {
+            <span class="kw">let </span>error =
+                Error::InvalidUrl(<span class="string">"http:// invalid.url"</span>.to_string());
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Invalid URL: http:// invalid.url. Ensure the URL is well-formed and valid."
+            </span>);
+        }
+
+        <span class="doccomment">/// Test the `InvalidYaml` error variant.
+        </span><span class="attr">#[test]
+        </span><span class="kw">fn </span>test_invalid_yaml_error() {
+            <span class="kw">let </span>error = Error::InvalidYaml;
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Invalid YAML front matter: malformed or invalid structure."
+            </span>);
+        }
+
+        <span class="doccomment">/// Test the `ValidationError` error variant.
+        </span><span class="attr">#[test]
+        </span><span class="kw">fn </span>test_validation_error() {
+            <span class="kw">let </span>error =
+                Error::ValidationError(<span class="string">"Invalid title"</span>.to_string());
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"Input validation error: Invalid title"
+            </span>);
+        }
+
+        <span class="doccomment">/// Test the `JsonDepthLimitExceeded` error variant.
+        </span><span class="attr">#[test]
+        </span><span class="kw">fn </span>test_json_depth_limit_exceeded() {
+            <span class="kw">let </span>error = Error::JsonDepthLimitExceeded;
+            <span class="macro">assert_eq!</span>(
+                error.to_string(),
+                <span class="string">"JSON front matter exceeds maximum nesting depth"
+            </span>);
+        }
+
+        <span class="doccomment">/// Test the `category` method for different error variants.
+        </span><span class="attr">#[test]
+        </span><span class="kw">fn </span>test_category_method() {
             <span class="kw">let </span>validation_error =
-                Error::ValidationError(<span class="string">"Invalid data"</span>.to_string());
+                Error::ValidationError(<span class="string">"Invalid field"</span>.to_string());
             <span class="macro">assert_eq!</span>(
                 validation_error.category(),
                 Category::Validation
@@ -1440,31 +1554,29 @@
                 Category::Conversion
             );
 
-            <span class="kw">let </span>config_error = Error::ContentTooLarge {
-                size: <span class="number">1000</span>,
-                max: <span class="number">500</span>,
-            };
+            <span class="kw">let </span>config_error =
+                Error::ContentTooLarge { size: <span class="number">100</span>, max: <span class="number">50 </span>};
             <span class="macro">assert_eq!</span>(
                 config_error.category(),
                 Category::Configuration
             );
         }
 
-        <span class="doccomment">/// Test the `Clone` implementation for the `Error` enum.
+        <span class="doccomment">/// Test the `Clone` implementation for `Error`.
         </span><span class="attr">#[test]
-        </span><span class="kw">fn </span>test_clone_implementation() {
+        </span><span class="kw">fn </span>test_error_clone() {
             <span class="kw">let </span>original = Error::ContentTooLarge {
-                size: <span class="number">1000</span>,
-                max: <span class="number">500</span>,
+                size: <span class="number">200</span>,
+                max: <span class="number">100</span>,
             };
             <span class="kw">let </span>cloned = original.clone();
             <span class="macro">assert!</span>(
-                <span class="macro">matches!</span>(cloned, Error::ContentTooLarge { size, max } <span class="kw">if </span>size == <span class="number">1000 </span>&amp;&amp; max == <span class="number">500</span>)
+                <span class="macro">matches!</span>(cloned, Error::ContentTooLarge { size, max } <span class="kw">if </span>size == <span class="number">200 </span>&amp;&amp; max == <span class="number">100</span>)
             );
         }
     }
 
-    <span class="doccomment">/// Tests for the `EngineError` enum and its conversions.
+    <span class="doccomment">/// Tests for the `EngineError` enum.
     </span><span class="kw">mod </span>engine_error_tests {
         <span class="kw">use </span><span class="kw">super</span>::<span class="kw">super</span>::<span class="kw-2">*</span>;
         <span class="kw">use </span>std::io;
@@ -1472,44 +1584,31 @@
         <span class="doccomment">/// Test the `ContentError` variant.
         </span><span class="attr">#[test]
         </span><span class="kw">fn </span>test_content_error() {
-            <span class="kw">let </span>error =
-                EngineError::ContentError(<span class="string">"Content issue"</span>.to_string());
-            <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, EngineError::ContentError(<span class="kw">_</span>)));
+            <span class="kw">let </span>error = EngineError::ContentError(
+                <span class="string">"Processing failed"</span>.to_string(),
+            );
             <span class="macro">assert_eq!</span>(
                 error.to_string(),
-                <span class="string">"Content processing error: Content issue"
+                <span class="string">"Content processing error: Processing failed"
             </span>);
         }
 
-        <span class="doccomment">/// Test the conversion of `EngineError::FileSystemError` to `Error`.
+        <span class="doccomment">/// Test `EngineError::FileSystemError` conversion to `Error`.
         </span><span class="attr">#[test]
-        </span><span class="kw">fn </span>test_filesystem_error_conversion() {
-            <span class="kw">let </span>io_error = io::Error::new(
-                io::ErrorKind::NotFound,
-                <span class="string">"file not found"</span>,
-            );
+        </span><span class="kw">fn </span>test_engine_error_to_error_conversion() {
+            <span class="kw">let </span>io_error =
+                io::Error::new(io::ErrorKind::Other, <span class="string">"disk full"</span>);
             <span class="kw">let </span>engine_error = EngineError::FileSystemError {
                 source: io_error,
-                context: <span class="string">"file not found"</span>.to_string(),
+                context: <span class="string">"Saving file"</span>.to_string(),
             };
-            <span class="kw">let </span>frontmatter_error: Error = engine_error.into();
-            <span class="macro">assert!</span>(<span class="macro">matches!</span>(frontmatter_error, Error::ParseError(<span class="kw">_</span>)));
-            <span class="macro">assert!</span>(frontmatter_error
-                .to_string()
-                .contains(<span class="string">"file not found"</span>));
-        }
-
-        <span class="doccomment">/// Test the `Clone` implementation for the `EngineError` enum.
-        </span><span class="attr">#[test]
-        </span><span class="kw">fn </span>test_engine_error_clone() {
-            <span class="kw">let </span>original =
-                EngineError::ContentError(<span class="string">"test error"</span>.to_string());
-            <span class="kw">let </span>cloned = original.clone();
-            <span class="macro">assert_eq!</span>(cloned.to_string(), original.to_string());
+            <span class="kw">let </span>converted: Error = engine_error.into();
+            <span class="macro">assert!</span>(converted.to_string().contains(<span class="string">"disk full"</span>));
+            <span class="macro">assert!</span>(converted.to_string().contains(<span class="string">"Saving file"</span>));
         }
     }
 
-    <span class="doccomment">/// Tests for the `Context` struct and its `Display` implementation.
+    <span class="doccomment">/// Tests for the `Context` struct.
     </span><span class="kw">mod </span>context_tests {
         <span class="kw">use </span><span class="kw">super</span>::<span class="kw">super</span>::<span class="kw-2">*</span>;
 
@@ -1517,79 +1616,56 @@
         </span><span class="attr">#[test]
         </span><span class="kw">fn </span>test_context_display() {
             <span class="kw">let </span>context = Context {
-                line: <span class="prelude-val">Some</span>(<span class="number">3</span>),
-                column: <span class="prelude-val">Some</span>(<span class="number">15</span>),
-                snippet: <span class="prelude-val">Some</span>(<span class="string">"example snippet"</span>.to_string()),
+                line: <span class="prelude-val">Some</span>(<span class="number">42</span>),
+                column: <span class="prelude-val">Some</span>(<span class="number">10</span>),
+                snippet: <span class="prelude-val">Some</span>(<span class="string">"invalid key"</span>.to_string()),
             };
             <span class="macro">assert_eq!</span>(
                 context.to_string(),
-                <span class="string">"at 3:15 near 'example snippet'"
+                <span class="string">"at 42:10 near 'invalid key'"
             </span>);
         }
 
-        <span class="doccomment">/// Test edge cases for the `Context` struct.
+        <span class="doccomment">/// Test missing fields in `Context`.
         </span><span class="attr">#[test]
-        </span><span class="kw">fn </span>test_context_edge_cases() {
+        </span><span class="kw">fn </span>test_context_missing_fields() {
             <span class="kw">let </span>context = Context {
                 line: <span class="prelude-val">None</span>,
                 column: <span class="prelude-val">None</span>,
-                snippet: <span class="prelude-val">Some</span>(<span class="string">"snippet only"</span>.to_string()),
-            };
-            <span class="macro">assert_eq!</span>(
-                context.to_string(),
-                <span class="string">"at 0:0 near 'snippet only'"
-            </span>);
-
-            <span class="kw">let </span>context = Context {
-                line: <span class="prelude-val">Some</span>(<span class="number">3</span>),
-                column: <span class="prelude-val">None</span>,
-                snippet: <span class="prelude-val">None</span>,
-            };
-            <span class="macro">assert_eq!</span>(context.to_string(), <span class="string">"at 3:0"</span>);
-
-            <span class="kw">let </span>context = Context {
-                line: <span class="prelude-val">Some</span>(<span class="number">3</span>),
-                column: <span class="prelude-val">Some</span>(<span class="number">15</span>),
-                snippet: <span class="prelude-val">None</span>,
-            };
-            <span class="macro">assert_eq!</span>(context.to_string(), <span class="string">"at 3:15"</span>);
-
-            <span class="kw">let </span>context = Context {
-                line: <span class="prelude-val">Some</span>(<span class="number">3</span>),
-                column: <span class="prelude-val">Some</span>(<span class="number">15</span>),
                 snippet: <span class="prelude-val">Some</span>(<span class="string">"example snippet"</span>.to_string()),
             };
             <span class="macro">assert_eq!</span>(
                 context.to_string(),
-                <span class="string">"at 3:15 near 'example snippet'"
+                <span class="string">"at 0:0 near 'example snippet'"
             </span>);
         }
     }
 
-    <span class="doccomment">/// Tests for conversion traits and `From` implementations.
+    <span class="doccomment">/// Tests for conversions.
     </span><span class="kw">mod </span>conversion_tests {
         <span class="kw">use </span><span class="kw">super</span>::<span class="kw">super</span>::<span class="kw-2">*</span>;
         <span class="kw">use </span>std::io;
 
-        <span class="doccomment">/// Test the conversion of `std::io::Error` to `Error`.
+        <span class="doccomment">/// Test the conversion from `std::io::Error` to `Error`.
         </span><span class="attr">#[test]
         </span><span class="kw">fn </span>test_io_error_conversion() {
             <span class="kw">let </span>io_error =
-                io::Error::new(io::ErrorKind::Other, <span class="string">"an IO error"</span>);
+                io::Error::new(io::ErrorKind::NotFound, <span class="string">"file missing"</span>);
             <span class="kw">let </span>error: Error = io_error.into();
             <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, Error::ParseError(<span class="kw">_</span>)));
-            <span class="macro">assert!</span>(error.to_string().contains(<span class="string">"an IO error"</span>));
+            <span class="macro">assert!</span>(error.to_string().contains(<span class="string">"file missing"</span>));
         }
+    }
 
-        <span class="doccomment">/// Test the conversion of `EngineError` to `Error`.
-        </span><span class="attr">#[test]
-        </span><span class="kw">fn </span>test_engine_error_conversion() {
-            <span class="kw">let </span>engine_error =
-                EngineError::ContentError(<span class="string">"content failed"</span>.to_string());
-            <span class="kw">let </span>error: Error = engine_error.into();
-            <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, Error::ParseError(<span class="kw">_</span>)));
-            <span class="macro">assert!</span>(error.to_string().contains(<span class="string">"content failed"</span>));
-        }
+    <span class="doccomment">/// Test the conversion of `EngineError` to `Error`.
+    </span><span class="attr">#[test]
+    </span><span class="kw">fn </span>test_engine_error_conversion() {
+        <span class="kw">let </span>engine_error = <span class="kw">crate</span>::error::EngineError::ContentError(
+            <span class="string">"content failed"</span>.to_string(),
+        );
+        <span class="kw">let </span>error: <span class="kw">crate</span>::Error = engine_error.into();
+        <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, <span class="kw">crate</span>::Error::ParseError(<span class="kw">_</span>)));
+        <span class="macro">assert!</span>(error.to_string().contains(<span class="string">"content failed"</span>));
     }
 }
 </code></pre></div></section></main></body></html>

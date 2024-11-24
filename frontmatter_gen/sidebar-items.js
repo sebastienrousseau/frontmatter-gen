@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["MAX_FRONTMATTER_SIZE","MAX_NESTING_DEPTH"],"fn":["extract","to_format"],"mod":["cli","config","engine","error","extractor","parser","prelude","ssg","types","utils"],"struct":["ParseOptions"],"type":["Result"]};
+window.SIDEBAR_ITEMS = {"constant":["MAX_FRONTMATTER_SIZE","MAX_NESTING_DEPTH"],"fn":["extract","to_format","validate_input"],"mod":["cli","config","engine","error","extractor","parser","prelude","ssg","types","utils"],"struct":["ParseOptions"],"type":["Result"]};

@@ -642,9 +642,7 @@
 <a href="#641" id="641">641</a>
 <a href="#642" id="642">642</a>
 <a href="#643" id="643">643</a>
-<a href="#644" id="644">644</a>
-<a href="#645" id="645">645</a>
-<a href="#646" id="646">646</a></pre></div><pre class="rust"><code><span class="doccomment">//! # Frontmatter Generator
+<a href="#644" id="644">644</a></pre></div><pre class="rust"><code><span class="doccomment">//! # Frontmatter Generator
 //!
 //! The Frontmatter Generator is a command-line tool designed for extracting, validating,
 //! and manipulating frontmatter in various formats, including YAML, TOML, and JSON.
@@ -696,8 +694,7 @@
 
 </span><span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>log::LevelFilter;
-<span class="kw">use </span>std::env;
-<span class="kw">use </span>std::process;
+<span class="kw">use </span>std::{env, process, sync::Once};
 
 <span class="comment">// Conditional imports based on features
 </span><span class="attr">#[cfg(feature = <span class="string">"cli"</span>)]
@@ -706,6 +703,8 @@
 </span><span class="kw">use </span>frontmatter_gen::cli::Cli;
 <span class="attr">#[cfg(feature = <span class="string">"ssg"</span>)]
 </span><span class="kw">use </span>frontmatter_gen::ssg::SsgCommand;
+
+<span class="kw">static </span>INIT: Once = Once::new();
 
 <span class="doccomment">/// Main entry point for the Frontmatter Generator tool.
 ///
@@ -768,37 +767,34 @@
 /// cargo run
 /// ```
 </span><span class="kw">fn </span>setup_logging() {
-    <span class="comment">// Get desired log level from RUST_LOG env var, default to "debug"
-    </span><span class="kw">let </span>env =
-        env::var(<span class="string">"RUST_LOG"</span>).unwrap_or_else(|<span class="kw">_</span>| <span class="string">"debug"</span>.to_string());
+    INIT.call_once(|| {
+        <span class="comment">// Get desired log level from RUST_LOG env var, default to "debug"
+        </span><span class="kw">let </span>env = env::var(<span class="string">"RUST_LOG"</span>).unwrap_or_else(|<span class="kw">_</span>| <span class="string">"debug"</span>.to_string());
 
-    <span class="comment">// Define the logger level based on the environment variable
-    </span><span class="kw">let </span>level = <span class="kw">match </span>env.to_lowercase().as_str() {
-        <span class="string">"error" </span>=&gt; LevelFilter::Error,
-        <span class="string">"warn" </span>=&gt; LevelFilter::Warn,
-        <span class="string">"info" </span>=&gt; LevelFilter::Info,
-        <span class="string">"debug" </span>=&gt; LevelFilter::Debug,
-        <span class="string">"trace" </span>=&gt; LevelFilter::Trace,
-        <span class="string">"off" </span>=&gt; LevelFilter::Off,
-        <span class="kw">_ </span>=&gt; {
-            <span class="macro">log::warn!</span>(
-                <span class="string">"Invalid RUST_LOG value '{}', defaulting to 'debug'"</span>,
-                env
-            );
-            LevelFilter::Debug
+        <span class="comment">// Define the logger level based on the environment variable
+        </span><span class="kw">let </span>level = <span class="kw">match </span>env.to_lowercase().as_str() {
+            <span class="string">"error" </span>=&gt; LevelFilter::Error,
+            <span class="string">"warn" </span>=&gt; LevelFilter::Warn,
+            <span class="string">"info" </span>=&gt; LevelFilter::Info,
+            <span class="string">"debug" </span>=&gt; LevelFilter::Debug,
+            <span class="string">"trace" </span>=&gt; LevelFilter::Trace,
+            <span class="string">"off" </span>=&gt; LevelFilter::Off,
+            <span class="kw">_ </span>=&gt; {
+                <span class="macro">eprintln!</span>(
+                    <span class="string">"Invalid RUST_LOG value '{}', defaulting to 'debug'"</span>,
+                    env
+                );
+                LevelFilter::Debug
+            }
+        };
+
+        <span class="comment">// Set up the logger
+        </span><span class="kw">if </span>log::set_logger(<span class="kw-2">&amp;</span>LOGGER).is_ok() {
+            log::set_max_level(level);
+        } <span class="kw">else </span>{
+            <span class="macro">eprintln!</span>(<span class="string">"Logger already initialized."</span>);
         }
-    };
-
-    <span class="comment">// Set up the logger
-    </span>log::set_logger(<span class="kw-2">&amp;</span>LOGGER)
-        .map(|()| log::set_max_level(level))
-        .unwrap_or_else(|e| {
-            <span class="macro">eprintln!</span>(<span class="string">"Warning: Failed to initialize logger: {}"</span>, e);
-        });
-
-    <span class="kw">if </span>level != LevelFilter::Off {
-        <span class="macro">log::info!</span>(<span class="string">"Logging initialized at level `{}`"</span>, level);
-    }
+    });
 }
 
 <span class="doccomment">/// Executes the appropriate command based on enabled features.
@@ -1005,7 +1001,7 @@
     </span><span class="kw">fn </span>test_version_output() {
         <span class="comment">// Set environment variables to mock package metadata
         </span>env::set_var(<span class="string">"CARGO_PKG_NAME"</span>, <span class="string">"frontmatter-gen"</span>);
-        env::set_var(<span class="string">"CARGO_PKG_VERSION"</span>, <span class="string">"0.0.4"</span>);
+        env::set_var(<span class="string">"CARGO_PKG_VERSION"</span>, <span class="string">"0.0.5"</span>);
 
         <span class="attr">#[cfg(feature = <span class="string">"cli"</span>)]
         </span>{
@@ -1024,8 +1020,8 @@
 
             <span class="comment">// Assert that the output contains the correct version
             </span><span class="macro">assert!</span>(
-                output.contains(<span class="string">"0.0.4"</span>),
-                <span class="string">"Version output does not contain '0.0.4'. Actual output: {}"</span>,
+                output.contains(<span class="string">"0.0.5"</span>),
+                <span class="string">"Version output does not contain '0.0.5'. Actual output: {}"</span>,
                 output
             );
         }
