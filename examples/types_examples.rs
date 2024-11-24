@@ -16,7 +16,7 @@
 //! To run this example:
 //!
 //! ```bash
-//! cargo run --features default --example types_examples
+//! cargo run --features default --example types
 //! ```
 
 use frontmatter_gen::{Format, Frontmatter, Value};

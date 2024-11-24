@@ -15,7 +15,7 @@
 //! ## Usage
 //!
 //! ```bash
-//! cargo run --features default --example error_examples
+//! cargo run --features default --example error
 //! ```
 
 use anyhow::{Context, Result};

@@ -20,7 +20,7 @@
 //! To run this example:
 //!
 //! ```bash
-//! cargo run --features default --example parser_examples
+//! cargo run --features default --example parser
 //! ```
 
 use frontmatter_gen::{
@@ -192,7 +192,16 @@ fn serialize_to_json_example() -> Result<(), Error> {
     let json = to_string(&frontmatter, Format::Json)?;
 
     println!("    ✅ Serialized to JSON:\n{}", json);
-    assert!(json.contains("\"title\": \"My Post\""));
+
+    // Deserialize JSON to verify structure
+    let deserialized: serde_json::Value =
+        serde_json::from_str(&json)
+            .map_err(|e| Error::ConversionError(e.to_string()))?;
+
+    assert_eq!(
+        deserialized.get("title").and_then(|v| v.as_str()),
+        Some("My Post")
+    );
 
     Ok(())
 }

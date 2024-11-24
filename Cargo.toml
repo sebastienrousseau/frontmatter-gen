@@ -143,6 +143,14 @@ name = "extractor"
 path = "examples/extractor_examples.rs"
 
 [[example]]
+name = "fenced"
+path = "examples/fenced_examples.rs"
+
+[[example]]
+name = "frontmatter"
+path = "examples/frontmatter_examples.rs"
+
+[[example]]
 name = "lib"
 path = "examples/lib_examples.rs"
 

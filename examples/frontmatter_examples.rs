@@ -17,7 +17,7 @@
 //! To run this example:
 //!
 //! ```bash
-//! cargo run --features default --example frontmatter_examples
+//! cargo run --features default --example frontmatter
 //! ```
 
 use anyhow::{Context, Result};

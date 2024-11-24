@@ -17,7 +17,7 @@
 //! To run this example:
 //!
 //! ```bash
-//! cargo run --features default --example library_examples
+//! cargo run --features default --example lib
 //! ```
 
 use frontmatter_gen::error::Error;
