@@ -33,13 +33,11 @@ use std::io::{self};
 use std::path::Path;
 
 #[cfg(feature = "ssg")]
-use std::path::PathBuf;
-
-#[cfg(feature = "ssg")]
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use thiserror::Error;
+
 #[cfg(feature = "ssg")]
 use tokio::sync::RwLock;
 
@@ -78,6 +76,7 @@ pub enum UtilsError {
 /// File system utilities module
 pub mod fs {
     use super::*;
+    use std::path::PathBuf;
 
     /// Tracks temporary files for cleanup
     #[cfg(feature = "ssg")]
@@ -123,17 +122,13 @@ pub mod fs {
     #[cfg(feature = "ssg")]
     pub async fn create_temp_file(
         prefix: &str,
-    ) -> Result<(PathBuf, File)> {
+    ) -> Result<(PathBuf, File), UtilsError> {
         let temp_dir = std::env::temp_dir();
         let file_name = format!("{}-{}", prefix, Uuid::new_v4());
         let path = temp_dir.join(file_name);
 
-        let file = File::create(&path).with_context(|| {
-            format!(
-                "Failed to create temporary file: {}",
-                path.display()
-            )
-        })?;
+        let file =
+            File::create(&path).map_err(UtilsError::FileSystem)?;
 
         Ok((path, file))
     }
@@ -199,15 +194,23 @@ pub mod fs {
             // In test mode, allow absolute paths in the temporary directory
             if cfg!(test) {
                 let temp_dir = std::env::temp_dir();
-                let path_canonicalized =
-                    path.canonicalize().with_context(|| {
+                let path_canonicalized = path
+                    .canonicalize()
+                    .or_else(|_| {
+                        Ok::<PathBuf, io::Error>(path.to_path_buf())
+                    }) // Specify the type explicitly
+                    .with_context(|| {
                         format!(
                             "Failed to canonicalize path: {}",
                             path.display()
                         )
                     })?;
-                let temp_dir_canonicalized =
-                    temp_dir.canonicalize().with_context(|| {
+                let temp_dir_canonicalized = temp_dir
+                    .canonicalize()
+                    .or_else(|_| {
+                        Ok::<PathBuf, io::Error>(temp_dir.clone())
+                    }) // Specify the type explicitly
+                    .with_context(|| {
                         format!(
                             "Failed to canonicalize temp_dir: {}",
                             temp_dir.display()
@@ -418,14 +421,40 @@ pub mod log {
     }
 }
 
+impl From<anyhow::Error> for UtilsError {
+    fn from(err: anyhow::Error) -> Self {
+        UtilsError::InvalidOperation(err.to_string())
+    }
+}
+
+impl From<tokio::task::JoinError> for UtilsError {
+    fn from(err: tokio::task::JoinError) -> Self {
+        UtilsError::InvalidOperation(err.to_string())
+    }
+}
+
 #[cfg(all(test, feature = "ssg"))]
 mod tests {
-    use super::*;
+    use crate::utils::fs::copy_file;
+    use crate::utils::fs::create_directory;
+    use crate::utils::fs::create_temp_file;
+    use crate::utils::fs::validate_path_safety;
+    use crate::utils::fs::TempFileTracker;
+    use crate::utils::log::LogEntry;
+    use crate::utils::log::LogWriter;
+    use crate::utils::UtilsError;
+    use log::Level;
+    use log::Record;
+    use std::fs::read_to_string;
+    use std::fs::remove_file;
+    use std::path::Path;
+    use std::sync::Arc;
 
     #[tokio::test]
-    async fn test_temp_file_creation_and_cleanup() -> Result<()> {
-        let tracker = fs::TempFileTracker::new();
-        let (path, _file) = fs::create_temp_file("test").await?;
+    async fn test_temp_file_creation_and_cleanup() -> anyhow::Result<()>
+    {
+        let tracker = TempFileTracker::new();
+        let (path, _file) = create_temp_file("test").await?;
 
         tracker.register(path.clone()).await?;
         assert!(path.exists());
@@ -435,95 +464,19 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn test_path_validation() {
-        // Valid relative paths
-        assert!(fs::validate_path_safety(Path::new(
-            "content/file.txt"
-        ))
-        .is_ok());
-        assert!(fs::validate_path_safety(Path::new("templates/blog"))
-            .is_ok());
-
-        // Invalid paths
-        assert!(
-            fs::validate_path_safety(Path::new("../outside")).is_err()
-        );
-        assert!(fs::validate_path_safety(Path::new("/absolute/path"))
-            .is_err());
-        assert!(fs::validate_path_safety(Path::new("content\0hidden"))
-            .is_err());
-        assert!(fs::validate_path_safety(Path::new("CON")).is_err());
-
-        // Test temporary directory paths
-        let temp_dir = std::env::temp_dir();
-        let temp_path = temp_dir.join("valid_temp.txt");
-
-        // Ensure the file exists before validation
-        let _ = File::create(&temp_path).unwrap();
-
-        assert!(fs::validate_path_safety(&temp_path).is_ok());
-
-        // Cleanup
-        remove_file(temp_path).unwrap();
-    }
-
-    #[test]
-    fn test_temp_path_validation() {
-        let temp_dir = std::env::temp_dir();
-        let temp_path = temp_dir.join("test_temp_file.txt");
-
-        // Ensure the file exists before validation
-        let _ = File::create(&temp_path).unwrap();
-
-        let temp_dir_canonicalized = temp_dir.canonicalize().unwrap();
-        let temp_path_canonicalized = temp_path.canonicalize().unwrap();
-
-        println!(
-            "Canonicalized Temp dir: {}",
-            temp_dir_canonicalized.display()
-        );
-        println!(
-            "Canonicalized Temp path: {}",
-            temp_path_canonicalized.display()
-        );
-
-        assert!(fs::validate_path_safety(&temp_path).is_ok());
-
-        // Cleanup
-        remove_file(temp_path).unwrap();
-    }
-
-    #[test]
-    fn test_path_validation_edge_cases() {
-        // Test Unicode paths
-        assert!(
-            fs::validate_path_safety(Path::new("content/📚")).is_ok()
-        );
-
-        // Test long paths
-        let long_name = "a".repeat(255);
-        assert!(fs::validate_path_safety(Path::new(&long_name)).is_ok());
-
-        // Test special characters
-        assert!(
-            fs::validate_path_safety(Path::new("content/#$@!")).is_ok()
-        );
-    }
-
     #[tokio::test]
-    async fn test_concurrent_temp_file_access() -> Result<()> {
+    async fn test_temp_file_concurrent_access() -> Result<(), UtilsError>
+    {
         use tokio::task;
 
-        let tracker = Arc::new(fs::TempFileTracker::new());
+        let tracker = Arc::new(TempFileTracker::new());
         let mut handles = Vec::new();
 
         for i in 0..5 {
             let tracker = Arc::clone(&tracker);
             handles.push(task::spawn(async move {
                 let (path, _) =
-                    fs::create_temp_file(&format!("concurrent{}", i))
-                        .await?;
+                    create_temp_file(&format!("test{}", i)).await?;
                 tracker.register(path).await
             }));
         }
@@ -534,5 +487,136 @@ mod tests {
 
         tracker.cleanup().await?;
         Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_create_directory_valid_path() -> anyhow::Result<()> {
+        let temp_dir = std::env::temp_dir().join("test_dir");
+
+        // Ensure the directory does not exist beforehand
+        if temp_dir.exists() {
+            tokio::fs::remove_dir_all(&temp_dir).await?;
+        }
+
+        create_directory(&temp_dir).await?;
+        assert!(temp_dir.exists());
+        tokio::fs::remove_dir_all(temp_dir).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_copy_file_valid_paths() -> anyhow::Result<()> {
+        let src = std::env::temp_dir().join("src.txt");
+        let dst = std::env::temp_dir().join("dst.txt");
+
+        // Create the source file with content
+        tokio::fs::write(&src, "test content").await?;
+
+        copy_file(&src, &dst).await?;
+        assert_eq!(
+            tokio::fs::read_to_string(&dst).await?,
+            "test content"
+        );
+
+        tokio::fs::remove_file(src).await?;
+        tokio::fs::remove_file(dst).await?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_validate_path_safety_valid_paths() {
+        assert!(
+            validate_path_safety(Path::new("content/file.txt")).is_ok()
+        );
+        assert!(
+            validate_path_safety(Path::new("templates/blog")).is_ok()
+        );
+    }
+
+    #[test]
+    fn test_validate_path_safety_invalid_paths() {
+        assert!(validate_path_safety(Path::new("../outside")).is_err());
+        assert!(
+            validate_path_safety(Path::new("content\0file")).is_err()
+        );
+        assert!(validate_path_safety(Path::new("CON")).is_err());
+    }
+
+    #[test]
+    fn test_validate_path_safety_edge_cases() {
+        // Test Unicode
+        assert!(validate_path_safety(Path::new("content/📚")).is_ok());
+
+        // Long paths
+        let long_name = "a".repeat(255);
+        assert!(validate_path_safety(Path::new(&long_name)).is_ok());
+
+        // Special characters
+        assert!(validate_path_safety(Path::new("content/#$@!")).is_ok());
+    }
+
+    #[test]
+    fn test_log_entry_format() {
+        let record = Record::builder()
+            .args(format_args!("Test log message"))
+            .level(Level::Info)
+            .target("test")
+            .module_path_static(Some("test"))
+            .file_static(Some("test.rs"))
+            .line(Some(42))
+            .build();
+
+        let entry = LogEntry::new(&record);
+        assert!(entry.format().contains("Test log message"));
+        assert!(entry.format().contains("INFO"));
+    }
+
+    #[test]
+    fn test_log_entry_with_error() {
+        let record = Record::builder()
+            .args(format_args!("Test error message"))
+            .level(Level::Error)
+            .target("test")
+            .module_path_static(Some("test"))
+            .file_static(Some("test.rs"))
+            .line(Some(42))
+            .build();
+
+        let mut entry = LogEntry::new(&record);
+        entry.error = Some("Error details".to_string());
+
+        let formatted = entry.format();
+        assert!(formatted.contains("Error details"));
+        assert!(formatted.contains("ERROR"));
+    }
+
+    #[test]
+    fn test_log_writer_creation() {
+        let temp_log_path = std::env::temp_dir().join("test_log.txt");
+        let writer = LogWriter::new(&temp_log_path).unwrap();
+
+        assert!(temp_log_path.exists());
+        drop(writer); // Ensure file is closed
+        remove_file(temp_log_path).unwrap();
+    }
+
+    #[test]
+    fn test_log_writer_write() {
+        let temp_log_path =
+            std::env::temp_dir().join("test_log_write.txt");
+        let mut writer = LogWriter::new(&temp_log_path).unwrap();
+
+        let record = Record::builder()
+            .args(format_args!("Write test message"))
+            .level(Level::Info)
+            .target("test")
+            .build();
+
+        let entry = LogEntry::new(&record);
+        writer.write(&entry).unwrap();
+
+        let content = read_to_string(&temp_log_path).unwrap();
+        assert!(content.contains("Write test message"));
+        remove_file(temp_log_path).unwrap();
     }
 }

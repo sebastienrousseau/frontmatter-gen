@@ -73,12 +73,11 @@ required-features = ["cli"]
 [features]
 # Optional features that can be enabled or disabled.
 default = []                            # SSG is not enabled by default
-cli = ["dep:clap", "dep:tokio"]         # CLI functionality only
+cli = ["dep:clap"]                      # CLI functionality only
 ssg = [                                 # Full SSG functionality
     "cli",                              # Include CLI as part of SSG
     "dep:tera",
     "dep:pulldown-cmark",
-    "dep:tokio",
     "dep:dtt",
     "dep:url",
 ]
@@ -94,6 +93,7 @@ serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
 serde_yml = "0.0.12"
 time = { version = "0.3.36", features = ["formatting", "local-offset"] }
+tokio = { version = "1.41.1", features = ["full"]}
 
 thiserror = "2.0.3"
 toml = "0.8.19"
@@ -109,7 +109,6 @@ pulldown-cmark = { version = "0.12.2", optional = true }
 simple_logger = "5.0.0"
 tempfile = "3.14.0"
 tera = { version = "1.20.0", optional = true }
-tokio = { version = "1.41.1", features = ["full"], optional = true }
 url = { version = "2.5.4", optional = true }
 
 # Examples development dependencies
