@@ -50,8 +50,7 @@
 
 use anyhow::Result;
 use log::LevelFilter;
-use std::env;
-use std::process;
+use std::{env, process, sync::Once};
 
 // Conditional imports based on features
 #[cfg(feature = "cli")]
@@ -60,6 +59,8 @@ use clap::Parser;
 use frontmatter_gen::cli::Cli;
 #[cfg(feature = "ssg")]
 use frontmatter_gen::ssg::SsgCommand;
+
+static INIT: Once = Once::new();
 
 /// Main entry point for the Frontmatter Generator tool.
 ///
@@ -122,37 +123,34 @@ async fn main() -> Result<()> {
 /// cargo run
 /// ```
 fn setup_logging() {
-    // Get desired log level from RUST_LOG env var, default to "debug"
-    let env =
-        env::var("RUST_LOG").unwrap_or_else(|_| "debug".to_string());
+    INIT.call_once(|| {
+        // Get desired log level from RUST_LOG env var, default to "debug"
+        let env = env::var("RUST_LOG").unwrap_or_else(|_| "debug".to_string());
 
-    // Define the logger level based on the environment variable
-    let level = match env.to_lowercase().as_str() {
-        "error" => LevelFilter::Error,
-        "warn" => LevelFilter::Warn,
-        "info" => LevelFilter::Info,
-        "debug" => LevelFilter::Debug,
-        "trace" => LevelFilter::Trace,
-        "off" => LevelFilter::Off,
-        _ => {
-            log::warn!(
-                "Invalid RUST_LOG value '{}', defaulting to 'debug'",
-                env
-            );
-            LevelFilter::Debug
+        // Define the logger level based on the environment variable
+        let level = match env.to_lowercase().as_str() {
+            "error" => LevelFilter::Error,
+            "warn" => LevelFilter::Warn,
+            "info" => LevelFilter::Info,
+            "debug" => LevelFilter::Debug,
+            "trace" => LevelFilter::Trace,
+            "off" => LevelFilter::Off,
+            _ => {
+                eprintln!(
+                    "Invalid RUST_LOG value '{}', defaulting to 'debug'",
+                    env
+                );
+                LevelFilter::Debug
+            }
+        };
+
+        // Set up the logger
+        if log::set_logger(&LOGGER).is_ok() {
+            log::set_max_level(level);
+        } else {
+            eprintln!("Logger already initialized.");
         }
-    };
-
-    // Set up the logger
-    log::set_logger(&LOGGER)
-        .map(|()| log::set_max_level(level))
-        .unwrap_or_else(|e| {
-            eprintln!("Warning: Failed to initialize logger: {}", e);
-        });
-
-    if level != LevelFilter::Off {
-        log::info!("Logging initialized at level `{}`", level);
-    }
+    });
 }
 
 /// Executes the appropriate command based on enabled features.
