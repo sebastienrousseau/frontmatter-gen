@@ -104,7 +104,7 @@ log = "0.4.22"
 
 # Optional CLI and SSG dependencies - all must have optional = true
 clap = { version = "4.5.21", features = ["derive"], optional = true }
-dtt = { version = "0.0.8", optional = true }
+dtt = { version = "0.0.9", optional = true }
 pulldown-cmark = { version = "0.12.2", optional = true }
 simple_logger = "5.0.0"
 tempfile = "3.14.0"
