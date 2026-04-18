@@ -816,7 +816,7 @@ impl Frontmatter {
     #[must_use]
     pub fn iter(
         &self,
-    ) -> std::collections::hash_map::Iter<String, Value> {
+    ) -> std::collections::hash_map::Iter<'_, String, Value> {
         self.0.iter()
     }
 
@@ -845,7 +845,7 @@ impl Frontmatter {
     /// ```
     pub fn iter_mut(
         &mut self,
-    ) -> std::collections::hash_map::IterMut<String, Value> {
+    ) -> std::collections::hash_map::IterMut<'_, String, Value> {
         self.0.iter_mut()
     }
 

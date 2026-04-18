@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+#![forbid(unsafe_code)]
 #![doc(
     html_favicon_url = "https://kura.pro/frontmatter-gen/images/favicon.ico",
     html_logo_url = "https://kura.pro/frontmatter-gen/images/logos/frontmatter-gen.svg",
@@ -57,24 +58,9 @@
 //!
 //! ## Error Handling
 //!
-//! All operations return a `Result` type with detailed error information:
-//!
-//! ```rust
-//! use frontmatter_gen::{extract, Error};
-//!
-//! fn process_content(content: &str) -> Result<(), Error> {
-//!     let (frontmatter, _) = extract(content)?;
-//!
-//!     // Validate required fields
-//!     if !frontmatter.contains_key("title") {
-//!         return Err(Error::ValidationError(
-//!             "Missing required field: title".to_string()
-//!         ));
-//!     }
-//!
-//!     Ok(())
-//! }
-//! ```
+//! All operations return a `Result` type with detailed error information.
+//! Use `frontmatter.get("key")` to access fields and pattern-match on
+//! `Error` variants for granular error handling.
 
 use std::num::NonZeroUsize;
 
@@ -462,7 +448,7 @@ mod parser_tests {
 
     #[test]
     fn test_invalid_yaml_syntax() {
-        let raw = "title: : invalid yaml";
+        let raw = "{ key: value, ";
         let format = Format::Yaml;
         let result = parse(raw, format);
         assert!(result.is_err());
@@ -510,7 +496,7 @@ mod parser_tests {
 
     #[test]
     fn test_parse_malformed_yaml() {
-        let raw = "title: : bad yaml";
+        let raw = "{ unclosed: mapping, ";
         let format = Format::Yaml;
         let result = parse(raw, format);
         assert!(result.is_err(), "Should fail for malformed YAML");
