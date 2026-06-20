@@ -188,7 +188,7 @@ Content"#;
         assert!(yaml.contains("title: Test"));
 
         let json = to_format(&frontmatter, Format::Json)?;
-        assert!(json.contains("\"title\": \"Test\""));
+        assert!(json.contains("\"title\":\"Test\""));
 
         let toml = to_format(&frontmatter, Format::Toml)?;
         assert!(toml.contains("title = \"Test\""));

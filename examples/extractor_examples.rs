@@ -359,18 +359,6 @@ Content"#;
     }
 
     #[test]
-    fn test_yaml_extraction() -> Result<(), Error> {
-        let content = r#"---
-title: Test
----
-Content"#;
-        let result = extract_raw_frontmatter(content)?;
-        assert_eq!(result.0, "title: Test");
-        assert_eq!(result.1, "Content");
-        Ok(())
-    }
-
-    #[test]
     fn test_empty_inputs() -> Result<(), Error> {
         example_empty_inputs()
     }

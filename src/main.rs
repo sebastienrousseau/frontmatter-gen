@@ -357,7 +357,7 @@ mod tests {
     fn test_version_output() {
         // Set environment variables to mock package metadata
         env::set_var("CARGO_PKG_NAME", "frontmatter-gen");
-        env::set_var("CARGO_PKG_VERSION", "0.0.5");
+        env::set_var("CARGO_PKG_VERSION", "0.0.6");
 
         #[cfg(feature = "cli")]
         {
@@ -376,8 +376,8 @@ mod tests {
 
             // Assert that the output contains the correct version
             assert!(
-                output.contains("0.0.5"),
-                "Version output does not contain '0.0.5'. Actual output: {}",
+                output.contains("0.0.6"),
+                "Version output does not contain '0.0.6'. Actual output: {}",
                 output
             );
         }
