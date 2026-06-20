@@ -302,7 +302,7 @@ impl Engine {
         let parts: Vec<&str> = content.splitn(3, "---").collect();
         match parts.len() {
             3 => {
-                let metadata = serde_yml::from_str(parts[1])?;
+                let metadata = noyalib::from_str(parts[1])?;
                 Ok((metadata, parts[2].trim().to_string()))
             }
             _ => Ok((HashMap::new(), content.to_string())),

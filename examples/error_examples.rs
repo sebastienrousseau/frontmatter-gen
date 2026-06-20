@@ -48,7 +48,7 @@ fn display_result(
 /// # Returns
 /// * `Result<(), Error>` indicating success or failure.
 fn validate_yaml_parsing(input: &str) -> Result<(), Error> {
-    match serde_yml::from_str::<serde_yml::Value>(input) {
+    match noyalib::from_str::<noyalib::Value>(input) {
         Ok(_) => Err(Error::InvalidFormat),
         Err(_) => Ok(()),
     }

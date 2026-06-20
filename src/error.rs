@@ -30,7 +30,7 @@
 //! fn example() -> Result<(), Error> {
 //!     // Example of handling YAML parsing errors
 //!     let invalid_yaml = "invalid: : yaml";
-//!     match serde_yml::from_str::<serde_yml::Value>(invalid_yaml) {
+//!     match noyalib::from_str::<noyalib::Value>(invalid_yaml) {
 //!         Ok(_) => Ok(()),
 //!         Err(e) => Err(Error::YamlParseError { source: e.into() }),
 //!     }
@@ -38,7 +38,7 @@
 //! ```
 
 use serde_json::Error as JsonError;
-use serde_yml::Error as YamlError;
+use noyalib::Error as YamlError;
 use std::sync::Arc;
 use thiserror::Error;
 
