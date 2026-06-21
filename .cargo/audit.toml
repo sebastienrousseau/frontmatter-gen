@@ -1,0 +1,11 @@
+# cargo-audit configuration.
+# Path matters — cargo-audit only auto-discovers `.cargo/audit.toml`,
+# not project-root `audit.toml`.
+
+[advisories]
+ignore = [
+    # proc-macro-error2 unmaintained (2026-06-07).
+    # Transitive via clap; no first-party fix until clap upstream
+    # bumps. Revisit on next clap release.
+    "RUSTSEC-2026-0173",
+]

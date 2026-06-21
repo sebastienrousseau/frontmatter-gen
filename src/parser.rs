@@ -339,7 +339,7 @@ fn yaml_to_value(yaml: &YamlValue) -> Value {
             Value::Object(Box::new(result))
         }
         YamlValue::Tagged(tagged) => Value::Tagged(
-            optimise_string(&tagged.tag().to_string()),
+            optimise_string(tagged.tag().as_ref()),
             Box::new(yaml_to_value(tagged.value())),
         ),
     }
