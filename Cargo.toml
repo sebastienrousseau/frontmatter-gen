@@ -113,7 +113,7 @@ url = { version = "2.5.4", optional = true }
 
 # Examples development dependencies
 env_logger = "0.11.5"
-commons = { git = "https://github.com/sebastienrousseau/commons", tag = "v0.0.1", default-features = false, features = ["error", "time", "validation"] }
+commons = { package = "euxis-commons", version = "0.0.2", default-features = false, features = ["error", "time", "validation"] }
 # -----------------------------------------------------------------------------
 # Build Dependencies
 # -----------------------------------------------------------------------------
