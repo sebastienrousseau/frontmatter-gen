@@ -37,8 +37,8 @@
 //! }
 //! ```
 
-use serde_json::Error as JsonError;
 use noyalib::Error as YamlError;
+use serde_json::Error as JsonError;
 use std::sync::Arc;
 use thiserror::Error;
 

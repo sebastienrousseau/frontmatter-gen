@@ -5,10 +5,9 @@
 //! for accurate performance measurements.
 
 #![allow(missing_docs)]
-use criterion::{
-    black_box, criterion_group, criterion_main, Criterion,
-};
+use criterion::{criterion_group, criterion_main, Criterion};
 use frontmatter_gen::{extract, parser, Format, Frontmatter, Value};
+use std::hint::black_box;
 
 // Benchmarks the `extract` function for extracting frontmatter from content.
 //

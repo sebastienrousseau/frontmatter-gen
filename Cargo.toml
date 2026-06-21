@@ -96,7 +96,7 @@ time = { version = "0.3.36", features = ["formatting", "local-offset"] }
 tokio = { version = "1.41.1", features = ["full"]}
 
 thiserror = "2.0.3"
-toml = "0.8.19"
+toml = "1.1.2"
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 
 # Optional logging (only included when "logging" feature is enabled)
@@ -104,8 +104,8 @@ log = "0.4.22"
 
 # Optional CLI and SSG dependencies - all must have optional = true
 clap = { version = "4.5.21", features = ["derive"], optional = true }
-dtt = { version = "0.0.9", optional = true }
-pulldown-cmark = { version = "0.12.2", optional = true }
+dtt = { version = "0.0.10", optional = true }
+pulldown-cmark = { version = "0.13.4", optional = true }
 simple_logger = "5.0.0"
 tempfile = "3.14.0"
 tera = { version = "1.20.0", optional = true }
@@ -125,7 +125,7 @@ version_check = "0.9.5"
 # -----------------------------------------------------------------------------
 
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = "0.8.2"
 pretty_assertions = "1.4.1"
 
 

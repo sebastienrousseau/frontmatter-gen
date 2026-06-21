@@ -33,9 +33,9 @@
 //! # }
 //! ```
 
+use noyalib::Value as YamlValue;
 use serde::Serialize;
 use serde_json::Value as JsonValue;
-use noyalib::Value as YamlValue;
 use std::{collections::HashMap, sync::Arc};
 use toml::Value as TomlValue;
 
@@ -372,21 +372,16 @@ fn to_yaml(front_matter: &Frontmatter) -> Result<String, Error> {
 ///
 /// A `Result` containing the parsed `Frontmatter` or a `Error`.
 fn parse_toml(raw: &str) -> Result<Frontmatter, Error> {
-    let toml_value: TomlValue =
+    // toml 1.x: `Value::from_str` parses a single TOML *value*, not a
+    // document. Parse into `toml::Table` (i.e. a document) and wrap it.
+    let table: toml::Table =
         raw.parse().map_err(Error::TomlParseError)?;
 
-    let capacity = match &toml_value {
-        TomlValue::Table(table) => table.len(),
-        _ => 0,
-    };
-
     let mut front_matter =
-        Frontmatter(HashMap::with_capacity(capacity));
+        Frontmatter(HashMap::with_capacity(table.len()));
 
-    if let TomlValue::Table(table) = toml_value {
-        for (key, value) in table {
-            let _ = front_matter.0.insert(key, toml_to_value(&value));
-        }
+    for (key, value) in table {
+        let _ = front_matter.0.insert(key, toml_to_value(&value));
     }
 
     Ok(front_matter)

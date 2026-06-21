@@ -62,7 +62,9 @@ fn validate_yaml_parsing(input: &str) -> Result<(), Error> {
 /// # Returns
 /// * `Result<(), Error>` indicating success or failure.
 fn validate_toml_parsing(input: &str) -> Result<(), Error> {
-    match toml::from_str::<toml::Value>(input) {
+    // toml 1.x: parse a document into `toml::Table`, not `toml::Value`.
+    // `toml::Value` only deserialises a single TOML value.
+    match toml::from_str::<toml::Table>(input) {
         Ok(_) => Err(Error::InvalidFormat),
         Err(_) => Ok(()),
     }
