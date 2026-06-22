@@ -6,7 +6,7 @@
 name = "frontmatter-gen"
 version = "0.0.6"
 edition = "2021"
-rust-version = "1.56.0"
+rust-version = "1.85.0"
 license = "MIT OR Apache-2.0"
 description = """
 A Rust library for generating and parsing frontmatter in various formats.
