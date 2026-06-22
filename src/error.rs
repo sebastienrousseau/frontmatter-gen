@@ -761,8 +761,7 @@ mod tests {
         /// Test `EngineError::FileSystemError` conversion to `Error`.
         #[test]
         fn test_engine_error_to_error_conversion() {
-            let io_error =
-                io::Error::new(io::ErrorKind::Other, "disk full");
+            let io_error = io::Error::other("disk full");
             let engine_error = EngineError::FileSystemError {
                 source: io_error,
                 context: "Saving file".to_string(),
