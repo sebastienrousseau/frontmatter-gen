@@ -180,7 +180,7 @@ impl Engine {
             let path = entry.path();
             if path
                 .extension()
-                .map_or(false, |ext| ext == "html" || ext == "hbs")
+                .is_some_and(|ext| ext == "html" || ext == "hbs")
             {
                 let content = fs::read_to_string(&path).await.context(
                     format!(
@@ -229,7 +229,7 @@ impl Engine {
 
         while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
-            if path.extension().map_or(false, |ext| ext == "md") {
+            if path.extension().is_some_and(|ext| ext == "md") {
                 let content =
                     self.process_content_file(&path, config).await?;
 
@@ -302,7 +302,7 @@ impl Engine {
         let parts: Vec<&str> = content.splitn(3, "---").collect();
         match parts.len() {
             3 => {
-                let metadata = serde_yml::from_str(parts[1])?;
+                let metadata = noyalib::from_str(parts[1])?;
                 Ok((metadata, parts[2].trim().to_string()))
             }
             _ => Ok((HashMap::new(), content.to_string())),

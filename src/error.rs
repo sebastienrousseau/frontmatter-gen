@@ -30,15 +30,15 @@
 //! fn example() -> Result<(), Error> {
 //!     // Example of handling YAML parsing errors
 //!     let invalid_yaml = "invalid: : yaml";
-//!     match serde_yml::from_str::<serde_yml::Value>(invalid_yaml) {
+//!     match noyalib::from_str::<noyalib::Value>(invalid_yaml) {
 //!         Ok(_) => Ok(()),
 //!         Err(e) => Err(Error::YamlParseError { source: e.into() }),
 //!     }
 //! }
 //! ```
 
+use noyalib::Error as YamlError;
 use serde_json::Error as JsonError;
-use serde_yml::Error as YamlError;
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -761,8 +761,7 @@ mod tests {
         /// Test `EngineError::FileSystemError` conversion to `Error`.
         #[test]
         fn test_engine_error_to_error_conversion() {
-            let io_error =
-                io::Error::new(io::ErrorKind::Other, "disk full");
+            let io_error = io::Error::other("disk full");
             let engine_error = EngineError::FileSystemError {
                 source: io_error,
                 context: "Saving file".to_string(),

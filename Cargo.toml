@@ -6,7 +6,7 @@
 name = "frontmatter-gen"
 version = "0.0.6"
 edition = "2021"
-rust-version = "1.56.0"
+rust-version = "1.85.0"
 license = "MIT OR Apache-2.0"
 description = """
 A Rust library for generating and parsing frontmatter in various formats.
@@ -88,24 +88,24 @@ ssg = [                                 # Full SSG functionality
 
 [dependencies]
 # Core dependencies
-anyhow = "1.0.93"
+anyhow = "1.0.95"
 serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
-serde_yml = { path = "crates/serde_yml" }
+noyalib = { version = "0.0.8", default-features = false, features = ["std"] }
 time = { version = "0.3.36", features = ["formatting", "local-offset"] }
-tokio = { version = "1.41.1", features = ["full"]}
+tokio = { version = "1.44", features = ["full"] }
 
 thiserror = "2.0.3"
-toml = "0.8.19"
-uuid = { version = "1.11.0", features = ["v4", "serde"] }
+toml = "1.1.2"
+uuid = { version = "1.15", features = ["v4", "serde"] }
 
 # Optional logging (only included when "logging" feature is enabled)
 log = "0.4.22"
 
 # Optional CLI and SSG dependencies - all must have optional = true
 clap = { version = "4.5.21", features = ["derive"], optional = true }
-dtt = { version = "0.0.9", optional = true }
-pulldown-cmark = { version = "0.12.2", optional = true }
+dtt = { version = "0.0.10", optional = true }
+pulldown-cmark = { version = "0.13.4", optional = true }
 simple_logger = "5.0.0"
 tempfile = "3.14.0"
 tera = { version = "1.20.0", optional = true }
@@ -113,6 +113,7 @@ url = { version = "2.5.4", optional = true }
 
 # Examples development dependencies
 env_logger = "0.11.5"
+commons = { package = "euxis-commons", version = "0.0.2", default-features = false, features = ["error", "time", "validation"] }
 # -----------------------------------------------------------------------------
 # Build Dependencies
 # -----------------------------------------------------------------------------
@@ -125,7 +126,7 @@ version_check = "0.9.5"
 # -----------------------------------------------------------------------------
 
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = "0.8.2"
 pretty_assertions = "1.4.1"
 
 
@@ -212,7 +213,10 @@ future_incompatible = { level = "deny", priority = -1 } # Handle future compatib
 keyword_idents = { level = "deny", priority = -1 }      # Deny usage of keywords as identifiers
 macro_use_extern_crate = "deny"             # Deny macro use of `extern crate`
 meta_variable_misuse = "deny"               # Deny misuse of meta variables in macros
-missing_fragment_specifier = "deny"         # Deny missing fragment specifiers in macros
+# `missing_fragment_specifier` was promoted to a hard error in newer rustc;
+# the lint is removed and re-declaring it now triggers
+# `renamed_and_removed_lints`. The behaviour it guarded is enforced by
+# the compiler unconditionally.
 noop_method_call = "deny"                   # Deny method calls that have no effect
 rust_2018_idioms = { level = "deny", priority = -1 }    # Enforce Rust 2018 idioms
 rust_2021_compatibility = { level = "deny", priority = -1 } # Enforce Rust 2021 compatibility

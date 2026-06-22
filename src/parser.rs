@@ -33,9 +33,9 @@
 //! # }
 //! ```
 
+use noyalib::Value as YamlValue;
 use serde::Serialize;
 use serde_json::Value as JsonValue;
-use serde_yml::Value as YamlValue;
 use std::{collections::HashMap, sync::Arc};
 use toml::Value as TomlValue;
 
@@ -265,25 +265,24 @@ pub fn to_string(
 ///
 /// A `Result` containing the parsed `Frontmatter` or a `Error`.
 fn parse_yaml(raw: &str) -> Result<Frontmatter, Error> {
-    // Parse the YAML content into a serde_yml::Value
-    let yaml_value: YamlValue = serde_yml::from_str(raw)
+    // Parse the YAML content into a noyalib::Value
+    let yaml_value: YamlValue = noyalib::from_str(raw)
         .map_err(|e| Error::YamlParseError { source: e.into() })?;
 
     // Prepare the front matter container
     let capacity =
-        yaml_value.as_mapping().map_or(0, serde_yml::Mapping::len);
+        yaml_value.as_mapping().map_or(0, noyalib::Mapping::len);
     let mut front_matter =
         Frontmatter(HashMap::with_capacity(capacity));
 
-    // Convert the YAML mapping into the front matter structure
+    // Convert the YAML mapping into the front matter structure.
+    //
+    // `noyalib::Mapping` keys are guaranteed `String` (unlike serde_yml's
+    // `Value`-keyed mapping), so we can iterate directly without an extra
+    // type check.
     if let YamlValue::Mapping(mapping) = yaml_value {
         for (key, value) in mapping {
-            if let YamlValue::String(k) = key {
-                let _ = front_matter.insert(k, yaml_to_value(&value));
-            } else {
-                // Log a warning for non-string keys
-                log::warn!("Warning: Non-string key ignored in YAML front matter");
-            }
+            let _ = front_matter.insert(key, yaml_to_value(&value));
         }
     } else {
         return Err(Error::ParseError(
@@ -294,38 +293,31 @@ fn parse_yaml(raw: &str) -> Result<Frontmatter, Error> {
     Ok(front_matter)
 }
 
-/// Converts a `serde_yml::Value` into a `Value`.
+/// Converts a `noyalib::Value` into a `Value`.
 fn yaml_to_value(yaml: &YamlValue) -> Value {
     match yaml {
         YamlValue::Null => Value::Null,
         YamlValue::Bool(b) => Value::Boolean(*b),
         YamlValue::Number(n) => {
-            n.as_i64()
-                .map_or_else(
-                    || {
-                        n.as_f64().map_or_else(
-                            || {
-                                log::warn!(
-                                    "Invalid or unsupported number encountered in YAML: {:?}",
-                                    n
-                                );
-                                Value::Number(0.0) // Fallback for invalid numbers
-                            },
-                            Value::Number,
-                        )
-                    },
-                    |i| {
-                        if i.abs() < (1_i64 << 52) {
-                            Value::Number(i as f64)
-                        } else {
-                            log::warn!(
-                                "Integer {} exceeds precision of f64. Defaulting to 0.0",
-                                i
-                            );
-                            Value::Number(0.0) // Fallback for large values outside f64 precision
-                        }
-                    },
-                )
+            // `noyalib::Number::as_f64` returns `f64` directly (not
+            // `Option<f64>` — integers are losslessly widened when
+            // possible). We still prefer the integer path when the value
+            // fits in f64's 52-bit mantissa, falling back to the float
+            // representation otherwise.
+            n.as_i64().map_or_else(
+                || Value::Number(n.as_f64()),
+                |i| {
+                    if i.abs() < (1_i64 << 52) {
+                        Value::Number(i as f64)
+                    } else {
+                        log::warn!(
+                            "Integer {} exceeds precision of f64. Defaulting to 0.0",
+                            i
+                        );
+                        Value::Number(0.0) // Fallback for large values outside f64 precision
+                    }
+                },
+            )
         }
         YamlValue::String(s) => Value::String(optimise_string(s)),
         YamlValue::Sequence(seq) => {
@@ -334,25 +326,21 @@ fn yaml_to_value(yaml: &YamlValue) -> Value {
             Value::Array(vec)
         }
         YamlValue::Mapping(map) => {
+            // `noyalib::Mapping` is keyed by `String` directly — no need
+            // to filter out non-string keys the way we did with the old
+            // `serde_yml::Value`-keyed mapping.
             let mut result =
                 Frontmatter(HashMap::with_capacity(map.len()));
             for (k, v) in map {
-                if let YamlValue::String(key) = k {
-                    let _ = result
-                        .0
-                        .insert(optimise_string(key), yaml_to_value(v));
-                } else {
-                    log::warn!(
-                        "Non-string key in YAML mapping ignored: {:?}",
-                        k
-                    );
-                }
+                let _ = result
+                    .0
+                    .insert(optimise_string(k), yaml_to_value(v));
             }
             Value::Object(Box::new(result))
         }
         YamlValue::Tagged(tagged) => Value::Tagged(
-            optimise_string(&tagged.tag.to_string()),
-            Box::new(yaml_to_value(&tagged.value)),
+            optimise_string(tagged.tag().as_ref()),
+            Box::new(yaml_to_value(tagged.value())),
         ),
     }
 }
@@ -367,7 +355,7 @@ fn yaml_to_value(yaml: &YamlValue) -> Value {
 ///
 /// A `Result` containing the serialised YAML string or a `Error`.
 fn to_yaml(front_matter: &Frontmatter) -> Result<String, Error> {
-    serde_yml::to_string(&front_matter.0)
+    noyalib::to_string(&front_matter.0)
         .map_err(|e| Error::ConversionError(e.to_string()))
 }
 
@@ -384,21 +372,16 @@ fn to_yaml(front_matter: &Frontmatter) -> Result<String, Error> {
 ///
 /// A `Result` containing the parsed `Frontmatter` or a `Error`.
 fn parse_toml(raw: &str) -> Result<Frontmatter, Error> {
-    let toml_value: TomlValue =
+    // toml 1.x: `Value::from_str` parses a single TOML *value*, not a
+    // document. Parse into `toml::Table` (i.e. a document) and wrap it.
+    let table: toml::Table =
         raw.parse().map_err(Error::TomlParseError)?;
 
-    let capacity = match &toml_value {
-        TomlValue::Table(table) => table.len(),
-        _ => 0,
-    };
-
     let mut front_matter =
-        Frontmatter(HashMap::with_capacity(capacity));
+        Frontmatter(HashMap::with_capacity(table.len()));
 
-    if let TomlValue::Table(table) = toml_value {
-        for (key, value) in table {
-            let _ = front_matter.0.insert(key, toml_to_value(&value));
-        }
+    for (key, value) in table {
+        let _ = front_matter.0.insert(key, toml_to_value(&value));
     }
 
     Ok(front_matter)
