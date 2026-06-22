@@ -180,7 +180,7 @@ impl Engine {
             let path = entry.path();
             if path
                 .extension()
-                .map_or(false, |ext| ext == "html" || ext == "hbs")
+                .is_some_and(|ext| ext == "html" || ext == "hbs")
             {
                 let content = fs::read_to_string(&path).await.context(
                     format!(
@@ -229,7 +229,7 @@ impl Engine {
 
         while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
-            if path.extension().map_or(false, |ext| ext == "md") {
+            if path.extension().is_some_and(|ext| ext == "md") {
                 let content =
                     self.process_content_file(&path, config).await?;
 

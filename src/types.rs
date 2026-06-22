@@ -11,7 +11,7 @@ use std::{
 };
 
 /// Represents the different formats supported for frontmatter serialization/deserialization.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Format {
     /// YAML format.
@@ -19,15 +19,10 @@ pub enum Format {
     /// TOML format.
     Toml,
     /// JSON format.
+    #[default]
     Json,
     /// Unsupported format.
     Unsupported,
-}
-
-impl Default for Format {
-    fn default() -> Self {
-        Format::Json
-    }
 }
 
 impl fmt::Display for Format {
@@ -43,10 +38,11 @@ impl fmt::Display for Format {
 }
 
 /// A flexible value type that can hold various types of data found in frontmatter.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum Value {
     /// Represents a null value.
+    #[default]
     Null,
     /// Represents a string value.
     String(String),
@@ -547,12 +543,6 @@ impl Value {
         } else {
             None
         }
-    }
-}
-
-impl Default for Value {
-    fn default() -> Self {
-        Value::Null
     }
 }
 
