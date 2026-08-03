@@ -444,9 +444,9 @@ dependencies = [
 
 [[package]]
 name = "dtt"
-version = "0.0.10"
+version = "0.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "300fa4cbe63b08446f74755c6cc002fb70e45bf50c32390f475d19b1ef23bc8e"
+checksum = "d3ad961df245c82bc67098f5bd69640d3194a081df8f0f5df1f017db4a05292a"
 dependencies = [
  "pastey",
  "serde",
