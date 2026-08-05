@@ -374,11 +374,13 @@ mod tests {
             let err = cli.unwrap_err();
             let output = err.to_string();
 
-            // Assert that the output contains the correct version
+            // Assert that the output contains the correct version.
+            // Read it from the manifest so this cannot go stale on a
+            // version bump.
+            let expected = env!("CARGO_PKG_VERSION");
             assert!(
-                output.contains("0.0.6"),
-                "Version output does not contain '0.0.6'. Actual output: {}",
-                output
+                output.contains(expected),
+                "Version output does not contain '{expected}'. Actual output: {output}"
             );
         }
     }
