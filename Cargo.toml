@@ -91,7 +91,7 @@ ssg = [                                 # Full SSG functionality
 anyhow = "1.0.95"
 serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
-noyalib = { version = "0.0.8", default-features = false, features = ["std"] }
+noyalib = { version = "0.0.17", default-features = false, features = ["std"] }
 time = { version = "0.3.36", features = ["formatting", "local-offset"] }
 tokio = { version = "1.44", features = ["full"] }
 
@@ -104,7 +104,7 @@ log = "0.4.22"
 
 # Optional CLI and SSG dependencies - all must have optional = true
 clap = { version = "4.5.21", features = ["derive"], optional = true }
-dtt = { version = "0.0.10", optional = true }
+dtt = { version = "0.0.11", optional = true }
 pulldown-cmark = { version = "0.13.4", optional = true }
 simple_logger = "5.0.0"
 tempfile = "3.14.0"
