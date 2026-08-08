@@ -330,7 +330,10 @@ impl Engine {
         tera_context.insert("content", &content.content);
 
         for (key, value) in &content.metadata {
-            tera_context.insert(key, value);
+            // tera 2's `Context::insert` requires the key to be
+            // `Into<Cow<'static, str>>`; a borrowed `&String` isn't 'static,
+            // so hand it an owned `String`.
+            tera_context.insert(key.clone(), value);
         }
 
         let mut tera = Tera::default();
