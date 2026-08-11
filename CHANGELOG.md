@@ -5,6 +5,17 @@ All notable changes to `frontmatter-gen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.9] - 2026-08-10
+
+### Changed
+
+- Bumped `noyalib` 0.0.17 -> 0.0.18, preserving
+  `default-features = false, features = ["std"]`.
+- Bumped the minor-and-patch group (9 updates), including clap 4.6.6.
+
+> Note: 0.0.7 and 0.0.8 shipped without changelog entries. They are not
+> reconstructed here rather than be given invented content.
+
 ## [0.0.6] - 2026-06-20
 
 ### Changed
