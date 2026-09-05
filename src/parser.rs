@@ -689,6 +689,42 @@ fn estimate_value_size(value: &Value) -> usize {
 
 #[cfg(test)]
 mod tests {
+    /// The scalar arms of the borrowed converter: null, a non-integral
+    /// float, an integer beyond f64's exact range, and a tagged value.
+    ///
+    /// These were reached on every parse when the mapping loop went
+    /// through `yaml_to_value`; now that it moves through
+    /// `yaml_into_value`, only `Tagged` and nested borrows arrive here, and
+    /// Codecov reported them as newly uncovered. Each is asserted on its
+    /// documented behaviour, not merely executed.
+    #[test]
+    fn yaml_to_value_borrowed_handles_every_scalar_arm() {
+        let doc = "nothing: ~\nratio: 2.5\nhuge: 9007199254740993\ntagged: !custom text\n";
+        let root: YamlValue = noyalib::from_str(doc).expect("yaml");
+
+        assert_eq!(
+            yaml_to_value(root.get("nothing").expect("nothing")),
+            Value::Null
+        );
+        assert_eq!(
+            yaml_to_value(root.get("ratio").expect("ratio")),
+            Value::Number(2.5)
+        );
+        // 2^53 + 1 is not exactly representable; the converter documents a
+        // 0.0 fallback rather than a silently rounded value.
+        assert_eq!(
+            yaml_to_value(root.get("huge").expect("huge")),
+            Value::Number(0.0)
+        );
+        match yaml_to_value(root.get("tagged").expect("tagged")) {
+            Value::Tagged(tag, inner) => {
+                assert!(tag.contains("custom"), "tag was {tag:?}");
+                assert_eq!(*inner, Value::String("text".into()));
+            }
+            other => panic!("expected tagged, got {other:?}"),
+        }
+    }
+
     /// The borrowed converter still handles every variant.
     ///
     /// The mapping loop now moves values through `yaml_into_value`, so
