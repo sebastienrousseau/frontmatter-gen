@@ -5,6 +5,25 @@ All notable changes to `frontmatter-gen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.10] - 2026-09-05
+
+### Changed
+
+- **YAML scalars are moved into `Value`, not copied.** `parse_yaml`
+  consumes the parsed mapping by value, yet passed each entry by reference
+  to a converter that allocated a fresh `String` for every scalar it had
+  just been handed. A moving converter removes one allocation per value:
+  on a 2,000-document corpus (~26,000 values) that is 202k → 178k
+  allocations. Total bytes barely move (22.4 → 21.8 MB) because the
+  remaining volume is allocated inside the YAML parser itself, a 24×
+  amplification over the input — recorded here so the next person chasing
+  heap in this path starts there rather than in this conversion.
+
+### Fixed
+
+- README install snippet said `0.0.6`; it had not been bumped since that
+  release. A test now checks it against `Cargo.toml`.
+
 ## [0.0.9] - 2026-08-10
 
 ### Changed
