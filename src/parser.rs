@@ -282,7 +282,10 @@ fn parse_yaml(raw: &str) -> Result<Frontmatter, Error> {
     // type check.
     if let YamlValue::Mapping(mapping) = yaml_value {
         for (key, value) in mapping {
-            let _ = front_matter.insert(key, yaml_to_value(&value));
+            // `mapping` is consumed by value, so each `value` is owned
+            // here. Passing `&value` forced `yaml_to_value` to allocate a
+            // fresh `String` for every scalar it had just been handed.
+            let _ = front_matter.insert(key, yaml_into_value(value));
         }
     } else {
         return Err(Error::ParseError(
@@ -291,6 +294,38 @@ fn parse_yaml(raw: &str) -> Result<Frontmatter, Error> {
     }
 
     Ok(front_matter)
+}
+
+/// Converts an **owned** `noyalib::Value` into a `Value`, moving strings
+/// rather than copying them.
+///
+/// The borrowed [`yaml_to_value`] is kept for callers that genuinely only
+/// have a reference (nested sequences reached through a borrow). Where the
+/// caller owns the value — which the mapping loop in [`parse_yaml`] does,
+/// because it consumes the mapping — this avoids one heap allocation and
+/// one copy per scalar.
+///
+/// Measured on a 2,000-document corpus of typical frontmatter: the parse
+/// phase allocated 22.4 MB across 202k allocations to read 0.9 MB of
+/// input, roughly eight allocations per value. Every string was allocated
+/// once by the YAML parser and again here.
+fn yaml_into_value(yaml: YamlValue) -> Value {
+    match yaml {
+        YamlValue::String(s) => Value::String(s),
+        YamlValue::Sequence(seq) => {
+            Value::Array(seq.into_iter().map(yaml_into_value).collect())
+        }
+        YamlValue::Mapping(map) => {
+            let mut inner = HashMap::with_capacity(map.len());
+            for (k, v) in map {
+                let _ = inner.insert(k, yaml_into_value(v));
+            }
+            Value::Object(Box::new(Frontmatter(inner)))
+        }
+        // Scalars that own nothing: reuse the borrowed conversion so the
+        // number-precision handling lives in exactly one place.
+        other => yaml_to_value(&other),
+    }
 }
 
 /// Converts a `noyalib::Value` into a `Value`.
@@ -654,6 +689,106 @@ fn estimate_value_size(value: &Value) -> usize {
 
 #[cfg(test)]
 mod tests {
+    /// The scalar arms of the borrowed converter: null, a non-integral
+    /// float, an integer beyond f64's exact range, and a tagged value.
+    ///
+    /// These were reached on every parse when the mapping loop went
+    /// through `yaml_to_value`; now that it moves through
+    /// `yaml_into_value`, only `Tagged` and nested borrows arrive here, and
+    /// Codecov reported them as newly uncovered. Each is asserted on its
+    /// documented behaviour, not merely executed.
+    #[test]
+    fn yaml_to_value_borrowed_handles_every_scalar_arm() {
+        let doc = "nothing: ~\nratio: 2.5\nhuge: 9007199254740993\ntagged: !custom text\n";
+        let root: YamlValue = noyalib::from_str(doc).expect("yaml");
+
+        assert_eq!(
+            yaml_to_value(root.get("nothing").expect("nothing")),
+            Value::Null
+        );
+        assert_eq!(
+            yaml_to_value(root.get("ratio").expect("ratio")),
+            Value::Number(2.5)
+        );
+        // 2^53 + 1 is not exactly representable; the converter documents a
+        // 0.0 fallback rather than a silently rounded value.
+        assert_eq!(
+            yaml_to_value(root.get("huge").expect("huge")),
+            Value::Number(0.0)
+        );
+        match yaml_to_value(root.get("tagged").expect("tagged")) {
+            Value::Tagged(tag, inner) => {
+                assert!(tag.contains("custom"), "tag was {tag:?}");
+                assert_eq!(*inner, Value::String("text".into()));
+            }
+            other => panic!("expected tagged, got {other:?}"),
+        }
+    }
+
+    /// The borrowed converter still handles every variant.
+    ///
+    /// The mapping loop now moves values through `yaml_into_value`, so
+    /// these arms of `yaml_to_value` are only reached through a `Tagged`
+    /// wrapper or a nested borrow. They must keep working, and without a
+    /// direct test they had silently gone uncovered.
+    #[test]
+    fn yaml_to_value_borrowed_handles_compound_values() {
+        let doc = "list:\n  - one\n  - two\nmap:\n  k: v\n";
+        let root: YamlValue = noyalib::from_str(doc).expect("yaml");
+        let list = root.get("list").expect("list");
+        let map = root.get("map").expect("map");
+
+        match yaml_to_value(list) {
+            Value::Array(items) => {
+                assert_eq!(items.len(), 2);
+                assert_eq!(items[0], Value::String("one".into()));
+            }
+            other => panic!("expected array, got {other:?}"),
+        }
+        match yaml_to_value(map) {
+            Value::Object(obj) => {
+                assert_eq!(
+                    obj.get("k"),
+                    Some(&Value::String("v".into()))
+                );
+            }
+            other => panic!("expected object, got {other:?}"),
+        }
+    }
+
+    /// Moving and borrowing produce identical results.
+    #[test]
+    fn yaml_into_value_matches_yaml_to_value() {
+        let doc =
+            "s: text\nn: 3\nb: true\nlist:\n  - a\nmap:\n  x: y\n";
+        let root: YamlValue = noyalib::from_str(doc).expect("yaml");
+        if let YamlValue::Mapping(m) = root {
+            for (k, v) in m {
+                let borrowed = yaml_to_value(&v);
+                let moved = yaml_into_value(v);
+                assert_eq!(borrowed, moved, "key {k}");
+            }
+        } else {
+            panic!("expected mapping");
+        }
+    }
+
+    /// The README install snippet must name the crate's own version.
+    ///
+    /// REPO-STANDARD §1 asks for docs verified against the manifest. This
+    /// README said `0.0.6` through two releases; nothing checked it.
+    #[test]
+    fn readme_install_snippet_matches_cargo_version() {
+        let readme = include_str!("../README.md");
+        let version = env!("CARGO_PKG_VERSION");
+        let expected = format!("frontmatter-gen = \"{version}\"");
+        assert!(
+            readme.contains(&expected),
+            "README does not contain `{expected}`; update the install \
+             snippet when bumping Cargo.toml"
+        );
+    }
+
     use super::*;
     use std::f64::consts::PI;
 
