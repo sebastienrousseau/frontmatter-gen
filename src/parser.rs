@@ -689,6 +689,70 @@ fn estimate_value_size(value: &Value) -> usize {
 
 #[cfg(test)]
 mod tests {
+    /// The borrowed converter still handles every variant.
+    ///
+    /// The mapping loop now moves values through `yaml_into_value`, so
+    /// these arms of `yaml_to_value` are only reached through a `Tagged`
+    /// wrapper or a nested borrow. They must keep working, and without a
+    /// direct test they had silently gone uncovered.
+    #[test]
+    fn yaml_to_value_borrowed_handles_compound_values() {
+        let doc = "list:\n  - one\n  - two\nmap:\n  k: v\n";
+        let root: YamlValue = noyalib::from_str(doc).expect("yaml");
+        let list = root.get("list").expect("list");
+        let map = root.get("map").expect("map");
+
+        match yaml_to_value(list) {
+            Value::Array(items) => {
+                assert_eq!(items.len(), 2);
+                assert_eq!(items[0], Value::String("one".into()));
+            }
+            other => panic!("expected array, got {other:?}"),
+        }
+        match yaml_to_value(map) {
+            Value::Object(obj) => {
+                assert_eq!(
+                    obj.get("k"),
+                    Some(&Value::String("v".into()))
+                );
+            }
+            other => panic!("expected object, got {other:?}"),
+        }
+    }
+
+    /// Moving and borrowing produce identical results.
+    #[test]
+    fn yaml_into_value_matches_yaml_to_value() {
+        let doc =
+            "s: text\nn: 3\nb: true\nlist:\n  - a\nmap:\n  x: y\n";
+        let root: YamlValue = noyalib::from_str(doc).expect("yaml");
+        if let YamlValue::Mapping(m) = root {
+            for (k, v) in m {
+                let borrowed = yaml_to_value(&v);
+                let moved = yaml_into_value(v);
+                assert_eq!(borrowed, moved, "key {k}");
+            }
+        } else {
+            panic!("expected mapping");
+        }
+    }
+
+    /// The README install snippet must name the crate's own version.
+    ///
+    /// REPO-STANDARD §1 asks for docs verified against the manifest. This
+    /// README said `0.0.6` through two releases; nothing checked it.
+    #[test]
+    fn readme_install_snippet_matches_cargo_version() {
+        let readme = include_str!("../README.md");
+        let version = env!("CARGO_PKG_VERSION");
+        let expected = format!("frontmatter-gen = \"{version}\"");
+        assert!(
+            readme.contains(&expected),
+            "README does not contain `{expected}`; update the install \
+             snippet when bumping Cargo.toml"
+        );
+    }
+
     use super::*;
     use std::f64::consts::PI;
 
