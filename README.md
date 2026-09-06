@@ -28,7 +28,7 @@ Or add to `Cargo.toml`:
 
 ```toml
 [dependencies]
-frontmatter-gen = "0.0.10"
+frontmatter-gen = "0.0.11"
 ```
 
 You need [Rust](https://rustup.rs/) 1.56.0 or later. Works on macOS, Linux, and Windows.
