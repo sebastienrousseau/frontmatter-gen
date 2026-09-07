@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 frontmatter-gen
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & ideas
+    url: https://github.com/sebastienrousseau/frontmatter-gen/discussions
+    about: Ask how to use frontmatter-gen, or float an idea before filing a feature request.
+  - name: Security vulnerability
+    url: https://github.com/sebastienrousseau/frontmatter-gen/security/advisories/new
+    about: Report a vulnerability privately — please do NOT open a public issue (see SECURITY.md).

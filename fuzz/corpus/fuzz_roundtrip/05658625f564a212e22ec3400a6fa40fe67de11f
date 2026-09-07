@@ -1,0 +1,10 @@
+tiflag: true
+diot:
+  - a
+  - b
+: 3
+flag: a
+  
+dist:
+  - a
+  - b

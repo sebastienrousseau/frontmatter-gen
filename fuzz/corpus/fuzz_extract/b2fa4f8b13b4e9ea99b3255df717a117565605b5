@@ -1,0 +1,10 @@
+---
+tit: [a, b]
+nested:
+  key: va
+  -
+:
+  -  -e
+lue
+---
+text

@@ -1,0 +1,6 @@
+---
+title: Seed
+tags: [ab ,]
+nested:
+ *key> value
+---

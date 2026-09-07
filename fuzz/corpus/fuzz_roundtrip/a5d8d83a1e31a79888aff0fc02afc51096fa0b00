@@ -1,0 +1,11 @@
+tiflag: true
+dist:
+  - a
+  - b
+: 2
+fladist:
+  - a
+  - b
+: 2
+flag: true
+: tru
