@@ -1427,3 +1427,274 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod exhaustive_type_tests {
+    //! `Display`, the conversion helpers and the map surface, one case
+    //! per variant and one per failure mode.
+    //!
+    //! `Display` for `Value` is what every serialiser in this crate
+    //! ultimately calls, so a wrong arm there is wrong output rather
+    //! than a crash — the kind of bug a test has to look for on purpose.
+
+    use super::*;
+
+    fn one_of_every_value() -> Vec<Value> {
+        vec![
+            Value::Null,
+            Value::String("s".into()),
+            Value::Number(42.0),
+            Value::Number(1.5),
+            Value::Boolean(true),
+            Value::Array(vec![
+                Value::Number(1.0),
+                Value::String("a".into()),
+            ]),
+            Value::Object(Box::new(Frontmatter::new())),
+            Value::Tagged("tag".into(), Box::new(Value::Number(42.0))),
+        ]
+    }
+
+    #[test]
+    fn format_displays_each_variant_by_name() {
+        assert_eq!(Format::Yaml.to_string(), "YAML");
+        assert_eq!(Format::Toml.to_string(), "TOML");
+        assert_eq!(Format::Json.to_string(), "JSON");
+        assert_eq!(Format::Unsupported.to_string(), "Unsupported");
+    }
+
+    #[test]
+    fn value_display_covers_every_variant() {
+        assert_eq!(Value::Null.to_string(), "null");
+        assert_eq!(Value::String("s".into()).to_string(), "\"s\"");
+        assert_eq!(Value::Boolean(true).to_string(), "true");
+        // Whole numbers print without a fractional part; others keep it.
+        assert_eq!(Value::Number(42.0).to_string(), "42");
+        assert_eq!(Value::Number(1.5).to_string(), "1.5");
+        assert_eq!(
+            Value::Array(vec![
+                Value::Number(1.0),
+                Value::String("a".into())
+            ])
+            .to_string(),
+            "[1, \"a\"]"
+        );
+        assert_eq!(
+            Value::Tagged("t".into(), Box::new(Value::Number(2.0)))
+                .to_string(),
+            "\"t\": 2"
+        );
+    }
+
+    #[test]
+    fn display_escapes_quotes_and_backslashes() {
+        assert_eq!(
+            Value::String("a\"b\\c".into()).to_string(),
+            "\"a\\\"b\\\\c\""
+        );
+        // `escape_str` handles the two characters its documentation
+        // names. It does not escape control characters, so a string
+        // containing a newline renders with that newline intact —
+        // see `display_is_not_json_for_control_characters`.
+        assert_eq!(escape_str("plain"), "plain");
+        assert_eq!(escape_str("line\nbreak"), "line\nbreak");
+    }
+
+    #[test]
+    fn display_is_not_json_for_control_characters() {
+        // Pinning a known limitation rather than asserting it is fine.
+        // `Display` renders JSON-shaped output, but `escape_str` only
+        // escapes `"` and `\`, so a control character passes through
+        // and the result is not parseable JSON. Callers that need JSON
+        // must use `serde_json`, not `to_string`.
+        let rendered = Value::String("line\nbreak".into()).to_string();
+        assert_eq!(rendered, "\"line\nbreak\"");
+        assert!(
+            serde_json::from_str::<serde_json::Value>(&rendered).is_err(),
+            "if this starts parsing, escape_str learned control characters \
+             and this test should become the stronger assertion"
+        );
+    }
+
+    #[test]
+    fn frontmatter_display_sorts_keys_and_escapes_them() {
+        let mut fm = Frontmatter::new();
+        let _ = fm.insert("b".into(), Value::Number(2.0));
+        let _ = fm.insert("a".into(), Value::String("x".into()));
+        // Sorted, so the rendering is stable regardless of insertion order.
+        assert_eq!(fm.to_string(), "{\"a\": \"x\", \"b\": 2}");
+        assert_eq!(Frontmatter::new().to_string(), "{}");
+    }
+
+    #[test]
+    fn accessors_return_some_only_for_their_own_variant() {
+        for value in one_of_every_value() {
+            let matches_str = matches!(value, Value::String(_));
+            assert_eq!(
+                value.as_str().is_some(),
+                matches_str,
+                "{value:?}"
+            );
+            let matches_obj = matches!(value, Value::Object(_));
+            assert_eq!(
+                value.as_object().is_some(),
+                matches_obj,
+                "{value:?}"
+            );
+            let matches_tag = matches!(value, Value::Tagged(_, _));
+            assert_eq!(
+                value.as_tagged().is_some(),
+                matches_tag,
+                "{value:?}"
+            );
+            let matches_arr = matches!(value, Value::Array(_));
+            assert_eq!(
+                value.array_len().is_some(),
+                matches_arr,
+                "{value:?}"
+            );
+        }
+        assert_eq!(
+            Value::Tagged("t".into(), Box::new(Value::Null))
+                .as_tagged()
+                .map(|(t, _)| t),
+            Some("t")
+        );
+        assert_eq!(
+            Value::Array(vec![Value::Null, Value::Null]).array_len(),
+            Some(2)
+        );
+    }
+
+    #[test]
+    fn is_null_only_for_null() {
+        for value in one_of_every_value() {
+            assert_eq!(
+                value.is_null(),
+                matches!(value, Value::Null),
+                "{value:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn conversions_succeed_for_their_variant_and_report_the_others() {
+        assert_eq!(
+            Value::String("s".into()).into_string().unwrap(),
+            "s"
+        );
+        assert!(Value::Number(1.0).into_string().is_err());
+
+        assert!(
+            (Value::Number(2.5).into_f64().unwrap() - 2.5).abs()
+                < f64::EPSILON
+        );
+        assert!(Value::Null.into_f64().is_err());
+
+        assert!(Value::Boolean(true).into_bool().unwrap());
+        assert!(Value::String("true".into()).into_bool().is_err());
+
+        assert!(Value::Object(Box::new(Frontmatter::new()))
+            .to_object()
+            .is_ok());
+        assert!(Value::Null.to_object().is_err());
+    }
+
+    #[test]
+    fn to_string_representation_matches_display() {
+        // Documented behaviour: strings keep their quotes, numbers do
+        // not. The name suggests a plain rendering; it is `Display`.
+        assert_eq!(
+            Value::String("plain".into()).to_string_representation(),
+            "\"plain\""
+        );
+        // Not 3.14: clippy reads that as an approximation of PI.
+        assert_eq!(
+            Value::Number(2.75).to_string_representation(),
+            "2.75"
+        );
+        assert_eq!(Value::Null.to_string_representation(), "null");
+        assert_eq!(
+            Value::Boolean(false).to_string_representation(),
+            "false"
+        );
+    }
+
+    #[test]
+    fn get_mut_array_allows_in_place_edits() {
+        let mut value = Value::Array(vec![Value::Number(1.0)]);
+        value
+            .get_mut_array()
+            .expect("array")
+            .push(Value::Number(2.0));
+        assert_eq!(value.array_len(), Some(2));
+        assert!(Value::Null.get_mut_array().is_none());
+    }
+
+    #[test]
+    fn frontmatter_map_surface_behaves_like_a_map() {
+        let mut fm = Frontmatter::new();
+        assert!(fm.is_empty());
+        assert_eq!(fm.len(), 0);
+
+        let _ = fm.insert("a".into(), Value::Number(1.0));
+        let _ = fm.insert("b".into(), Value::Null);
+        assert_eq!(fm.len(), 2);
+        assert!(!fm.is_empty());
+        assert!(fm.contains_key("a"));
+        assert!(!fm.contains_key("zz"));
+        assert!(fm.is_null("b"));
+        assert!(!fm.is_null("a"));
+        assert!(!fm.is_null("missing"));
+
+        assert_eq!(fm.get("a"), Some(&Value::Number(1.0)));
+        assert_eq!(fm.get("missing"), None);
+        if let Some(v) = fm.get_mut("a") {
+            *v = Value::Number(9.0);
+        }
+        assert_eq!(fm.get("a"), Some(&Value::Number(9.0)));
+        assert!(fm.get_mut("missing").is_none());
+
+        assert_eq!(fm.remove("b"), Some(Value::Null));
+        assert_eq!(fm.remove("b"), None);
+
+        assert_eq!(fm.iter().count(), 1);
+        for (_, v) in fm.iter_mut() {
+            *v = Value::Boolean(false);
+        }
+        assert_eq!(fm.get("a"), Some(&Value::Boolean(false)));
+
+        fm.reserve(8);
+        assert!(fm.capacity() >= 1);
+        fm.clear();
+        assert!(fm.is_empty());
+    }
+
+    #[test]
+    fn merge_lets_the_incoming_map_win() {
+        let mut base = Frontmatter::new();
+        let _ = base.insert("shared".into(), Value::Number(1.0));
+        let _ = base.insert("kept".into(), Value::Boolean(true));
+
+        let mut other = Frontmatter::new();
+        let _ = other.insert("shared".into(), Value::Number(2.0));
+        let _ = other.insert("added".into(), Value::Null);
+
+        base.merge(other);
+        assert_eq!(base.get("shared"), Some(&Value::Number(2.0)));
+        assert_eq!(base.get("kept"), Some(&Value::Boolean(true)));
+        assert!(base.contains_key("added"));
+    }
+
+    #[test]
+    fn collects_from_an_iterator() {
+        let fm: Frontmatter = vec![
+            ("a".to_string(), Value::Number(1.0)),
+            ("b".to_string(), Value::String("x".into())),
+        ]
+        .into_iter()
+        .collect();
+        assert_eq!(fm.len(), 2);
+        assert_eq!(fm.get("b"), Some(&Value::String("x".into())));
+    }
+}
