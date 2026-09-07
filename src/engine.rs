@@ -687,6 +687,7 @@ mod exhaustive_engine_tests {
     //! only through a full `generate`.
 
     use super::*;
+    use std::path::Path;
 
     #[test]
     fn size_cache_evicts_when_it_is_full_and_clears_on_request() {
@@ -786,7 +787,7 @@ mod exhaustive_engine_tests {
         assert!(engine.render_template("{% if %}", &content).is_err());
     }
 
-    async fn config_in(dir: &std::path::Path) -> Config {
+    async fn config_in(dir: &Path) -> Config {
         for sub in ["content", "templates", "public"] {
             std::fs::create_dir_all(dir.join(sub)).expect("mkdir");
         }

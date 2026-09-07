@@ -94,9 +94,8 @@ for conditions the surrounding code has already excluded.
   exhaustive suites that cover every enum variant, every builder setter
   and every path-safety rule.
 - `benches/frontmatter_benchmark.rs` — Criterion, declared with
-  `harness = false`. Without that the file builds under libtest's
-  harness, collects zero tests and reports success, which is how it ran
-  nothing for several releases.
+  `harness = false`; libtest's harness would collect zero tests and
+  report success.
 - `fuzz/fuzz_targets/` — `fuzz_extract` (the body must be a suffix of
   the input), `fuzz_parse` (every parser against every input) and
   `fuzz_roundtrip` (parse, serialise, re-parse, same keys).

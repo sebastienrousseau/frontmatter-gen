@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.11] - 2026-09-07
 
 The repository-standard release: the layout, gates and documents every
-crate in the family shares, plus three real defects the new tests found.
+crate in the family shares, plus two real defects the new tests found.
 
 ### Changed (breaking: output)
 
@@ -44,22 +44,16 @@ crate in the family shares, plus three real defects the new tests found.
   sometimes dropped the entry being replaced and returned `None` for a
   key that existed a moment earlier. It now only evicts for a genuinely
   new key.
-- **The benchmark ran nothing.** `criterion` was missing from the
-  manifest entirely, so `benches/frontmatter_benchmark.rs` did not
-  compile. Adding it exposed a second problem: with no `[[bench]]` entry
-  the file was built under libtest's harness, which collected zero tests
-  and reported success. The bench now declares `harness = false` and
-  exercises its four workloads.
 
 ### Changed
 
 - **`noyalib` pinned at `=0.0.37`**, from a caret `0.0.28`. A caret is
   wrong for a same-author 0.0.x line where any release may break
   (ADR-0005).
-- **Dev-only dependencies moved out of `[dependencies]`.** The crate had
-  no `[dev-dependencies]` section at all, so `tempfile` (used only in
-  test modules) and `env_logger` (examples only) shipped to every
-  consumer. `simple_logger` and `euxis-commons` are removed outright:
+- **Dev-only dependencies moved into `[dev-dependencies]`.** `tempfile`
+  (used only inside `#[cfg(test)]` modules) and `env_logger` (examples
+  only) were declared as runtime dependencies, so every consumer built
+  them. `simple_logger` and `euxis-commons` are removed outright:
   neither is referenced anywhere in the crate.
 - **`build.rs` removed.** `rust-version` is the MSRV gate and Cargo
   enforces it without a build script.
