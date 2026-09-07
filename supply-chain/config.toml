@@ -128,6 +128,10 @@ criteria = "safe-to-run"
 version = "0.5.8"
 criteria = "safe-to-deploy"
 
+[[exemptions.diff]]
+version = "0.1.13"
+criteria = "safe-to-run"
+
 [[exemptions.displaydoc]]
 version = "0.2.6"
 criteria = "safe-to-deploy"
@@ -343,6 +347,10 @@ criteria = "safe-to-run"
 [[exemptions.potential_utf]]
 version = "0.1.5"
 criteria = "safe-to-deploy"
+
+[[exemptions.pretty_assertions]]
+version = "1.4.1"
+criteria = "safe-to-run"
 
 [[exemptions.proc-macro2]]
 version = "1.0.106"
@@ -579,6 +587,10 @@ criteria = "safe-to-deploy"
 [[exemptions.writeable]]
 version = "0.6.3"
 criteria = "safe-to-deploy"
+
+[[exemptions.yansi]]
+version = "1.0.1"
+criteria = "safe-to-run"
 
 [[exemptions.yoke]]
 version = "0.8.3"

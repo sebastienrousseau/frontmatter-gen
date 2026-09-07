@@ -76,6 +76,11 @@ pub enum UtilsError {
 /// File system utilities module
 pub mod fs {
     use super::*;
+    // Only the `ssg` surface below uses owned paths; without the gate
+    // this import is dead in a default build, which `[lints.rust]`
+    // makes an error. The fuzz and Miri jobs are the first to compile
+    // that configuration.
+    #[cfg(feature = "ssg")]
     use std::path::PathBuf;
 
     /// Tracks temporary files for cleanup
