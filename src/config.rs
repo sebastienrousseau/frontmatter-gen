@@ -999,3 +999,180 @@ mod tests {
         }
     }
 }
+
+#[cfg(all(test, feature = "ssg"))]
+mod exhaustive_config_tests {
+    //! Every builder setter and every rejection in `validate`.
+    //!
+    //! Configuration validation is where a typo becomes a broken site
+    //! rather than an error, so each rule gets a case that violates it
+    //! and one that satisfies it.
+
+    use super::*;
+
+    fn valid_builder() -> Builder {
+        Config::builder()
+            .site_name("site")
+            .site_title("title")
+            .site_description("description")
+            .language("en-GB")
+            .base_url("https://example.com")
+            .content_dir("content")
+            .output_dir("public")
+            .template_dir("templates")
+    }
+
+    #[test]
+    fn every_builder_setter_reaches_the_config() {
+        let config = valid_builder()
+            .serve_dir("serve")
+            .build()
+            .expect("valid configuration");
+
+        assert_eq!(config.site_name, "site");
+        assert_eq!(config.site_title, "title");
+        assert_eq!(config.site_description, "description");
+        assert_eq!(config.language, "en-GB");
+        assert_eq!(config.base_url, "https://example.com");
+        assert_eq!(config.content_dir, PathBuf::from("content"));
+        assert_eq!(config.output_dir, PathBuf::from("public"));
+        assert_eq!(config.template_dir, PathBuf::from("templates"));
+        assert_eq!(config.serve_dir, Some(PathBuf::from("serve")));
+    }
+
+    #[test]
+    fn serve_dir_is_optional() {
+        let config =
+            valid_builder().build().expect("valid configuration");
+        assert!(config.serve_dir.is_none());
+    }
+
+    #[test]
+    fn rejects_a_malformed_base_url() {
+        let err = valid_builder()
+            .base_url("not a url")
+            .build()
+            .expect_err("a base URL that does not parse is rejected");
+        assert!(
+            err.to_string().to_lowercase().contains("url"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn language_must_be_lowercase_lang_uppercase_region() {
+        for good in ["en-GB", "fr-FR", "pt-BR"] {
+            assert!(
+                valid_builder().language(good).build().is_ok(),
+                "{good} should be accepted"
+            );
+        }
+        for bad in ["en", "EN-gb", "en_GB", "eng-GBR", "", "en-gb"] {
+            assert!(
+                valid_builder().language(bad).build().is_err(),
+                "{bad} should be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_unsafe_directory_paths() {
+        assert!(valid_builder()
+            .content_dir("../escape")
+            .build()
+            .is_err());
+        assert!(valid_builder()
+            .output_dir("out\\win")
+            .build()
+            .is_err());
+        assert!(valid_builder()
+            .template_dir("../../up")
+            .build()
+            .is_err());
+        assert!(valid_builder().serve_dir("../serve").build().is_err());
+    }
+
+    #[test]
+    fn accessors_expose_the_configured_values() {
+        let config =
+            valid_builder().build().expect("valid configuration");
+        assert_eq!(config.site_name(), "site");
+        // Every config gets its own identifier.
+        let other =
+            valid_builder().build().expect("valid configuration");
+        assert_ne!(config.id(), other.id());
+    }
+
+    #[test]
+    fn the_server_port_is_reported_only_when_the_server_is_enabled() {
+        let off = valid_builder().build().expect("valid configuration");
+        assert!(!off.server_enabled());
+        assert_eq!(off.server_port(), None, "disabled means no port");
+
+        let on = valid_builder()
+            .server_enabled(true)
+            .server_port(8080)
+            .build()
+            .expect("valid configuration");
+        assert!(on.server_enabled());
+        assert_eq!(on.server_port(), Some(8080));
+    }
+
+    #[test]
+    fn a_privileged_port_is_rejected_when_the_server_is_enabled() {
+        // Ports below 1024 need elevated privileges; the check only
+        // applies when the server is actually turned on.
+        assert!(valid_builder()
+            .server_enabled(true)
+            .server_port(80)
+            .build()
+            .is_err());
+        assert!(valid_builder()
+            .server_enabled(false)
+            .server_port(80)
+            .build()
+            .is_ok());
+    }
+
+    #[test]
+    fn display_names_the_site_and_its_directories() {
+        let config =
+            valid_builder().build().expect("valid configuration");
+        let shown = config.to_string();
+        assert!(shown.contains("site"), "{shown}");
+    }
+
+    #[test]
+    fn from_file_reads_a_toml_configuration() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("frontmatter.toml");
+        std::fs::write(
+            &path,
+            br#"
+site_name = "from file"
+site_title = "title"
+site_description = "description"
+language = "en-GB"
+base_url = "https://example.com"
+content_dir = "content"
+output_dir = "public"
+template_dir = "templates"
+"#,
+        )
+        .expect("write config");
+
+        let config = Config::from_file(&path).expect("parse config");
+        assert_eq!(config.site_name, "from file");
+    }
+
+    #[test]
+    fn from_file_reports_a_missing_or_malformed_file() {
+        assert!(Config::from_file(Path::new("does-not-exist.toml"))
+            .is_err());
+
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("broken.toml");
+        std::fs::write(&path, b"site_name = ").expect("write");
+        assert!(Config::from_file(&path).is_err());
+    }
+}

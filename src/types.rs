@@ -1687,6 +1687,59 @@ mod exhaustive_type_tests {
     }
 
     #[test]
+    fn every_is_predicate_answers_for_every_variant() {
+        for value in one_of_every_value() {
+            assert_eq!(
+                value.is_string(),
+                matches!(value, Value::String(_))
+            );
+            assert_eq!(
+                value.is_number(),
+                matches!(value, Value::Number(_))
+            );
+            assert_eq!(
+                value.is_boolean(),
+                matches!(value, Value::Boolean(_))
+            );
+            assert_eq!(
+                value.is_array(),
+                matches!(value, Value::Array(_))
+            );
+            assert_eq!(
+                value.is_object(),
+                matches!(value, Value::Object(_))
+            );
+            assert_eq!(
+                value.is_tagged(),
+                matches!(value, Value::Tagged(_, _))
+            );
+        }
+    }
+
+    #[test]
+    fn converts_from_each_rust_scalar() {
+        assert_eq!(Value::from("s"), Value::String("s".into()));
+        assert_eq!(
+            Value::from(String::from("owned")),
+            Value::String("owned".into())
+        );
+        assert_eq!(Value::from(2.5_f64), Value::Number(2.5));
+        assert_eq!(Value::from(true), Value::Boolean(true));
+    }
+
+    #[test]
+    fn default_frontmatter_is_empty_and_iterates() {
+        let fm = Frontmatter::default();
+        assert!(fm.is_empty());
+
+        let mut fm = Frontmatter::new();
+        let _ = fm.insert("a".into(), Value::Number(1.0));
+        let _ = fm.insert("b".into(), Value::Number(2.0));
+        let collected: Vec<_> = fm.into_iter().collect();
+        assert_eq!(collected.len(), 2);
+    }
+
+    #[test]
     fn collects_from_an_iterator() {
         let fm: Frontmatter = vec![
             ("a".to_string(), Value::Number(1.0)),

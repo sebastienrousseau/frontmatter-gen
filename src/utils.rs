@@ -601,6 +601,7 @@ mod exhaustive_utils_tests {
 
     use super::fs::*;
     use super::log::*;
+    use super::UtilsError;
     use std::path::{Path, PathBuf};
 
     #[test]
@@ -742,6 +743,60 @@ mod exhaustive_utils_tests {
         }
     }
 
+    #[tokio::test]
+    async fn create_directory_makes_nested_paths_and_refuses_unsafe_ones(
+    ) {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let nested = dir.path().join("a/b/c");
+        create_directory(&nested).await.expect("create nested");
+        assert!(nested.is_dir());
+
+        // Already there: creating again is not an error.
+        create_directory(&nested).await.expect("idempotent");
+
+        assert!(create_directory(Path::new("../escape"))
+            .await
+            .is_err());
+    }
+
+    #[tokio::test]
+    async fn create_temp_file_returns_a_writable_handle_under_the_temp_dir(
+    ) {
+        use std::io::Write as _;
+
+        let (path, mut file) = create_temp_file("frontmatter-gen-test")
+            .await
+            .expect("create temp file");
+        assert!(path.starts_with(std::env::temp_dir()));
+        assert!(
+            path.file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| n.starts_with("frontmatter-gen-test-")),
+            "the prefix names the file: {path:?}"
+        );
+
+        file.write_all(b"payload").expect("write");
+        drop(file);
+        assert_eq!(
+            std::fs::read(&path).expect("read back"),
+            b"payload"
+        );
+
+        // Handing it to the tracker is what makes it disposable.
+        let tracker = TempFileTracker::new();
+        tracker.register(path.clone()).await.expect("register");
+        tracker.cleanup().await.expect("cleanup");
+        assert!(!path.exists());
+    }
+
+    #[tokio::test]
+    async fn copy_file_reports_a_missing_source() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let missing = dir.path().join("absent.md");
+        let dst = dir.path().join("dst.md");
+        assert!(copy_file(&missing, &dst).await.is_err());
+    }
+
     #[test]
     fn log_entries_format_with_their_level_and_message() {
         let formatted = entry(log::Level::Info, "hello", None).format();
@@ -754,6 +809,45 @@ mod exhaustive_utils_tests {
             entry(log::Level::Error, "failed", Some("disk full"))
                 .format();
         assert!(with_error.contains("disk full"), "{with_error}");
+    }
+
+    #[test]
+    fn utils_error_converts_from_anyhow_and_join_errors() {
+        let err: UtilsError = anyhow::anyhow!("boom").into();
+        assert!(err.to_string().contains("boom"), "{err}");
+        assert!(matches!(err, UtilsError::InvalidOperation(_)));
+    }
+
+    #[tokio::test]
+    async fn utils_error_converts_from_a_join_error() {
+        let handle = tokio::spawn(async { panic!("task failed") });
+        let join_err = handle.await.expect_err("the task panicked");
+        let err: UtilsError = join_err.into();
+        assert!(matches!(err, UtilsError::InvalidOperation(_)));
+        assert!(!err.to_string().is_empty());
+    }
+
+    #[test]
+    fn log_writer_reports_a_path_it_cannot_open() {
+        // A directory is not a file: opening it for append fails.
+        let dir = tempfile::tempdir().expect("tempdir");
+        assert!(LogWriter::new(dir.path()).is_err());
+    }
+
+    #[tokio::test]
+    async fn cleanup_skips_files_that_are_already_gone() {
+        let tracker = TempFileTracker::new();
+        let dir = tempfile::tempdir().expect("tempdir");
+        let present = dir.path().join("present.txt");
+        let absent = dir.path().join("absent.txt");
+        std::fs::write(&present, b"x").expect("write");
+
+        tracker.register(present.clone()).await.expect("register");
+        tracker.register(absent.clone()).await.expect("register");
+
+        // The absent path is skipped rather than reported as an error.
+        tracker.cleanup().await.expect("cleanup");
+        assert!(!present.exists());
     }
 
     #[test]

@@ -1245,6 +1245,50 @@ obj:
     }
 
     #[test]
+    fn size_estimates_grow_with_the_document() {
+        // The estimate feeds `to_json_optimised`'s buffer reservation.
+        // It does not have to be exact, but it must account for every
+        // variant: a variant returning 0 would make the reservation
+        // useless for documents made of it.
+        let empty = Frontmatter::new();
+        assert!(estimate_json_size(&empty) >= 2, "at least the braces");
+
+        let mut fm = Frontmatter::new();
+        let _ = fm.insert("k".into(), Value::String("value".into()));
+        let one = estimate_json_size(&fm);
+        let _ = fm.insert("k2".into(), Value::Number(1.0));
+        assert!(
+            estimate_json_size(&fm) > one,
+            "adding a key must grow the estimate"
+        );
+
+        for value in [
+            Value::Null,
+            Value::String("s".into()),
+            Value::Number(1.0),
+            Value::Boolean(true),
+            Value::Array(vec![Value::Null, Value::Number(1.0)]),
+            Value::Object(Box::new(Frontmatter::new())),
+            Value::Tagged("t".into(), Box::new(Value::Null)),
+        ] {
+            assert!(
+                estimate_value_size(&value) > 0,
+                "{value:?} estimated as zero bytes"
+            );
+        }
+
+        // Nesting is counted through, not truncated at the first level.
+        let nested =
+            Value::Array(vec![Value::Array(vec![Value::String(
+                "deep".into(),
+            )])]);
+        assert!(
+            estimate_value_size(&nested)
+                > estimate_value_size(&Value::Array(vec![]))
+        );
+    }
+
+    #[test]
     fn malformed_input_reports_the_formats_own_error() {
         assert!(parse_yaml("a: [").is_err());
         assert!(parse_toml("a = ").is_err());
