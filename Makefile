@@ -40,7 +40,7 @@ fmt:
 # REUSE 3.3 compliance. `reuse` runs through uvx so the gate does not
 # depend on a system Python install.
 lint:
-	npx --yes markdownlint-cli2 "**/*.md" "!target/**" "!fuzz/target/**" "!node_modules/**"
+	npx --yes markdownlint-cli2 "**/*.md" "!target/**" "!fuzz/**" "!node_modules/**"
 	uvx codespell
 	uvx --with chardet reuse lint
 

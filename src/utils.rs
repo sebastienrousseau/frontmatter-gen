@@ -589,7 +589,10 @@ mod tests {
     }
 }
 
-#[cfg(test)]
+// The `fs` and `log` modules this exercises are gated behind `ssg`;
+// without the same gate these tests do not compile under a default
+// build, which is how `cargo miri test --lib` runs them.
+#[cfg(all(test, feature = "ssg"))]
 mod exhaustive_utils_tests {
     //! Every rejection rule in `validate_path_safety`, and the file
     //! helpers built on it.

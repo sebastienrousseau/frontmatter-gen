@@ -10,6 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The repository-standard release: the layout, gates and documents every
 crate in the family shares, plus three real defects the new tests found.
 
+### Changed (breaking: output)
+
+- **YAML serialisation changed shape**, following the `noyalib` bump.
+  Plain scalars are no longer quoted (`date: 2025-09-09`, not
+  `date: '2025-09-09'`) and block sequences are indented under their
+  key:
+
+  ```yaml
+  # before                # after
+  tags:                   tags:
+  - rust                    - rust
+  - example                 - example
+  ```
+
+  Both remain valid YAML and re-parse to the same values, so nothing
+  breaks at the data level. It is called out here because this crate
+  treats what it produces as part of its API: anything comparing
+  generated YAML byte for byte — a golden file, a checked-in site — will
+  see a diff on upgrade. JSON and TOML output are unchanged.
+
 ### Fixed
 
 - **`validate_path_safety` skipped its own last two rules for absolute
