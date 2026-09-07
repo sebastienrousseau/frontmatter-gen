@@ -5,6 +5,96 @@ All notable changes to `frontmatter-gen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.11] - 2026-09-07
+
+The repository-standard release: the layout, gates and documents every
+crate in the family shares, plus two real defects the new tests found.
+
+### Changed (breaking: output)
+
+- **YAML serialisation changed shape**, following the `noyalib` bump.
+  Plain scalars are no longer quoted (`date: 2025-09-09`, not
+  `date: '2025-09-09'`) and block sequences are indented under their
+  key:
+
+  ```yaml
+  # before                # after
+  tags:                   tags:
+  - rust                    - rust
+  - example                 - example
+  ```
+
+  Both remain valid YAML and re-parse to the same values, so nothing
+  breaks at the data level. It is called out here because this crate
+  treats what it produces as part of its API: anything comparing
+  generated YAML byte for byte — a golden file, a checked-in site — will
+  see a diff on upgrade. JSON and TOML output are unchanged.
+
+### Fixed
+
+- **`validate_path_safety` skipped its own last two rules for absolute
+  paths.** The function returned `Ok` as soon as it saw an absolute
+  path, so the symlink and Windows-reserved-name checks below never ran:
+  a symlink passed validation whenever it arrived as an absolute path.
+  The early return is gone and every rule now applies to every path.
+- **The engine's `SizeCache` evicted on replacement.** `insert` made
+  room whenever the map was at capacity, including when the key was
+  already present, so replacing a value dropped an unrelated entry. And
+  because the victim is whichever key the map iterates first, it
+  sometimes dropped the entry being replaced and returned `None` for a
+  key that existed a moment earlier. It now only evicts for a genuinely
+  new key.
+
+### Changed
+
+- **`noyalib` pinned at `=0.0.37`**, from a caret `0.0.28`. A caret is
+  wrong for a same-author 0.0.x line where any release may break
+  (ADR-0005).
+- **Dev-only dependencies moved into `[dev-dependencies]`.** `tempfile`
+  (used only inside `#[cfg(test)]` modules) and `env_logger` (examples
+  only) were declared as runtime dependencies, so every consumer built
+  them. `simple_logger` and `euxis-commons` are removed outright:
+  neither is referenced anywhere in the crate.
+- **`build.rs` removed.** `rust-version` is the MSRV gate and Cargo
+  enforces it without a build script.
+- **`Cargo.lock` is committed** and CI builds `--locked`.
+
+### Added
+
+- **Fuzz harness** (`fuzz/`): `fuzz_extract` (the returned body must be
+  a suffix of the input), `fuzz_parse` (all three parsers against every
+  input) and `fuzz_roundtrip` (parse, serialise, re-parse, same keys,
+  the only thing that catches a serialiser dropping a key). A committed
+  seed corpus and a `regressions/` directory replay on every push.
+- **`quality.yml`**, a second CI workflow holding the gates the shared
+  pipeline does not cover: the coverage threshold, Miri, the fuzz build
+  and corpus replay, the docs lint (markdownlint, codespell, REUSE),
+  cargo-vet with an exemption ratchet, and release hygiene. Nothing in
+  this release is enforced only by a local `make` target.
+- **Coverage gate at 98% lines**, excluding `src/main.rs`, the CLI
+  binary's entry point, reachable only by running the binary and with
+  every library function behind it covered directly. The argument is in
+  `DEVELOPMENT.md` rather than assumed. Coverage rose from 89.7% to
+  98.0% through exhaustive suites over every error variant, every
+  `Value` variant, every format-converter branch, every builder setter
+  and every path-safety rule.
+- Repository standard layout: `DEVELOPMENT.md`, `docs/ARCHITECTURE.md`,
+  `docs/adr/` with five decisions, `CODE_OF_CONDUCT.md`,
+  `GOVERNANCE.md`, `SECURITY.md`, `SUPPORT.md`, `AGENTS.md`,
+  `CITATION.cff`, `KEYS.asc`, `REUSE.toml` (REUSE 3.3 compliant),
+  `rust-toolchain.toml`, `.devcontainer/`, `.pre-commit-config.yaml`,
+  `.codespellrc`, `.markdownlint.yaml`, issue and PR templates.
+- `scripts/verify-release-versions.sh` and `supply-chain/` with
+  cargo-vet trust entries and an exemption baseline.
+- **README rewritten** to the family's structural template. The previous
+  one was 103 lines and claimed a Rust floor of 1.56.0 while the
+  manifest said 1.85.0.
+
+### Removed
+
+- `input.md` and `.deepsource.toml`: a stray fixture and configuration
+  for a service the family does not use. Nothing references either.
+
 ## [0.0.10] - 2026-09-05
 
 ### Changed

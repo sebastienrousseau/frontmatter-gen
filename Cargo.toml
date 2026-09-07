@@ -4,7 +4,7 @@
 
 [package]
 name = "frontmatter-gen"
-version = "0.0.10"
+version = "0.0.11"
 edition = "2021"
 rust-version = "1.85.0"
 license = "MIT OR Apache-2.0"
@@ -15,7 +15,6 @@ homepage = "https://frontmatter-gen.com/"
 documentation = "https://frontmatter-gen.com/documentation/index.html"
 repository = "https://github.com/sebastienrousseau/frontmatter-gen"
 readme = "README.md"
-build = "build.rs"
 
 # -----------------------------------------------------------------------------
 # Crate Configuration
@@ -91,7 +90,7 @@ ssg = [                                 # Full SSG functionality
 anyhow = "1.0.95"
 serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
-noyalib = { version = "0.0.28", default-features = false, features = ["std"] }
+noyalib = { version = "=0.0.37", default-features = false, features = ["std"] }
 time = { version = "0.3.36", features = ["formatting", "local-offset"] }
 tokio = { version = "1.44", features = ["full"] }
 
@@ -106,28 +105,18 @@ log = "0.4.22"
 clap = { version = "4.5.21", features = ["derive"], optional = true }
 dtt = { version = "0.0.11", optional = true }
 pulldown-cmark = { version = "0.13.4", optional = true }
-simple_logger = "5.0.0"
-tempfile = "3.14.0"
 tera = { version = "2", optional = true }
 url = { version = "2.5.4", optional = true }
 
-# Examples development dependencies
-env_logger = "0.11.5"
-commons = { package = "euxis-commons", version = "0.0.2", default-features = false, features = ["error", "time", "validation"] }
 # -----------------------------------------------------------------------------
 # Build Dependencies
 # -----------------------------------------------------------------------------
 
-[build-dependencies]
-version_check = "0.9.5"
-
-# -----------------------------------------------------------------------------
-# Development Dependencies
-# -----------------------------------------------------------------------------
-
 [dev-dependencies]
 criterion = "0.8.2"
+env_logger = "0.11.5"        # Examples that demonstrate logging
 pretty_assertions = "1.4.1"
+tempfile = "3.14.0"          # Temporary directories in tests
 
 
 # -----------------------------------------------------------------------------

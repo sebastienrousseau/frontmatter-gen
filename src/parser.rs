@@ -1041,3 +1041,257 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod exhaustive_parser_tests {
+    //! One case per branch of the three value converters and per
+    //! failure mode of the entry points.
+    //!
+    //! `yaml_to_value`, `toml_to_value` and `json_to_value` are three
+    //! parallel matches over three foreign enums. They are exactly the
+    //! shape where one arm drifts from the others and nothing notices:
+    //! the output is still a `Value`, just the wrong one.
+
+    use super::*;
+
+    fn get<'a>(fm: &'a Frontmatter, key: &str) -> &'a Value {
+        fm.get(key).unwrap_or_else(|| panic!("missing key {key}"))
+    }
+
+    #[test]
+    fn toml_converts_every_scalar_and_container_kind() {
+        let raw = "\
+s = \"text\"
+i = 7
+f = 2.5
+b = true
+when = 2024-01-02
+arr = [1, 2]
+nested = [[1], [2]]
+
+[table]
+inner = \"x\"
+";
+        let fm = parse_toml(raw).expect("valid TOML");
+        assert_eq!(get(&fm, "s"), &Value::String("text".into()));
+        assert_eq!(get(&fm, "i"), &Value::Number(7.0));
+        assert_eq!(get(&fm, "f"), &Value::Number(2.5));
+        assert_eq!(get(&fm, "b"), &Value::Boolean(true));
+        // Datetimes render as strings; TOML's type is not in `Value`.
+        assert!(
+            matches!(get(&fm, "when"), Value::String(s) if s.contains("2024"))
+        );
+        assert_eq!(get(&fm, "arr").array_len(), Some(2));
+        assert_eq!(get(&fm, "nested").array_len(), Some(2));
+        let Value::Object(table) = get(&fm, "table") else {
+            panic!("table should convert to an object");
+        };
+        assert_eq!(
+            table.get("inner"),
+            Some(&Value::String("x".into()))
+        );
+    }
+
+    #[test]
+    fn json_converts_every_scalar_and_container_kind() {
+        let raw = r#"{
+            "null": null,
+            "bool": false,
+            "int": 7,
+            "float": 2.5,
+            "big": 12345678901234567890,
+            "str": "text",
+            "arr": [1, "a", null],
+            "obj": {"inner": {"deep": 1}}
+        }"#;
+        let fm = parse_json(raw).expect("valid JSON");
+        assert_eq!(get(&fm, "null"), &Value::Null);
+        assert_eq!(get(&fm, "bool"), &Value::Boolean(false));
+        assert_eq!(get(&fm, "int"), &Value::Number(7.0));
+        assert_eq!(get(&fm, "float"), &Value::Number(2.5));
+        // Beyond i64: the f64 fallback, not the integer path.
+        assert!(
+            matches!(get(&fm, "big"), Value::Number(n) if *n > 1e19)
+        );
+        assert_eq!(get(&fm, "str"), &Value::String("text".into()));
+        assert_eq!(get(&fm, "arr").array_len(), Some(3));
+        let Value::Object(obj) = get(&fm, "obj") else {
+            panic!("nested object");
+        };
+        assert!(matches!(obj.get("inner"), Some(Value::Object(_))));
+    }
+
+    #[test]
+    fn yaml_converts_every_scalar_and_container_kind() {
+        let raw = "\
+s: text
+i: 7
+f: 2.5
+b: true
+n: null
+arr:
+  - 1
+  - a
+obj:
+  inner: x
+";
+        let fm = parse_yaml(raw).expect("valid YAML");
+        assert_eq!(get(&fm, "s"), &Value::String("text".into()));
+        assert_eq!(get(&fm, "i"), &Value::Number(7.0));
+        assert_eq!(get(&fm, "b"), &Value::Boolean(true));
+        assert_eq!(get(&fm, "n"), &Value::Null);
+        assert_eq!(get(&fm, "arr").array_len(), Some(2));
+        assert!(matches!(get(&fm, "obj"), Value::Object(_)));
+    }
+
+    #[test]
+    fn the_three_converters_agree_on_the_same_document() {
+        let yaml =
+            parse_yaml("a: 1\nb: text\nc: true\n").expect("yaml");
+        let toml = parse_toml("a = 1\nb = \"text\"\nc = true\n")
+            .expect("toml");
+        let json = parse_json(r#"{"a": 1, "b": "text", "c": true}"#)
+            .expect("json");
+        for key in ["a", "b", "c"] {
+            assert_eq!(
+                get(&yaml, key),
+                get(&toml, key),
+                "yaml vs toml on {key}"
+            );
+            assert_eq!(
+                get(&yaml, key),
+                get(&json, key),
+                "yaml vs json on {key}"
+            );
+        }
+    }
+
+    #[test]
+    fn format_mismatch_is_rejected_before_parsing() {
+        let err =
+            parse_with_options("no equals here", Format::Toml, None)
+                .expect_err("TOML without '=' is rejected");
+        assert!(
+            matches!(err, Error::ConversionError(ref m) if m.contains("TOML"))
+        );
+
+        let err =
+            parse_with_options("not an object", Format::Json, None)
+                .expect_err("JSON not starting with '{' is rejected");
+        assert!(
+            matches!(err, Error::ConversionError(ref m) if m.contains("JSON"))
+        );
+    }
+
+    #[test]
+    fn validation_limits_are_enforced_only_when_asked() {
+        let deep = r#"{"a": {"b": {"c": {"d": 1}}}}"#;
+
+        // Off by default for this entry point: the document parses.
+        let options = ParseOptions {
+            max_depth: 2,
+            max_keys: 100,
+            validate: false,
+        };
+        assert!(parse_with_options(deep, Format::Json, Some(options))
+            .is_ok());
+
+        let options = ParseOptions {
+            max_depth: 2,
+            max_keys: 100,
+            validate: true,
+        };
+        let err = parse_with_options(deep, Format::Json, Some(options))
+            .expect_err("nesting beyond max_depth is rejected");
+        assert!(matches!(err, Error::NestingTooDeep { .. }), "{err:?}");
+
+        let wide = r#"{"a": 1, "b": 2, "c": 3}"#;
+        let options = ParseOptions {
+            max_depth: 10,
+            max_keys: 2,
+            validate: true,
+        };
+        assert!(parse_with_options(wide, Format::Json, Some(options))
+            .is_err());
+    }
+
+    #[test]
+    fn round_trips_through_every_format() {
+        let fm = parse_json(r#"{"title": "T", "n": 2, "flag": true}"#)
+            .expect("json");
+        for format in [Format::Yaml, Format::Toml, Format::Json] {
+            let text = to_string(&fm, format)
+                .unwrap_or_else(|e| panic!("serialise {format}: {e}"));
+            let back = parse(&text, format)
+                .unwrap_or_else(|e| panic!("re-parse {format}: {e}"));
+            assert_eq!(
+                back.get("title"),
+                Some(&Value::String("T".into())),
+                "{format} lost the title"
+            );
+            assert_eq!(back.get("flag"), Some(&Value::Boolean(true)));
+        }
+    }
+
+    #[test]
+    fn unsupported_format_is_rejected_rather_than_reaching_unreachable()
+    {
+        // The `unreachable!()` arms downstream are guarded by this
+        // check; if it ever stops rejecting, they start panicking.
+        let err =
+            parse_with_options("anything", Format::Unsupported, None)
+                .expect_err("Unsupported must be refused up front");
+        assert!(!err.to_string().is_empty());
+    }
+
+    #[test]
+    fn size_estimates_grow_with_the_document() {
+        // The estimate feeds `to_json_optimised`'s buffer reservation.
+        // It does not have to be exact, but it must account for every
+        // variant: a variant returning 0 would make the reservation
+        // useless for documents made of it.
+        let empty = Frontmatter::new();
+        assert!(estimate_json_size(&empty) >= 2, "at least the braces");
+
+        let mut fm = Frontmatter::new();
+        let _ = fm.insert("k".into(), Value::String("value".into()));
+        let one = estimate_json_size(&fm);
+        let _ = fm.insert("k2".into(), Value::Number(1.0));
+        assert!(
+            estimate_json_size(&fm) > one,
+            "adding a key must grow the estimate"
+        );
+
+        for value in [
+            Value::Null,
+            Value::String("s".into()),
+            Value::Number(1.0),
+            Value::Boolean(true),
+            Value::Array(vec![Value::Null, Value::Number(1.0)]),
+            Value::Object(Box::new(Frontmatter::new())),
+            Value::Tagged("t".into(), Box::new(Value::Null)),
+        ] {
+            assert!(
+                estimate_value_size(&value) > 0,
+                "{value:?} estimated as zero bytes"
+            );
+        }
+
+        // Nesting is counted through, not truncated at the first level.
+        let nested =
+            Value::Array(vec![Value::Array(vec![Value::String(
+                "deep".into(),
+            )])]);
+        assert!(
+            estimate_value_size(&nested)
+                > estimate_value_size(&Value::Array(vec![]))
+        );
+    }
+
+    #[test]
+    fn malformed_input_reports_the_formats_own_error() {
+        assert!(parse_yaml("a: [").is_err());
+        assert!(parse_toml("a = ").is_err());
+        assert!(parse_json("{").is_err());
+    }
+}

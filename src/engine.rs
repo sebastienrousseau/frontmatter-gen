@@ -79,7 +79,15 @@ impl<K: Eq + std::hash::Hash + Clone, V> SizeCache<K, V> {
     }
 
     fn insert(&mut self, key: K, value: V) -> Option<V> {
-        if self.items.len() >= self.max_size {
+        // Only make room when the key is genuinely new. Evicting before
+        // checking meant that replacing an existing value at capacity
+        // dropped an unrelated entry — and, since the victim is
+        // whichever key the map iterates first, sometimes dropped the
+        // very entry being replaced, so `insert` returned `None` for a
+        // key that was present a moment earlier.
+        if !self.items.contains_key(&key)
+            && self.items.len() >= self.max_size
+        {
             if let Some(old_key) = self.items.keys().next().cloned() {
                 let _ = self.items.remove(&old_key);
             }
@@ -669,5 +677,163 @@ Test content"#;
 
         temp_dir.close()?;
         Ok(())
+    }
+}
+
+#[cfg(all(test, feature = "ssg"))]
+mod exhaustive_engine_tests {
+    //! The cache's eviction rule, template loading and rendering, and
+    //! asset copying — the parts of the engine the existing suite drives
+    //! only through a full `generate`.
+
+    use super::*;
+    use std::path::Path;
+
+    #[test]
+    fn size_cache_evicts_when_it_is_full_and_clears_on_request() {
+        let mut cache: SizeCache<String, u32> = SizeCache {
+            items: HashMap::new(),
+            max_size: 2,
+        };
+        assert!(cache.insert("a".into(), 1).is_none());
+        assert!(cache.insert("b".into(), 2).is_none());
+        assert_eq!(cache.items.len(), 2);
+
+        // At capacity: inserting a third evicts one rather than growing.
+        let _ = cache.insert("c".into(), 3);
+        assert_eq!(
+            cache.items.len(),
+            2,
+            "the cache grew past max_size"
+        );
+        assert!(cache.items.contains_key("c"), "the new entry is kept");
+
+        // Replacing an existing key returns the old value and evicts
+        // nothing: the entry is already there, so no room is needed.
+        assert_eq!(cache.insert("c".into(), 4), Some(3));
+        assert_eq!(
+            cache.items.len(),
+            2,
+            "a replacement evicted an entry"
+        );
+
+        cache.clear();
+        assert!(cache.items.is_empty());
+    }
+
+    #[test]
+    fn front_matter_is_split_from_the_body() {
+        let engine = Engine::new().expect("engine");
+
+        let (metadata, body) = engine
+            .extract_front_matter(
+                "---\ntitle: T\ncount: 2\n---\nBody text",
+            )
+            .expect("front matter splits");
+        assert_eq!(
+            metadata.get("title").and_then(|v| v.as_str()),
+            Some("T")
+        );
+        assert_eq!(body.trim(), "Body text");
+
+        // No fence: everything is body, and the metadata map is empty.
+        let (metadata, body) = engine
+            .extract_front_matter("Just content")
+            .expect("no front matter is not an error");
+        assert!(metadata.is_empty());
+        assert_eq!(body.trim(), "Just content");
+    }
+
+    #[test]
+    fn malformed_front_matter_is_reported() {
+        let engine = Engine::new().expect("engine");
+        assert!(engine
+            .extract_front_matter("---\ntitle: [\n---\nBody")
+            .is_err());
+    }
+
+    #[test]
+    fn templates_render_with_content_and_metadata_in_scope() {
+        let engine = Engine::new().expect("engine");
+        let mut metadata = HashMap::new();
+        let _ = metadata.insert(
+            "title".to_string(),
+            serde_json::Value::String("Hello".into()),
+        );
+        let content = ContentFile {
+            dest_path: PathBuf::from("out.html"),
+            metadata,
+            content: "<p>body</p>".to_string(),
+        };
+
+        let rendered = engine
+            .render_template(
+                "<h1>{{ title }}</h1>{{ content }}",
+                &content,
+            )
+            .expect("render");
+        assert!(rendered.contains("Hello"), "{rendered}");
+        assert!(rendered.contains("<p>body</p>"), "{rendered}");
+    }
+
+    #[test]
+    fn a_broken_template_is_an_error_not_a_panic() {
+        let engine = Engine::new().expect("engine");
+        let content = ContentFile {
+            dest_path: PathBuf::from("out.html"),
+            metadata: HashMap::new(),
+            content: String::new(),
+        };
+        assert!(engine.render_template("{% if %}", &content).is_err());
+    }
+
+    async fn config_in(dir: &Path) -> Config {
+        for sub in ["content", "templates", "public"] {
+            std::fs::create_dir_all(dir.join(sub)).expect("mkdir");
+        }
+        Config::builder()
+            .site_name("test")
+            .site_title("test")
+            .site_description("test")
+            .language("en-GB")
+            .base_url("https://example.com")
+            .content_dir(dir.join("content"))
+            .output_dir(dir.join("public"))
+            .template_dir(dir.join("templates"))
+            .build()
+            .expect("config")
+    }
+
+    #[tokio::test]
+    async fn load_templates_reads_every_file_in_the_template_dir() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let config = config_in(dir.path()).await;
+        std::fs::write(
+            config.template_dir.join("page.html"),
+            b"<p>{{ content }}</p>",
+        )
+        .expect("write template");
+
+        let engine = Engine::new().expect("engine");
+        engine.load_templates(&config).await.expect("load");
+    }
+
+    #[tokio::test]
+    async fn copy_assets_is_a_no_op_without_an_assets_directory() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let config = config_in(dir.path()).await;
+        let engine = Engine::new().expect("engine");
+        engine
+            .copy_assets(&config)
+            .await
+            .expect("no assets directory is not an error");
+    }
+
+    #[tokio::test]
+    async fn generate_pages_is_currently_a_no_op() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let config = config_in(dir.path()).await;
+        let engine = Engine::new().expect("engine");
+        engine.generate_pages(&config).await.expect("no-op");
     }
 }

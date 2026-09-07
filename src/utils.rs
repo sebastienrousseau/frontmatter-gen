@@ -76,6 +76,11 @@ pub enum UtilsError {
 /// File system utilities module
 pub mod fs {
     use super::*;
+    // Only the `ssg` surface below uses owned paths; without the gate
+    // this import is dead in a default build, which `[lints.rust]`
+    // makes an error. The fuzz and Miri jobs are the first to compile
+    // that configuration.
+    #[cfg(feature = "ssg")]
     use std::path::PathBuf;
 
     /// Tracks temporary files for cleanup
@@ -184,49 +189,17 @@ pub mod fs {
             .into());
         }
 
-        // 4. Handle absolute paths
-        if path.is_absolute() {
-            println!(
-                "Debug: Absolute path detected: {}",
-                path.display()
-            );
-
-            // In test mode, allow absolute paths in the temporary directory
-            if cfg!(test) {
-                let temp_dir = std::env::temp_dir();
-                let path_canonicalized = path
-                    .canonicalize()
-                    .or_else(|_| {
-                        Ok::<PathBuf, io::Error>(path.to_path_buf())
-                    }) // Specify the type explicitly
-                    .with_context(|| {
-                        format!(
-                            "Failed to canonicalize path: {}",
-                            path.display()
-                        )
-                    })?;
-                let temp_dir_canonicalized = temp_dir
-                    .canonicalize()
-                    .or_else(|_| {
-                        Ok::<PathBuf, io::Error>(temp_dir.clone())
-                    }) // Specify the type explicitly
-                    .with_context(|| {
-                        format!(
-                            "Failed to canonicalize temp_dir: {}",
-                            temp_dir.display()
-                        )
-                    })?;
-
-                if path_canonicalized
-                    .starts_with(&temp_dir_canonicalized)
-                {
-                    return Ok(());
-                }
-            }
-
-            // Allow all absolute paths in non-test mode
-            return Ok(());
-        }
+        // 4. Absolute paths are accepted.
+        //
+        // This function checks the *shape* of a path, not where it
+        // points: deciding which directory a caller may write to is the
+        // caller's job, and it has the root to compare against.
+        //
+        // It used to `return Ok(())` here, which silently skipped rules
+        // 5 and 6 below — so a symlink or a reserved name passed
+        // validation whenever it arrived as an absolute path, and only
+        // relative paths were fully checked. The early return is gone;
+        // every rule now applies to every path.
 
         // 5. Check for symlinks
         if path.exists() {
@@ -618,5 +591,289 @@ mod tests {
         let content = read_to_string(&temp_log_path).unwrap();
         assert!(content.contains("Write test message"));
         remove_file(temp_log_path).unwrap();
+    }
+}
+
+// The `fs` and `log` modules this exercises are gated behind `ssg`;
+// without the same gate these tests do not compile under a default
+// build, which is how `cargo miri test --lib` runs them.
+#[cfg(all(test, feature = "ssg"))]
+mod exhaustive_utils_tests {
+    //! Every rejection rule in `validate_path_safety`, and the file
+    //! helpers built on it.
+    //!
+    //! Path validation is a security boundary: each rule below exists
+    //! because the path shape it rejects would otherwise escape the
+    //! directory the caller intended. A rule with no test is a rule
+    //! that can be deleted by accident.
+
+    use super::fs::*;
+    use super::log::*;
+    use super::UtilsError;
+    use std::path::{Path, PathBuf};
+
+    #[test]
+    fn rejects_backslashes() {
+        let err = validate_path_safety(Path::new("dir\\file.md"))
+            .expect_err(
+                "backslashes are rejected for POSIX compatibility",
+            );
+        assert!(err.to_string().contains("Backslash"), "{err}");
+    }
+
+    #[test]
+    fn rejects_null_bytes_and_control_characters() {
+        assert!(validate_path_safety(Path::new("a\0b")).is_err());
+        assert!(validate_path_safety(Path::new("a\u{7}b")).is_err());
+    }
+
+    #[test]
+    fn rejects_parent_directory_traversal() {
+        for candidate in ["../secret", "a/../../b", "..", "a/.."] {
+            assert!(
+                validate_path_safety(Path::new(candidate)).is_err(),
+                "{candidate} should be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn accepts_ordinary_relative_paths() {
+        for candidate in ["file.md", "dir/file.md", "a/b/c.txt", "."] {
+            assert!(
+                validate_path_safety(Path::new(candidate)).is_ok(),
+                "{candidate} should be accepted"
+            );
+        }
+    }
+
+    #[test]
+    fn absolute_paths_are_accepted_but_still_checked() {
+        // Absolute is not by itself unsafe: which directory a caller
+        // may write to is the caller's decision, and it has the root to
+        // compare against. What matters is that being absolute no
+        // longer skips the remaining rules — see `rejects_symlinks`,
+        // which passes an absolute path.
+        let inside =
+            std::env::temp_dir().join("frontmatter-gen-safe.md");
+        assert!(validate_path_safety(&inside).is_ok());
+        assert!(validate_path_safety(Path::new("/etc/passwd")).is_ok());
+        assert!(
+            validate_path_safety(Path::new("/tmp/con")).is_err(),
+            "an absolute path with a reserved name is still rejected"
+        );
+    }
+
+    #[test]
+    fn rejects_symlinks() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let target = dir.path().join("target.md");
+        std::fs::write(&target, b"x").expect("write");
+        let link = dir.path().join("link.md");
+
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&target, &link).expect("symlink");
+        #[cfg(not(unix))]
+        return;
+
+        let err = validate_path_safety(&link)
+            .expect_err("symlinks are rejected");
+        assert!(err.to_string().contains("Symlink"), "{err}");
+    }
+
+    #[test]
+    fn rejects_windows_reserved_names() {
+        for name in ["con", "PRN", "Aux", "nul", "com1", "LPT1"] {
+            assert!(
+                validate_path_safety(Path::new(name)).is_err(),
+                "{name} is reserved on Windows and must be rejected"
+            );
+        }
+        // A reserved stem with an extension is a different file name.
+        assert!(validate_path_safety(Path::new("console.md")).is_ok());
+    }
+
+    #[tokio::test]
+    async fn temp_file_tracker_registers_and_cleans_up() {
+        let tracker = TempFileTracker::new();
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("tracked.txt");
+        std::fs::write(&path, b"data").expect("write");
+
+        tracker.register(path.clone()).await.expect("register");
+        assert!(path.exists());
+
+        tracker.cleanup().await.expect("cleanup");
+        assert!(!path.exists(), "cleanup removes registered files");
+
+        // Cleaning up twice is not an error: the file is already gone.
+        tracker.cleanup().await.expect("second cleanup");
+    }
+
+    #[tokio::test]
+    async fn copy_file_creates_the_destination_parent() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let src = dir.path().join("src.md");
+        std::fs::write(&src, b"content").expect("write");
+        let dst = dir.path().join("nested/deeper/dst.md");
+
+        copy_file(&src, &dst).await.expect("copy");
+        assert_eq!(
+            std::fs::read_to_string(&dst).expect("read"),
+            "content"
+        );
+    }
+
+    #[tokio::test]
+    async fn copy_file_rejects_an_unsafe_path_before_touching_the_disk()
+    {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let src = dir.path().join("src.md");
+        std::fs::write(&src, b"content").expect("write");
+
+        let err = copy_file(&src, Path::new("../escape.md"))
+            .await
+            .expect_err("traversal in the destination is rejected");
+        assert!(!err.to_string().is_empty());
+        assert!(!PathBuf::from("../escape.md").exists());
+    }
+
+    fn entry(
+        level: log::Level,
+        message: &str,
+        error: Option<&str>,
+    ) -> LogEntry {
+        LogEntry {
+            timestamp: dtt::datetime::DateTime::new(),
+            level,
+            message: message.to_string(),
+            error: error.map(str::to_string),
+        }
+    }
+
+    #[tokio::test]
+    async fn create_directory_makes_nested_paths_and_refuses_unsafe_ones(
+    ) {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let nested = dir.path().join("a/b/c");
+        create_directory(&nested).await.expect("create nested");
+        assert!(nested.is_dir());
+
+        // Already there: creating again is not an error.
+        create_directory(&nested).await.expect("idempotent");
+
+        assert!(create_directory(Path::new("../escape"))
+            .await
+            .is_err());
+    }
+
+    #[tokio::test]
+    async fn create_temp_file_returns_a_writable_handle_under_the_temp_dir(
+    ) {
+        use std::io::Write as _;
+
+        let (path, mut file) = create_temp_file("frontmatter-gen-test")
+            .await
+            .expect("create temp file");
+        assert!(path.starts_with(std::env::temp_dir()));
+        assert!(
+            path.file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| n.starts_with("frontmatter-gen-test-")),
+            "the prefix names the file: {path:?}"
+        );
+
+        file.write_all(b"payload").expect("write");
+        drop(file);
+        assert_eq!(
+            std::fs::read(&path).expect("read back"),
+            b"payload"
+        );
+
+        // Handing it to the tracker is what makes it disposable.
+        let tracker = TempFileTracker::new();
+        tracker.register(path.clone()).await.expect("register");
+        tracker.cleanup().await.expect("cleanup");
+        assert!(!path.exists());
+    }
+
+    #[tokio::test]
+    async fn copy_file_reports_a_missing_source() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let missing = dir.path().join("absent.md");
+        let dst = dir.path().join("dst.md");
+        assert!(copy_file(&missing, &dst).await.is_err());
+    }
+
+    #[test]
+    fn log_entries_format_with_their_level_and_message() {
+        let formatted = entry(log::Level::Info, "hello", None).format();
+        assert!(formatted.contains("INFO"), "{formatted}");
+        assert!(formatted.contains("hello"), "{formatted}");
+        assert!(!formatted.contains("Error:"), "{formatted}");
+
+        // The optional error detail is appended when present.
+        let with_error =
+            entry(log::Level::Error, "failed", Some("disk full"))
+                .format();
+        assert!(with_error.contains("disk full"), "{with_error}");
+    }
+
+    #[test]
+    fn utils_error_converts_from_anyhow_and_join_errors() {
+        let err: UtilsError = anyhow::anyhow!("boom").into();
+        assert!(err.to_string().contains("boom"), "{err}");
+        assert!(matches!(err, UtilsError::InvalidOperation(_)));
+    }
+
+    #[tokio::test]
+    async fn utils_error_converts_from_a_join_error() {
+        let handle = tokio::spawn(async { panic!("task failed") });
+        let join_err = handle.await.expect_err("the task panicked");
+        let err: UtilsError = join_err.into();
+        assert!(matches!(err, UtilsError::InvalidOperation(_)));
+        assert!(!err.to_string().is_empty());
+    }
+
+    #[test]
+    fn log_writer_reports_a_path_it_cannot_open() {
+        // A directory is not a file: opening it for append fails.
+        let dir = tempfile::tempdir().expect("tempdir");
+        assert!(LogWriter::new(dir.path()).is_err());
+    }
+
+    #[tokio::test]
+    async fn cleanup_skips_files_that_are_already_gone() {
+        let tracker = TempFileTracker::new();
+        let dir = tempfile::tempdir().expect("tempdir");
+        let present = dir.path().join("present.txt");
+        let absent = dir.path().join("absent.txt");
+        std::fs::write(&present, b"x").expect("write");
+
+        tracker.register(present.clone()).await.expect("register");
+        tracker.register(absent.clone()).await.expect("register");
+
+        // The absent path is skipped rather than reported as an error.
+        tracker.cleanup().await.expect("cleanup");
+        assert!(!present.exists());
+    }
+
+    #[test]
+    fn log_writer_appends_entries_to_its_file() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("log.txt");
+        let mut writer = LogWriter::new(&path).expect("open log");
+        writer
+            .write(&entry(log::Level::Warn, "careful", None))
+            .expect("write entry");
+        writer
+            .write(&entry(log::Level::Info, "second", None))
+            .expect("write another");
+        drop(writer);
+
+        let contents =
+            std::fs::read_to_string(&path).expect("read log");
+        assert!(contents.contains("careful"), "{contents}");
+        assert!(contents.contains("second"), "{contents}");
     }
 }

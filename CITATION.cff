@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use frontmatter-gen in your work, please cite it as below."
+title: frontmatter-gen
+type: software
+authors:
+  - family-names: Rousseau
+    given-names: Sebastien
+    email: sebastian.rousseau@gmail.com
+repository-code: "https://github.com/sebastienrousseau/frontmatter-gen"
+url: "https://github.com/sebastienrousseau/frontmatter-gen"
+license: "Apache-2.0 OR MIT"
+version: 0.0.11
+date-released: "2026-09-07"
+abstract: >-
+  A Rust library and CLI for extracting and parsing front matter in YAML, TOML and JSON, with a static-site generation surface behind an optional feature.

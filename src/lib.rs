@@ -793,3 +793,45 @@ mod parse_options_tests {
         std::env::remove_var("VALIDATE_STRUCTURE");
     }
 }
+
+#[cfg(test)]
+mod size_limit_tests {
+    //! The size guard on `extract_with_options`.
+    //!
+    //! `max_size` is the one limit that applies before any parsing, so
+    //! it is the only thing standing between a caller and an unbounded
+    //! allocation. A guard nothing tests is a guard that can be removed
+    //! by accident.
+
+    use super::*;
+    use std::num::NonZeroUsize;
+
+    #[test]
+    fn content_larger_than_max_size_is_rejected() {
+        let options = ParseOptions {
+            max_size: NonZeroUsize::new(16).expect("non-zero"),
+            ..ParseOptions::default()
+        };
+        let content = "---\ntitle: a very long title indeed\n---\nbody";
+        assert!(content.len() > 16);
+
+        let err = validate_input(content, &options)
+            .expect_err("oversized content is rejected");
+        assert!(
+            matches!(err, Error::ContentTooLarge { size, max } if size == content.len() && max == 16),
+            "the error names both the size and the limit: {err:?}"
+        );
+    }
+
+    #[test]
+    fn content_exactly_at_max_size_is_accepted() {
+        let content = "---\ntitle: T\n---\nbody";
+        let options = ParseOptions {
+            max_size: NonZeroUsize::new(content.len())
+                .expect("non-zero"),
+            ..ParseOptions::default()
+        };
+        validate_input(content, &options)
+            .expect("content exactly at the limit is accepted");
+    }
+}

@@ -832,3 +832,259 @@ mod tests {
         assert!(error.to_string().contains("content failed"));
     }
 }
+
+#[cfg(test)]
+mod exhaustive_error_tests {
+    //! Every `Error` and `EngineError` variant through `Clone`,
+    //! `Display`, `category()` and the `EngineError -> Error`
+    //! conversion.
+    //!
+    //! `Clone` is hand-written here because several variants hold
+    //! `Arc`-wrapped or non-`Clone` sources, and a hand-written `Clone`
+    //! with twenty arms is exactly the code where one arm silently
+    //! returns the wrong variant. Each arm is checked to round-trip to
+    //! its own variant with its own payload.
+
+    use super::*;
+    use std::sync::Arc;
+
+    fn one_of_every_error() -> Vec<Error> {
+        let json_err = serde_json::from_str::<serde_json::Value>("{")
+            .expect_err("invalid JSON");
+        let toml_err = toml::from_str::<toml::Value>("a = ")
+            .expect_err("invalid TOML");
+        let yaml_err = noyalib::from_str::<noyalib::Value>("a: [")
+            .expect_err("invalid YAML");
+        let serde_err = serde_json::from_str::<serde_json::Value>("]")
+            .expect_err("invalid JSON");
+
+        vec![
+            Error::ContentTooLarge { size: 10, max: 5 },
+            Error::NestingTooDeep { depth: 9, max: 3 },
+            Error::YamlParseError {
+                source: Arc::new(yaml_err),
+            },
+            Error::TomlParseError(toml_err),
+            Error::JsonParseError(Arc::new(json_err)),
+            Error::SerdeError {
+                source: Arc::new(serde_err),
+            },
+            Error::InvalidFormat,
+            Error::ConversionError("conversion".into()),
+            Error::ParseError("parse".into()),
+            Error::UnsupportedFormat { line: 42 },
+            Error::NoFrontmatterFound,
+            Error::InvalidJson,
+            Error::InvalidToml,
+            Error::InvalidYaml,
+            Error::InvalidUrl("url".into()),
+            Error::InvalidLanguage("lang".into()),
+            Error::JsonDepthLimitExceeded,
+            Error::ExtractionError("extract".into()),
+            Error::ValidationError("validate".into()),
+            Error::Other("other".into()),
+        ]
+    }
+
+    /// A discriminant name for a variant, so a clone that lands on the
+    /// wrong arm is caught even when both arms carry the same payload.
+    fn variant_of(e: &Error) -> &'static str {
+        match e {
+            Error::ContentTooLarge { .. } => "ContentTooLarge",
+            Error::NestingTooDeep { .. } => "NestingTooDeep",
+            Error::YamlParseError { .. } => "YamlParseError",
+            Error::TomlParseError(_) => "TomlParseError",
+            Error::JsonParseError(_) => "JsonParseError",
+            Error::SerdeError { .. } => "SerdeError",
+            Error::InvalidFormat => "InvalidFormat",
+            Error::ConversionError(_) => "ConversionError",
+            Error::ParseError(_) => "ParseError",
+            Error::UnsupportedFormat { .. } => "UnsupportedFormat",
+            Error::NoFrontmatterFound => "NoFrontmatterFound",
+            Error::InvalidJson => "InvalidJson",
+            Error::InvalidToml => "InvalidToml",
+            Error::InvalidYaml => "InvalidYaml",
+            Error::InvalidUrl(_) => "InvalidUrl",
+            Error::InvalidLanguage(_) => "InvalidLanguage",
+            Error::JsonDepthLimitExceeded => "JsonDepthLimitExceeded",
+            Error::ExtractionError(_) => "ExtractionError",
+            Error::ValidationError(_) => "ValidationError",
+            Error::Other(_) => "Other",
+        }
+    }
+
+    #[test]
+    fn clone_round_trips_every_variant() {
+        for error in one_of_every_error() {
+            let cloned = error.clone();
+            assert_eq!(
+                variant_of(&error),
+                variant_of(&cloned),
+                "clone changed the variant of {error:?}"
+            );
+            assert_eq!(
+                error.to_string(),
+                cloned.to_string(),
+                "clone changed the message of {error:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn display_is_non_empty_and_names_its_payload() {
+        for error in one_of_every_error() {
+            let text = error.to_string();
+            assert!(
+                !text.is_empty(),
+                "{} has no message",
+                variant_of(&error)
+            );
+        }
+        assert!(Error::ContentTooLarge { size: 10, max: 5 }
+            .to_string()
+            .contains("10"));
+        assert!(Error::NestingTooDeep { depth: 9, max: 3 }
+            .to_string()
+            .contains('9'));
+        assert!(Error::UnsupportedFormat { line: 42 }
+            .to_string()
+            .contains("42"));
+    }
+
+    #[test]
+    fn every_variant_has_a_category() {
+        for error in one_of_every_error() {
+            // The point is that `category()` is total: a new variant
+            // added without a category arm fails to compile, and one
+            // mapped to the wrong group is visible here.
+            let _ = error.category();
+        }
+        assert_eq!(
+            Error::ValidationError("x".into()).category(),
+            Category::Validation
+        );
+        assert_eq!(
+            Error::ConversionError("x".into()).category(),
+            Category::Conversion
+        );
+        assert_eq!(
+            Error::NoFrontmatterFound.category(),
+            Category::Parsing
+        );
+        assert_eq!(
+            Error::ContentTooLarge { size: 1, max: 0 }.category(),
+            Category::Configuration
+        );
+    }
+
+    #[test]
+    fn context_is_added_to_parse_errors_and_ignored_elsewhere() {
+        let context = Context {
+            line: Some(7),
+            column: Some(3),
+            snippet: Some("bad: [".into()),
+        };
+
+        let with =
+            Error::ParseError("broken".into()).with_context(&context);
+        let text = with.to_string();
+        assert!(text.contains("line: 7"), "{text}");
+        assert!(text.contains("column: 3"), "{text}");
+        assert!(text.contains("near 'bad: ['"), "{text}");
+
+        // A context with no snippet still carries the position.
+        let bare = Context {
+            line: None,
+            column: None,
+            snippet: None,
+        };
+        let text = Error::ParseError("broken".into())
+            .with_context(&bare)
+            .to_string();
+        assert!(text.contains("line: 0"), "{text}");
+        assert!(!text.contains("near"), "{text}");
+
+        // Variants the function does not rewrite come back unchanged.
+        let untouched = Error::NoFrontmatterFound
+            .with_context(&context)
+            .to_string();
+        assert_eq!(untouched, Error::NoFrontmatterFound.to_string());
+    }
+
+    #[test]
+    fn helper_constructors_build_the_variant_they_name() {
+        assert!(matches!(
+            Error::generic_parse_error("x"),
+            Error::ParseError(_)
+        ));
+        assert!(matches!(
+            Error::validation_error("x"),
+            Error::ValidationError(_)
+        ));
+    }
+
+    #[test]
+    fn context_displays_all_three_fields() {
+        let full = Context {
+            line: Some(1),
+            column: Some(2),
+            snippet: Some("s".into()),
+        };
+        assert!(!full.to_string().is_empty());
+        let empty = Context {
+            line: None,
+            column: None,
+            snippet: None,
+        };
+        assert!(!empty.to_string().is_empty());
+    }
+
+    fn one_of_every_engine_error() -> Vec<EngineError> {
+        vec![
+            EngineError::ContentError("content".into()),
+            EngineError::TemplateError("template".into()),
+            EngineError::AssetError("asset".into()),
+            EngineError::FileSystemError {
+                source: std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    "gone",
+                ),
+                context: "reading a template".into(),
+            },
+            EngineError::MetadataError("metadata".into()),
+        ]
+    }
+
+    #[test]
+    fn engine_error_clones_and_converts_every_variant() {
+        for error in one_of_every_engine_error() {
+            let cloned = error.clone();
+            assert_eq!(error.to_string(), cloned.to_string());
+
+            let converted: Error = error.into();
+            assert!(
+                matches!(converted, Error::ParseError(_)),
+                "every EngineError converts to a ParseError: {converted:?}"
+            );
+            assert!(!converted.to_string().is_empty());
+        }
+    }
+
+    #[test]
+    fn filesystem_engine_error_keeps_its_kind_and_context() {
+        let error = EngineError::FileSystemError {
+            source: std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "nope",
+            ),
+            context: "writing output".into(),
+        };
+        let cloned = error.clone();
+        let EngineError::FileSystemError { source, context } = &cloned
+        else {
+            panic!("clone changed the variant");
+        };
+        assert_eq!(source.kind(), std::io::ErrorKind::PermissionDenied);
+        assert_eq!(context, "writing output");
+    }
+}
