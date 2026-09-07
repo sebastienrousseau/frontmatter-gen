@@ -76,11 +76,16 @@ fuzz:
 	  cargo +nightly fuzz run "$$t" -- -runs=0 "corpus/$$t" "regressions/$$t" || exit 1; \
 	done
 
+# Every declared [[example]] target. The names in Cargo.toml differ from
+# the file stems (`error` vs `error_examples.rs`), so the list comes
+# from cargo metadata rather than from the directory listing.
 examples:
-	@for f in examples/*.rs; do \
-	  name=$$(basename "$$f" .rs); \
-	  echo "== $$name"; cargo run --quiet --all-features --example "$$name" || exit 1; \
-	done
+	@cargo metadata --no-deps --format-version 1 \
+	  | python3 -c 'import json,sys; print("\n".join(t["name"] for p in json.load(sys.stdin)["packages"] for t in p["targets"] if "example" in t["kind"]))' \
+	  | while read -r name; do \
+	      echo "== $$name"; \
+	      cargo run --quiet --all-features --example "$$name" >/dev/null || exit 1; \
+	    done
 
 bench-smoke:
 	cargo bench --all-features -- --test

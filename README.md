@@ -295,13 +295,16 @@ Run any of these with `cargo run --example <name>`:
 
 | Example | Shows |
 |---|---|
-| `lib_examples` | the high-level `extract` flow |
-| `extractor_examples` | format detection and raw extraction |
-| `parser_examples` | parsing and serialising each format |
-| `types_examples` | `Value` and `Frontmatter` in use |
-| `fenced_examples` | the three delimiter styles |
-| `frontmatter_examples` | building front matter programmatically |
-| `error_examples` | every error variant and how to recover |
+| `lib` | the high-level `extract` flow |
+| `extractor` | format detection and raw extraction |
+| `parser` | parsing and serialising each format |
+| `types` | `Value` and `Frontmatter` in use |
+| `fenced` | the three delimiter styles |
+| `frontmatter` | building front matter programmatically |
+| `error` | every error variant and how to recover |
+
+The target names come from `Cargo.toml`, which drops the `_examples`
+suffix the files carry.
 
 `make examples` runs all of them; CI does the same on every push, so an
 example that stops working fails the build.
