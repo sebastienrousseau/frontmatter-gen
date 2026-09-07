@@ -1,9 +1,0 @@
-tiflag: true
-dist:
-  - a
-  - b
-: 2
-flag: true
-dist:
-  - a
-  - b

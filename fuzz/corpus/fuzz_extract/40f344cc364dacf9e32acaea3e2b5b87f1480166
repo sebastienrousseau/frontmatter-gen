@@ -1,7 +1,0 @@
----
-title: Seed
-tags: [ab ,a]
-nested:
- *key> value
----
-Body text
