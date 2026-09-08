@@ -1,58 +1,154 @@
-# Contributing to `FrontMatter Gen`
+# Contributing to frontmatter-gen
 
-Welcome! We're thrilled that you're interested in contributing to the `FrontMatter Gen` library. Whether you're looking to evangelize, submit feedback, or contribute code, we appreciate your involvement in making `FrontMatter Gen` a better tool for everyone. Here's how you can get started.
+Contributions are welcome. This guide covers the essentials.
 
-## Evangelize
+## Prerequisites
 
-One of the simplest ways to help us out is by spreading the word about `FrontMatter Gen`. We believe that a bigger, more involved community makes for a better framework, and that better frameworks make the world a better place. If you know people who might benefit from using `FrontMatter Gen`, please let them know!
+- **Rust 1.85.0+** (the `rust-version` in `Cargo.toml`; Cargo refuses
+  older toolchains).
+- Git with [commit signing](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits)
+  configured.
+- For the full local gate: a nightly toolchain (Miri, cargo-fuzz,
+  cargo-llvm-cov), `cargo-deny`, `cargo-vet`, `cargo-audit`, `uv` and
+  `npx`. [`DEVELOPMENT.md`](DEVELOPMENT.md) lists what each is for.
 
-## How to Contribute
+## Getting Started
 
-If you're interested in making a more direct contribution, there are several ways you can help us improve `FrontMatter Gen`. Here are some guidelines for submitting feedback, bug reports, and code contributions.
+```sh
+git clone https://github.com/sebastienrousseau/frontmatter-gen.git
+cd frontmatter-gen
+make
+```
 
-### Feedback
+`make` runs `cargo check`, `cargo clippy`, and `cargo test` in sequence.
 
-Your feedback is incredibly valuable to us, and we're always looking for ways to make `FrontMatter Gen` better. If you have ideas, suggestions, or questions about `FrontMatter Gen`, we'd love to hear them. Here's how you can provide feedback:
+## Branch naming
 
-- Click [the documentation][02] to submit a new feedback.
-- Use a descriptive title that clearly summarizes your feedback.
-- Provide a detailed description of the issue or suggestion.
-- Be patient while we review and respond to your feedback.
+Use Conventional Commits-flavoured prefixes. The branch prefix tells
+reviewers what kind of change to expect before they open the diff:
 
-### Bug Reports
+| Prefix | Use when… | Example |
+|---|---|---|
+| `feat/` | adding user-visible behaviour or public API | `feat/typed-extraction` |
+| `fix/` | fixing a bug whose behaviour change is observable | `fix/unescape-double-decode` |
+| `perf/` | speeding up code without changing behaviour | `perf/single-pass-escape` |
+| `refactor/` | restructuring code without behaviour change | `refactor/split-flatteners` |
+| `docs/` | docs-only changes | `docs/adr-exact-pins` |
+| `test/` | tests-only changes | `test/cover-context-arms` |
+| `ci/` | CI / build / packaging changes | `ci/coverage-gate` |
+| `chore/` | dependency bumps and similar housekeeping | `chore/bump-quick-xml-0.42` |
 
-If you encounter a bug while using `FrontMatter Gen`, please let us know so we can fix it. Here's how you can submit a bug report:
+Release work lands on the branch named for the release it targets
+(`feat/vX.Y.Z`); open PRs against `main`.
 
-- Click [the documentation][02] to submit a new issue.
-- Use a descriptive title that clearly summarizes the bug.
-- Provide a detailed description of the issue, including steps to reproduce it.
-- Be patient while we review and respond to your bug report.
+## Making changes
 
-### Code Contributions
+1. Fork the repository and create a branch using the prefixes above.
+2. Write code. Match the local style of the file you're touching —
+   read 2–3 neighbours before introducing a new pattern.
+3. **Add or update tests in the same commit / PR** as the
+   behaviour change. Never as a follow-up. A regression fix lands with
+   the input that found it (`fuzz/regressions/` for fuzzer findings).
+4. Run the full check suite:
 
-If you're interested in contributing code to `FrontMatter Gen`, we're excited to have your help! Here's what you need to know:
+```sh
+make           # check + clippy + test
+make fmt       # rustfmt --check
+make lint      # markdownlint + codespell + REUSE
+make deny      # cargo-deny supply-chain audit
+make vet       # cargo-vet provenance (regenerate exemptions after a
+dep change)
+```
 
-#### Feature Requests
+5. Commit with `git commit -S` (signed).
 
-If you have an idea for a new feature or improvement, we'd love to hear it. Here's how you can contribute code for a new feature to `FrontMatter Gen`:
+## Commit messages
 
-- Fork the repo.
-- Clone the [FrontMatter Gen][01] repo by running:
-  `git clone https://github.com/sebastienrousseau/frontmatter-gen.git`
-- Edit files in the `src/` folder. The `src/` folder contains the source code for `FrontMatter Gen`.
-- Submit a pull request, and we'll review and merge your changes if they fit with our vision for `FrontMatter Gen`.
+[Conventional Commits](https://www.conventionalcommits.org/) format.
+The scope is the module or subsystem touched:
 
-#### Submitting Code
+```text
+<type>(<scope>): <imperative summary>
 
-If you've identified a bug or have a specific code improvement in mind, we welcome your pull requests. Here's how to submit your code changes:
+<optional body explaining the why>
 
-- Fork the repo.
-- Clone the `FrontMatter Gen` repo by running:
-  `git clone https://github.com/sebastienrousseau/frontmatter-gen.git`
-- Edit files in the `src/` folder. The `src/` folder contains the source code for `FrontMatter Gen`.
-- Submit a pull request, and we'll review and merge your changes if they fit with our vision for `FrontMatter Gen`.
+<optional footer with breaking-change notes, issue refs>
+```
 
-We hope that this guide has been helpful in explaining how you can contribute to `FrontMatter Gen`. Thank you for your interest and involvement in our project!
+Types: `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `ci`,
+`chore`, `build`, `revert`.
 
-[01]: https://github.com/sebastienrousseau/frontmatter-gen
-[02]: https://github.com/sebastienrousseau/frontmatter-gen/issues/new
+Scopes: `parser`, `extractor`, `engine`, `types`, `config`, `error`,
+`utils`, `cli`, `ssg`, `deps`, `repo`, `fuzz`, `bench`.
+
+Examples:
+
+```text
+fix(utils): apply the symlink rule to absolute paths too
+build(deps): noyalib =0.0.37
+test(engine): cover replacement without eviction in SizeCache
+docs(adr): add 0004 opt-in validation limits
+```
+
+Sign every commit (`git commit -S`). Unsigned commits won't be
+merged. Set up GPG or SSH signing per the
+[GitHub guide](https://docs.github.com/en/authentication/managing-commit-signature-verification).
+
+## Pull requests
+
+- Open against `main`.
+- Title follows the same Conventional Commits format as commits.
+- Body includes:
+  - **What changed** in 1–3 bullets
+  - **Why** in plain English
+  - **Test plan** — what the reviewer should expect green
+- Keep PRs focused. One logical change per PR; mechanical
+  refactors and behaviour changes get separate PRs for blame
+  hygiene. Structure cleanups never couple to code changes.
+- CI must be green: clippy `-D warnings`, all tests, formatter,
+  REUSE compliance, supply-chain audit and vet, coverage gate
+  (98 % lines), Miri, fuzz corpus replay, docs lint.
+
+## Code standards
+
+- `#![forbid(unsafe_code)]`. **No `unsafe` blocks, ever.** See
+  [ADR 0001](./docs/adr/0001-zero-unsafe-policy.md).
+- All public items require documentation (`#![warn(missing_docs)]`,
+  and `cargo doc` runs with warnings denied in CI).
+- Public docstring rule: lead with one-line summary; include
+  `# Examples` with working code; include `# Errors` for fallible
+  functions; include `# Panics` if any path can panic.
+- `cargo clippy --all-targets --all-features -- -D warnings` must pass.
+- `cargo fmt --check` must pass.
+- New behaviour ships with new tests *in the same commit*.
+- New deps must come with a one-line rationale in the commit
+  message body. A new lockfile entry is a code change.
+
+## Architectural decisions
+
+For changes that touch the parsed value model, the public API surface,
+the dependency floor, or core invariants like the unsafe policy: write
+an [ADR](./docs/adr/) before opening the PR. The
+template lives at [`docs/adr/TEMPLATE.md`](./docs/adr/TEMPLATE.md).
+
+The bar is "would I want a future contributor to read this before
+proposing the opposite?" — if yes, ADR. If no, commit message
+suffices.
+
+## Reporting issues
+
+Open an issue on GitHub. Include:
+
+- A minimal front-matter block that reproduces the problem.
+- Expected behaviour vs. actual behaviour.
+- Rust version (`rustc --version`).
+- frontmatter-gen version (`grep '^version' Cargo.toml`).
+
+For security issues, **do not file a public issue.** See
+[SECURITY.md](./SECURITY.md) for the disclosure process.
+
+## License
+
+By contributing, you agree that contributions are licensed under
+the same dual license as the project: [MIT](LICENSE-MIT) or
+[Apache 2.0](LICENSE-APACHE).
