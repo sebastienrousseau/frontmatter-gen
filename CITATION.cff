@@ -9,7 +9,7 @@ authors:
 repository-code: "https://github.com/sebastienrousseau/frontmatter-gen"
 url: "https://github.com/sebastienrousseau/frontmatter-gen"
 license: "Apache-2.0 OR MIT"
-version: 0.0.11
-date-released: "2026-09-07"
+version: 0.0.12
+date-released: "2026-10-09"
 abstract: >-
   A Rust library and CLI for extracting and parsing front matter in YAML, TOML and JSON, with a static-site generation surface behind an optional feature.

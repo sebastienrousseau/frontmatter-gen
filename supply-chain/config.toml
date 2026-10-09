@@ -69,15 +69,15 @@ version = "1.0.4"
 criteria = "safe-to-deploy"
 
 [[exemptions.clap]]
-version = "4.6.6"
+version = "4.6.7"
 criteria = "safe-to-deploy"
 
 [[exemptions.clap_builder]]
-version = "4.6.6"
+version = "4.6.7"
 criteria = "safe-to-deploy"
 
 [[exemptions.clap_derive]]
-version = "4.6.4"
+version = "4.6.7"
 criteria = "safe-to-deploy"
 
 [[exemptions.clap_lex]]
@@ -161,7 +161,7 @@ version = "0.1.12"
 criteria = "safe-to-run"
 
 [[exemptions.frontmatter-gen]]
-version = "0.0.11"
+version = "0.0.12"
 criteria = "safe-to-deploy"
 
 [[exemptions.futures-core]]
@@ -316,10 +316,6 @@ criteria = "safe-to-deploy"
 version = "0.9.12"
 criteria = "safe-to-deploy"
 
-[[exemptions.pastey]]
-version = "0.2.3"
-criteria = "safe-to-deploy"
-
 [[exemptions.pin-project-lite]]
 version = "0.2.17"
 criteria = "safe-to-deploy"
@@ -424,10 +420,6 @@ criteria = "safe-to-deploy"
 version = "1.0.151"
 criteria = "safe-to-deploy"
 
-[[exemptions.shlex]]
-version = "2.0.1"
-criteria = "safe-to-run"
-
 [[exemptions.signal-hook-registry]]
 version = "1.4.8"
 criteria = "safe-to-deploy"
@@ -457,15 +449,15 @@ version = "0.13.2"
 criteria = "safe-to-deploy"
 
 [[exemptions.tera]]
-version = "2.3.0"
+version = "2.4.0"
 criteria = "safe-to-deploy"
 
 [[exemptions.thiserror]]
-version = "2.0.20"
+version = "2.0.21"
 criteria = "safe-to-deploy"
 
 [[exemptions.thiserror-impl]]
-version = "2.0.20"
+version = "2.0.21"
 criteria = "safe-to-deploy"
 
 [[exemptions.time]]
@@ -493,7 +485,7 @@ version = "2.7.0"
 criteria = "safe-to-deploy"
 
 [[exemptions.toml]]
-version = "1.1.5+spec-1.1.0"
+version = "1.1.6+spec-1.1.0"
 criteria = "safe-to-deploy"
 
 [[exemptions.toml_datetime]]
@@ -525,7 +517,7 @@ version = "0.2.2"
 criteria = "safe-to-deploy"
 
 [[exemptions.uuid]]
-version = "1.26.0"
+version = "1.26.1"
 criteria = "safe-to-deploy"
 
 [[exemptions.version_check]]

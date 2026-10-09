@@ -1,4 +1,6 @@
 [codespell]
 # British spellings are house style; crate/tech names are not typos.
+# Lockfiles are skipped: generated, and imports.lock quotes auditor
+# names and notes from other projects verbatim.
 ignore-words-list = crate,re-declaring,statics,unparseable,ser,de,deser,serde,noyalib,dtt,metatags,metatag,toml,behaviour,behavioural,colour,favour,initialise,serialise,serialiser,serialisation,deserialise,deserialiser,deserialisation,normalise,normalised,standardise,standardised,ot
-skip = ./target,./Cargo.lock,./fuzz/target,./fuzz/corpus,./fuzz/artifacts,./.git
+skip = ./target,./Cargo.lock,./supply-chain/imports.lock,./fuzz/target,./fuzz/corpus,./fuzz/artifacts,./.git

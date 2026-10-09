@@ -4,17 +4,17 @@
 # `Apache-2.0 OR MIT` distribution:
 #
 # * MIT, Apache-2.0 — this crate and most of the tree.
-# * Unicode-3.0 and Unicode-DFS-2016 — Unicode data licences, reached
-#   through `unicode-ident` and the `icu`/`idna` chain. Data licences,
-#   not code copyleft.
-# * BSD-3-Clause, ISC — permissive, reached transitively.
+# * Unicode-3.0: the Unicode data licence, reached through
+#   `unicode-ident` and the `icu`/`idna` chain. A data licence, not
+#   code copyleft.
+#
+# Only licences the dependency graph actually uses are listed; cargo
+# deny warns on an allowance it never matches, and a new licence
+# arrives with its own reviewed entry.
 allow = [
     "MIT",
     "Apache-2.0",
     "Unicode-3.0",
-    "Unicode-DFS-2016",
-    "BSD-3-Clause",
-    "ISC",
 ]
 
 [bans]
@@ -33,9 +33,4 @@ skip-tree = []
 
 [advisories]
 # List of advisory IDs to ignore
-ignore = [
-    # proc-macro-error2 unmaintained (2026-06-07).
-    # Transitive via clap; no first-party fix until clap upstream
-    # bumps. Revisit on next clap release.
-    "RUSTSEC-2026-0173",
-]
+ignore = []
