@@ -103,7 +103,7 @@ fn to_format_example() -> Result<(), Error> {
     let toml = to_format(&frontmatter, Format::Toml)?;
     println!("    ✅ Converted frontmatter to TOML:\n{}", toml);
 
-    // noyalib 0.0.37 emits unquoted plain scalars and indents block
+    // noyalib (0.0.37 onwards) emits unquoted plain scalars and indents block
     // sequences. Both changed with the 0.0.11 dependency bump; the
     // CHANGELOG records it as a breaking output change.
     assert!(yaml.contains("title: My Post"));
