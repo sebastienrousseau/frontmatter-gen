@@ -19,7 +19,7 @@
   <a href="https://scorecard.dev/viewer/?uri=github.com/sebastienrousseau/frontmatter-gen"><img src="https://img.shields.io/ossf-scorecard/github.com/sebastienrousseau/frontmatter-gen?style=for-the-badge&label=scorecard" alt="OpenSSF Scorecard" /></a>
   <a href="https://www.bestpractices.dev/projects/14538"><img src="https://img.shields.io/cii/level/14538?style=for-the-badge&label=OpenSSF%20Best%20Practices&logo=openssf" alt="OpenSSF Best Practices" /></a>
   <a href="LICENSE-APACHE"><img src="https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg?style=for-the-badge" alt="License" /></a>
-  <a href="#minimum-toolchain-policy"><img src="https://img.shields.io/badge/MSRV-1.85.0-orange.svg?style=for-the-badge" alt="MSRV 1.85.0" /></a>
+  <a href="#minimum-toolchain-policy"><img src="https://img.shields.io/badge/MSRV-1.88.0-orange.svg?style=for-the-badge" alt="MSRV 1.88.0" /></a>
 </p>
 
 ---
@@ -95,7 +95,7 @@ make          # check + clippy + test
 
 ## Requirements
 
-- **Rust 1.85.0 or newer.** `rust-version` in `Cargo.toml` is the floor
+- **Rust 1.88.0 or newer.** `rust-version` in `Cargo.toml` is the floor
   and Cargo enforces it; CI builds on stable across Linux, macOS and
   Windows. See the [minimum-toolchain policy](#minimum-toolchain-policy).
 - **A `std` platform.** The crate uses `std` unconditionally; there is no
@@ -480,7 +480,7 @@ The four entry points, identical across every repo in the family:
 
 ## Minimum-toolchain policy
 
-The floor is **Rust 1.85.0**, declared as `rust-version` in
+The floor is **Rust 1.88.0**, declared as `rust-version` in
 `Cargo.toml` so Cargo refuses older toolchains with a clear message.
 
 - **When it may rise:** only on a release, never silently, and always

@@ -2,7 +2,8 @@
 #
 # The gates the repository standard requires that `ci.yml` does not
 # cover: coverage threshold, Miri, fuzz corpus replay, docs lint,
-# cargo-vet provenance, version consistency, examples and benches.
+# cargo-vet provenance, the declared Rust floor, version consistency,
+# examples and benches.
 #
 # Kept separate from ci.yml so the shared `rust-ci.yml` call there stays
 # a straight upgrade path when the pipelines repo changes.
@@ -150,6 +151,35 @@ jobs:
             echo "::error::exemptions grew from $baseline to $current"
             exit 1
           fi
+
+  msrv:
+    name: msrv (rust-version)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The floor is read from Cargo.toml, its single source, so the
+      # manifest and this job cannot drift apart. v0.0.11 declared
+      # 1.85.0 while its dependencies needed 1.88.0, unnoticed because
+      # every other job builds on stable.
+      - name: Read rust-version
+        id: msrv
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^rust-version = "\(.*\)"$/\1/p' Cargo.toml)"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: ${{ steps.msrv.outputs.version }}
+      - uses: Swatinem/rust-cache@f0d9c3887740aee45f6153b24b3a6b815192ec16 # v2
+      # `+version` because rust-toolchain.toml selects stable for every
+      # other job and would otherwise win.
+      - env:
+          MSRV: ${{ steps.msrv.outputs.version }}
+        run: cargo +"$MSRV" check --all-features --all-targets --locked
 
   release-hygiene:
     name: versions, examples, benches
