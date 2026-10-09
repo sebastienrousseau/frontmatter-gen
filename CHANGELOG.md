@@ -5,6 +5,77 @@ All notable changes to `frontmatter-gen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.12] - 2026-10-09
+
+A security-driven dependency release: `noyalib` moves to `=0.0.56`,
+which clears RUSTSEC-2026-0333 from every graph that depends on this
+crate, and the declared Rust floor now matches what the dependency
+graph actually requires.
+
+### Security
+
+- **`noyalib` pinned at `=0.0.56`**, from `=0.0.37`. Versions before
+  0.0.53 are affected by
+  [RUSTSEC-2026-0333](https://rustsec.org/advisories/RUSTSEC-2026-0333)
+  (GHSA-4xcc-23fx-w2wj): `ParserConfig` budgets such as `max_events`
+  and `max_nodes` were not enforced on the typed deserialization path.
+  This crate parses with the default configuration and never tightens
+  those budgets, and the default length, depth and alias caps always
+  applied, so no input was unbounded here. The pin still put the
+  affected version into every consumer's lockfile, where `cargo deny`
+  and `cargo audit` fail on it. The bump also brings noyalib's
+  0.0.54 to 0.0.56 hardening: readers stop one byte past
+  `max_document_length`, and `Value` nesting is capped on every path.
+
+### Changed (parse behaviour)
+
+- Two inputs that parsed under noyalib 0.0.37 are now refused, both
+  following noyalib: YAML nested deeper than 256 levels (the default
+  `max_depth` of 128 already refused it, and this crate does not raise
+  it), and an implicit mapping key holding a flow collection longer
+  than 1024 characters, which YAML 1.2.2 forbids. Front matter that
+  stays clear of both parses to the same values: every example's output
+  was compared under 0.0.37 and 0.0.56 and differs only in hash-map key
+  order, which was never stable.
+
+### Fixed
+
+- **The declared Rust floor was false.** `rust-version` said 1.85.0,
+  but `noyalib` has required 1.86.0 since before 0.0.37, and the
+  committed lockfile's `time` 0.3.55 and the optional `dtt` 0.0.11
+  require 1.88.0, so Rust 1.85 failed with a dependency error rather
+  than the clear refusal the README promised. The floor is now 1.88.0,
+  the highest requirement in the graph, per the minimum-toolchain
+  policy, and `cargo +1.88.0 test --all-features --locked` passes.
+- `deny.toml` listed three licences no dependency uses (BSD-3-Clause,
+  ISC, Unicode-DFS-2016) and ignored an advisory for a crate no longer
+  in the graph (RUSTSEC-2026-0173, `proc-macro-error2`). cargo-deny
+  warned on all four; they are removed, so a new licence or ignore
+  arrives with its own review.
+- `quality.yml` named two `taiki-e/install-action` pins as v2.87.4 when
+  the SHAs are later releases, and repeated one comment twice.
+
+### Added
+
+- **An `msrv` CI job** that reads `rust-version` from `Cargo.toml` and
+  runs `cargo check --all-features --all-targets --locked` on exactly
+  that toolchain, so the floor cannot drift from the graph unnoticed
+  again.
+
+### Dependencies
+
+- `clap` 4.6.7, `tera` 2.4.0, `thiserror` 2.0.21, `toml` 1.1.6 and
+  `uuid` 1.26.1 (#50); `dtolnay/rust-toolchain`,
+  `taiki-e/install-action` 2.87.15 and `astral-sh/setup-uv` 10.1.0 in
+  CI (#48). The noyalib bump from Dependabot (#47) is superseded by the
+  0.0.56 pin above.
+- cargo-vet: the new versions take over their predecessors' exemptions,
+  noyalib 0.0.56 is covered by the existing trusted-publisher entry, and
+  `pastey` and `shlex` are now covered by imported audits, so the
+  exemption baseline drops from 153 to 151.
+- The fuzz workspace's lockfile follows the crate to 0.0.12 and noyalib
+  0.0.56.
+
 ## [0.0.11] - 2026-09-07
 
 The repository-standard release: the layout, gates and documents every

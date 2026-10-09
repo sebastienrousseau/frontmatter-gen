@@ -58,7 +58,7 @@
 
 ```toml
 [dependencies]
-frontmatter-gen = "0.0.11"
+frontmatter-gen = "0.0.12"
 ```
 
 Or from the command line:
