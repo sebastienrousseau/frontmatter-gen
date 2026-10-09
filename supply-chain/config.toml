@@ -316,10 +316,6 @@ criteria = "safe-to-deploy"
 version = "0.9.12"
 criteria = "safe-to-deploy"
 
-[[exemptions.pastey]]
-version = "0.2.3"
-criteria = "safe-to-deploy"
-
 [[exemptions.pin-project-lite]]
 version = "0.2.17"
 criteria = "safe-to-deploy"
@@ -423,10 +419,6 @@ criteria = "safe-to-deploy"
 [[exemptions.serde_json]]
 version = "1.0.151"
 criteria = "safe-to-deploy"
-
-[[exemptions.shlex]]
-version = "2.0.1"
-criteria = "safe-to-run"
 
 [[exemptions.signal-hook-registry]]
 version = "1.4.8"
