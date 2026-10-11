@@ -4,7 +4,7 @@
 
 [package]
 name = "frontmatter-gen"
-version = "0.0.12"
+version = "0.0.13"
 edition = "2021"
 rust-version = "1.88.0"
 license = "MIT OR Apache-2.0"
@@ -93,7 +93,6 @@ serde_json = "1.0.133"
 # Exact pin, same-author 0.0.x line (ADR-0005). 0.0.53 is the floor:
 # RUSTSEC-2026-0333 (budgets not enforced on typed deserialization).
 noyalib = { version = "=0.0.56", default-features = false, features = ["std"] }
-time = { version = "0.3.36", features = ["formatting", "local-offset"] }
 tokio = { version = "1.44", features = ["full"] }
 
 thiserror = "2.0.3"

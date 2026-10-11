@@ -413,7 +413,7 @@ dependencies = [
 
 [[package]]
 name = "frontmatter-gen"
-version = "0.0.12"
+version = "0.0.13"
 dependencies = [
  "anyhow",
  "clap",
@@ -429,7 +429,6 @@ dependencies = [
  "tempfile",
  "tera",
  "thiserror",
- "time",
  "tokio",
  "toml",
  "url",
@@ -759,15 +758,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
 dependencies = [
  "autocfg",
-]
-
-[[package]]
-name = "num_threads"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c7398b9c8b70908f6371f47ed36737907c87c52af34c268fed0bf0ceb92ead9"
-dependencies = [
- "libc",
 ]
 
 [[package]]
@@ -1254,9 +1244,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb87b95ec50ddfa440816d227a17b2ccbdda963a316a727fda0fc4334f7d134"
 dependencies = [
  "deranged",
- "libc",
  "num-conv",
- "num_threads",
  "powerfmt",
  "serde_core",
  "time-core",
