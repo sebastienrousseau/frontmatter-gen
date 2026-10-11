@@ -5,6 +5,12 @@ All notable changes to `frontmatter-gen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.13] - 2026-10-11
+
+### Changed
+
+- Purged unused `time` dependency to eliminate unsound local-offset feature flag and shrink dependency tree.
+
 ## [0.0.12] - 2026-10-09
 
 A security-driven dependency release: `noyalib` moves to `=0.0.56`,
