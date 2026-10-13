@@ -5,6 +5,21 @@ All notable changes to `frontmatter-gen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.14] - Unreleased
+
+### Changed
+
+- **The MSRV is now Rust 1.89.0** (was 1.88.0), the floor shared by the
+  maintainer's Rust crates; the dependency graph alone still needs
+  1.88.0. `rust-version`, the README badge and policy, CONTRIBUTING.md
+  and the PR and bug-report templates move together, and
+  `scripts/verify-release-versions.sh` now fails when any of those
+  statements disagrees with `rust-version`.
+
+### Fixed
+
+- `CITATION.cff` names 0.0.13, which turned the Quality workflow green.
+
 ## [0.0.13] - 2026-10-11
 
 ### Changed
