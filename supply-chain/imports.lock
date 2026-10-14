@@ -1,6 +1,10 @@
 
 # cargo-vet imports lock
 
+[[unpublished.frontmatter-gen]]
+version = "0.0.13"
+audited_as = "0.0.12"
+
 [[publisher.bumpalo]]
 version = "3.20.3"
 when = "2026-05-22"
@@ -16,8 +20,8 @@ user-login = "sebastienrousseau"
 user-name = "Sebastien Rousseau"
 
 [[publisher.noyalib]]
-version = "0.0.56"
-when = "2026-10-08"
+version = "0.0.57"
+when = "2026-10-09"
 trusted-publisher = "github:sebastienrousseau/noyalib"
 
 [[publisher.unicode-width]]
