@@ -1,7 +1,7 @@
 # Frontmatter Gen (frontmatter-gen)
 
 <!-- markdownlint-disable MD033 MD041 -->
-<img src="https://kura.pro/frontmatter-gen/images/logos/frontmatter-gen.svg"
+<img src="https://cloudcdn.pro/clients/frontmatter-gen/v1/logos/frontmatter-gen.svg"
 alt="FrontMatter Gen logo" height="66" align="right" />
 <!-- markdownlint-enable MD033 MD041 -->
 

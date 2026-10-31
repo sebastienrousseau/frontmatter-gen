@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 OR MIT -->
 
 <p align="center">
-  <img src="https://kura.pro/frontmatter-gen/images/logos/frontmatter-gen.svg" alt="frontmatter-gen logo" width="128" />
+  <img src="https://cloudcdn.pro/clients/frontmatter-gen/v1/logos/frontmatter-gen.svg" alt="frontmatter-gen logo" width="128" />
 </p>
 
 <h1 align="center">frontmatter-gen</h1>

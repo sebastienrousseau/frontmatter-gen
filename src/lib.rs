@@ -2,7 +2,7 @@
 #![forbid(unsafe_code)]
 #![doc(
     html_favicon_url = "https://kura.pro/frontmatter-gen/images/favicon.ico",
-    html_logo_url = "https://kura.pro/frontmatter-gen/images/logos/frontmatter-gen.svg",
+    html_logo_url = "https://cloudcdn.pro/clients/frontmatter-gen/v1/logos/frontmatter-gen.svg",
     html_root_url = "https://docs.rs/frontmatter-gen"
 )]
 
