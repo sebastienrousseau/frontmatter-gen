@@ -161,7 +161,7 @@ version = "0.1.12"
 criteria = "safe-to-run"
 
 [[exemptions.frontmatter-gen]]
-version = "0.0.14"
+version = "0.0.15"
 criteria = "safe-to-deploy"
 
 [[exemptions.futures-core]]
