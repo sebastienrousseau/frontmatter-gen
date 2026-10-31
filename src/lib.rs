@@ -833,3 +833,142 @@ mod size_limit_tests {
             .expect("content exactly at the limit is accepted");
     }
 }
+
+#[cfg(test)]
+extern crate alloc;
+
+#[cfg(test)]
+mod miri_and_core_symbiosis_tests {
+    mod core_kernel {
+        use crate::{
+            extractor::{detect_format, extract_raw_frontmatter},
+            parser::{
+                parse, parse_with_options, to_string,
+                validate_frontmatter, ParseOptions as ParserOptions,
+            },
+            Frontmatter, Value,
+        };
+        use alloc::{boxed::Box, string::String, vec::Vec};
+        use core::{fmt::Write as _, str};
+
+        pub(super) fn verify_core_pipeline(
+            input: &[u8],
+            max_depth: usize,
+            max_keys: usize,
+        ) -> crate::Result<Frontmatter> {
+            let content = str::from_utf8(input)
+                .map_err(|_| crate::Error::InvalidFormat)?;
+            let (raw, body) = extract_raw_frontmatter(content)?;
+            let doc_range = content.as_bytes().as_ptr_range();
+            assert!(doc_range.contains(&raw.as_bytes().as_ptr()));
+            assert!(doc_range.contains(&body.as_bytes().as_ptr()));
+            assert!(content.ends_with(body));
+
+            let fmt = detect_format(raw)?;
+            let opts = ParserOptions {
+                max_depth,
+                max_keys,
+                validate: true,
+            };
+            let fm: Frontmatter =
+                parse_with_options(raw, fmt, Some(opts))?;
+            validate_frontmatter(&fm, max_depth, max_keys)?;
+
+            let roundtrip: String = to_string(&fm, fmt)?;
+            let mut sink = String::new();
+            let _ = write!(&mut sink, "{roundtrip}");
+            assert!(!sink.is_empty());
+
+            let reparsed: Frontmatter = parse(&roundtrip, fmt)?;
+            let boxed: Box<Frontmatter> = Box::new(reparsed);
+            let keys: Vec<&String> =
+                boxed.iter().map(|(k, _)| k).collect();
+            assert_eq!(keys.len(), fm.len());
+            for (k, v) in fm.iter() {
+                let got = boxed.get(k);
+                assert_eq!(v.as_str(), got.and_then(Value::as_str));
+                assert_eq!(v.as_bool(), got.and_then(Value::as_bool));
+            }
+            Ok(*boxed)
+        }
+    }
+
+    use super::*;
+    use crate::error::{Context, EngineError};
+    use std::sync::Arc;
+    use std::thread;
+
+    #[test]
+    fn miri_zero_copy_provenance_and_core_alloc_symbiosis() {
+        let cases: [&[u8]; 3] = [
+            "---\ntitle: \"🦀 Rust Ω\"\nflag: true\n---\nBody 東京."
+                .as_bytes(),
+            "+++\ntitle = \"🦀 Rust Ω\"\nflag = true\n+++\nBody 東京."
+                .as_bytes(),
+            "{\n  \"title\": \"🦀 Rust Ω\",\n  \"flag\": true\n}\nBody 東京."
+                .as_bytes(),
+        ];
+
+        for doc in cases {
+            let fm =
+                core_kernel::verify_core_pipeline(doc, 4, 8).unwrap();
+            assert_eq!(
+                fm.get("title").and_then(Value::as_str),
+                Some("🦀 Rust Ω")
+            );
+            assert!(
+                core_kernel::verify_core_pipeline(doc, 4, 1).is_err()
+            );
+        }
+
+        assert!(core_kernel::verify_core_pipeline(&[0xFF, 0xFE], 4, 8)
+            .is_err());
+    }
+
+    #[test]
+    fn miri_concurrent_arc_error_clones_and_depth_boundaries() {
+        let deep_yaml = "---\na:\n  b:\n    c: val\n---\nbody";
+        assert!(core_kernel::verify_core_pipeline(
+            deep_yaml.as_bytes(),
+            3,
+            8
+        )
+        .is_ok());
+        assert!(core_kernel::verify_core_pipeline(
+            deep_yaml.as_bytes(),
+            2,
+            8
+        )
+        .is_err());
+
+        let yaml_err =
+            parse("invalid: [unclosed", Format::Yaml).unwrap_err();
+        let json_err =
+            parse("{\"unclosed\": ", Format::Json).unwrap_err();
+        let shared = Arc::new((yaml_err, json_err));
+
+        let mut handles = Vec::with_capacity(2);
+        for idx in 0..2 {
+            let pair = Arc::clone(&shared);
+            handles.push(thread::spawn(move || {
+                let ctx = Context {
+                    line: Some(idx + 1),
+                    column: Some(4),
+                    snippet: Some("unclosed".to_owned()),
+                };
+                let y = pair.0.clone().with_context(&ctx);
+                let j = pair.1.clone().with_context(&ctx);
+                let engine_err = EngineError::FileSystemError {
+                    source: std::io::Error::other("miri"),
+                    context: y.to_string(),
+                };
+                let converted: Error = engine_err.clone().into();
+                assert!(!j.to_string().is_empty());
+                assert!(!converted.to_string().is_empty());
+            }));
+        }
+        for handle in handles {
+            handle.join().unwrap();
+        }
+    }
+}

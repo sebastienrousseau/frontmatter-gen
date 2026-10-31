@@ -66,7 +66,7 @@ repository standard requires that the shared pipeline does not cover.
 | :--- | :--- | :--- |
 | `ci` (fmt, clippy, test, cross-platform) | `make` | |
 | `coverage-gate` | `make coverage` | nightly; 100 % lines and functions across all modules |
-| `miri` | `make miri` | lib tests; filesystem tests carry `#[cfg_attr(miri, ignore)]` |
+| `miri` | `make miri` | lib tests under Tree Borrows + strict provenance |
 | `fuzz-replay` | `make fuzz` | needs a source-installed cargo-fuzz (see above) |
 | `docs-lint` | `make lint` | British spellings are house style; see `.codespellrc` |
 | `cargo-vet` | `make vet` | after a dep change: `cargo vet regenerate exemptions`; the count must not exceed `supply-chain/exemptions-baseline.txt` |
@@ -93,8 +93,10 @@ paths, and CLI argument dispatch.
   `harness = false`; libtest's harness would collect zero tests and
   report success.
 - `fuzz/fuzz_targets/` — `fuzz_extract` (the body must be a suffix of
-  the input), `fuzz_parse` (every parser against every input) and
-  `fuzz_roundtrip` (parse, serialise, re-parse, same keys).
+  the input), `fuzz_parse` (every parser against every input),
+  `fuzz_roundtrip` (parse, serialise, re-parse, same keys and scalar
+  values) and `fuzz_structured` (`Arbitrary`-driven `Frontmatter` trees
+  checking DoS budgets, HTML meta-tag framing and round-trip fidelity).
   `fuzz/corpus/<target>` is the committed seed set and
   `fuzz/regressions/<target>` holds every fixed-bug reproducer. Both
   replay per push. A crash found by fuzzing lands as a regression input

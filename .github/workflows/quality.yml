@@ -62,9 +62,11 @@ jobs:
           components: miri
       - uses: Swatinem/rust-cache@c8037a86dde8214a8310e9f54a8fc61ab362aa31 # v2
       # The crate forbids unsafe, so this checks the interaction with
-      # dependencies that use it internally. Filesystem tests carry
-      # #[cfg_attr(miri, ignore)] — isolation forbids open() and mkdir().
-      - run: cargo +nightly miri test --lib
+      # dependencies that use it internally under Tree Borrows and
+      # strict provenance. Filesystem tests are gated behind `ssg`.
+      - env:
+          MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-tree-borrows -Zmiri-symbolic-alignment-check -Zmiri-retag-fields
+        run: cargo +nightly miri test --lib --locked
 
   fuzz-replay:
     name: fuzz build + corpus replay

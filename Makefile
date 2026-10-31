@@ -64,7 +64,8 @@ coverage:
 	  --fail-under-lines 100
 
 miri:
-	cargo +nightly miri test --lib
+	MIRIFLAGS="-Zmiri-strict-provenance -Zmiri-tree-borrows -Zmiri-symbolic-alignment-check -Zmiri-retag-fields" \
+	  cargo +nightly miri test --lib --locked
 
 # Build every target, then replay the seed corpus and the regression
 # inputs without generating new ones. Mirrors the per-push CI gate.
