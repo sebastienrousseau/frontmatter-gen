@@ -939,11 +939,8 @@ mod exhaustive_error_tests {
     fn display_is_non_empty_and_names_its_payload() {
         for error in one_of_every_error() {
             let text = error.to_string();
-            assert!(
-                !text.is_empty(),
-                "{} has no message",
-                variant_of(&error)
-            );
+            let variant = variant_of(&error);
+            assert!(!text.is_empty(), "{variant} has no message");
         }
         assert!(Error::ContentTooLarge { size: 10, max: 5 }
             .to_string()

@@ -176,9 +176,9 @@ impl SsgCommand {
             .context("Failed to load configuration")?;
 
         // Initialize the engine with error handling
-        let engine = Engine::new().context(
-            "Failed to initialize the static site generator engine",
-        )?;
+        let init_err =
+            "Failed to initialize the static site generator engine";
+        let engine = Engine::new().context(init_err)?;
 
         match &self.command {
             SsgSubCommand::Build(args) => {

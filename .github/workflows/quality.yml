@@ -45,8 +45,8 @@ jobs:
           tool: cargo-llvm-cov
       # The threshold and its rationale live in DEVELOPMENT.md.
       - run: |
-          cargo llvm-cov --all-features --locked \
-            --fail-under-lines 100
+          cargo +nightly llvm-cov --all-features --locked \
+            --fail-under-lines 100 --show-missing-lines
 
   miri:
     name: miri
