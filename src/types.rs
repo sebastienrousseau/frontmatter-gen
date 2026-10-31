@@ -58,6 +58,12 @@ pub enum Value {
     Tagged(String, Box<Value>),
 }
 
+/// Accessor and conversion methods for [`Value`].
+///
+/// These methods provide ergonomic type-checked projections (`as_str`,
+/// `as_float`, `as_bool`, `as_array`, `as_object`, `as_tagged`), along with
+/// emptiness checks and recursive deep merges for nested [`Frontmatter`]
+/// objects.
 impl Value {
     /// Returns the value as a string slice, if it is of type `String`.
     ///

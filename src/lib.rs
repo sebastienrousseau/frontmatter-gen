@@ -86,21 +86,19 @@ pub mod ssg;
 pub mod types;
 pub mod utils;
 
-macro_rules! non_zero_usize {
-    ($value:expr) => {
-        match NonZeroUsize::new($value) {
-            Some(val) => val,
-            None => panic!("Value must be non-zero"),
-        }
-    };
-}
-
-/// Maximum size allowed for frontmatter content (1MB)
+/// Maximum size allowed for frontmatter content (1 MiB).
 pub const MAX_FRONTMATTER_SIZE: NonZeroUsize =
-    non_zero_usize!(1024 * 1024);
+    match NonZeroUsize::new(1024 * 1024) {
+        Some(val) => val,
+        None => unreachable!(),
+    };
 
-/// Maximum allowed nesting depth for structured data
-pub const MAX_NESTING_DEPTH: NonZeroUsize = non_zero_usize!(32);
+/// Maximum allowed nesting depth for structured data (32 levels).
+pub const MAX_NESTING_DEPTH: NonZeroUsize = match NonZeroUsize::new(32)
+{
+    Some(val) => val,
+    None => unreachable!(),
+};
 
 /// A specialized Result type for frontmatter operations.
 ///
@@ -122,6 +120,8 @@ pub mod prelude {
 /// Configuration options for parsing operations.
 ///
 /// Provides fine-grained control over parsing behaviour and security limits.
+///
+/// Defaults can be overridden via environment variables with [`ParseOptions::from_env`].
 #[derive(Debug, Clone, Copy)]
 pub struct ParseOptions {
     /// Maximum allowed content size
@@ -142,6 +142,10 @@ impl Default for ParseOptions {
     }
 }
 
+const ERR_PATH_TRAVERSAL: &str =
+    "Content contains path traversal patterns";
+const ERR_NULL_BYTES: &str = "Content contains null bytes";
+
 /// Validates input content against security constraints.
 ///
 /// # Security
@@ -160,7 +164,12 @@ impl Default for ParseOptions {
 /// let options = ParseOptions::default();
 /// assert!(validate_input(content, &options).is_ok());
 /// ```
-#[inline]
+///
+/// # Errors
+///
+/// Returns [`Error::ValidationError`] on path traversal or null bytes, and
+/// [`Error::ContentTooLarge`] if `content.len()` exceeds `options.max_size`.
+/// Returns `Ok(())` when all checks succeed.
 pub fn validate_input(
     content: &str,
     options: &ParseOptions,
@@ -168,45 +177,36 @@ pub fn validate_input(
     let mut inside_fenced_code = false;
 
     for line in content.lines() {
-        if line.trim_start().starts_with("```")
-            || line.trim_start().starts_with("~~~")
-        {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
             inside_fenced_code = !inside_fenced_code;
-            continue; // Skip validation for this line
-        }
+        } else if !inside_fenced_code {
+            // Path traversal detection
+            if line.contains("../") || line.contains("..\\") {
+                // Log the offending line before returning the validation error.
+                // Both Unix and Windows parent-directory separators are rejected.
+                // Fenced code blocks are excluded above.
+                log::warn!("Potential path traversal detected: {line}");
+                let msg = ERR_PATH_TRAVERSAL.to_string();
+                return Err(Error::ValidationError(msg));
+            }
 
-        if inside_fenced_code {
-            continue; // Skip validation inside fenced code blocks
-        }
-
-        // Path traversal detection
-        if line.contains("../") || line.contains("..\\") {
-            log::warn!("Potential path traversal detected: {}", line);
-            return Err(Error::ValidationError(
-                "Content contains path traversal patterns".to_string(),
-            ));
-        }
-
-        // Null byte validation
-        if line.contains('\0') {
-            log::warn!("Null byte detected in content");
-            return Err(Error::ValidationError(
-                "Content contains null bytes".to_string(),
-            ));
+            // Null byte validation
+            if line.contains('\0') {
+                log::warn!("Null byte detected in content");
+                // Reject embedded NUL bytes
+                let msg = ERR_NULL_BYTES.to_string();
+                return Err(Error::ValidationError(msg));
+            }
         }
     }
 
     // Check size limit
-    if content.len() > options.max_size.get() {
-        log::warn!(
-            "Content exceeds maximum size: {} > {}",
-            content.len(),
-            options.max_size.get()
-        );
-        return Err(Error::ContentTooLarge {
-            size: content.len(),
-            max: options.max_size.get(),
-        });
+    let size = content.len();
+    let max = options.max_size.get();
+    if size > max {
+        log::warn!("Content exceeds maximum size: {size} > {max}");
+        return Err(Error::ContentTooLarge { size, max });
     }
 
     Ok(())
@@ -332,13 +332,13 @@ impl ParseOptions {
     pub fn from_env() -> Self {
         let max_size = std::env::var("MAX_FRONTMATTER_SIZE")
             .ok()
-            .and_then(|val| val.parse::<usize>().ok())
-            .map_or(MAX_FRONTMATTER_SIZE, |size| non_zero_usize!(size));
+            .and_then(|val| val.parse::<NonZeroUsize>().ok())
+            .unwrap_or(MAX_FRONTMATTER_SIZE);
 
         let max_depth = std::env::var("MAX_NESTING_DEPTH")
             .ok()
-            .and_then(|val| val.parse::<usize>().ok())
-            .map_or(MAX_NESTING_DEPTH, |depth| non_zero_usize!(depth));
+            .and_then(|val| val.parse::<NonZeroUsize>().ok())
+            .unwrap_or(MAX_NESTING_DEPTH);
 
         Self {
             max_size,

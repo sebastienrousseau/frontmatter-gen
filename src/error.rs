@@ -450,9 +450,11 @@ impl Error {
             .unwrap_or_default();
 
         match self {
-            Self::ParseError(msg) => Self::ParseError(format!(
-                "{msg}{context_info}{snippet_info}"
-            )),
+            Self::ParseError(mut msg) => {
+                msg.push_str(&context_info);
+                msg.push_str(&snippet_info);
+                Self::ParseError(msg)
+            }
             Self::YamlParseError { source } => {
                 Self::YamlParseError { source }
             }
@@ -494,6 +496,7 @@ pub enum EngineError {
     MetadataError(String),
 }
 
+/// Manual `Clone` implementation for `EngineError`.
 impl Clone for EngineError {
     fn clone(&self) -> Self {
         match self {
@@ -522,6 +525,9 @@ impl Clone for EngineError {
 ///
 /// This allows engine errors to be converted into front matter errors when needed,
 /// preserving the error context and message.
+///
+/// Every variant of `EngineError` maps to `Error::ParseError` with a descriptive
+/// prefix indicating the subsystems that reported the failure.
 ///
 /// # Examples
 ///
@@ -566,6 +572,8 @@ impl From<std::io::Error> for Error {
 }
 
 /// Converts a front matter `Error` into a string.
+///
+/// Uses the `Display` formatting of `Error` to produce an owned `String`.
 impl From<Error> for String {
     fn from(err: Error) -> Self {
         err.to_string()

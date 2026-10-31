@@ -123,71 +123,76 @@ pub fn parse_with_options(
     let options = options.unwrap_or_default();
 
     // Trim the input and validate format assumptions
-    let trimmed_content = raw_front_matter.trim();
+    let trimmed = raw_front_matter.trim();
 
     let front_matter = match format {
-        Format::Yaml => {
-            if !trimmed_content.starts_with("---") {
-                log::debug!("YAML front matter validation: Content structure appears non-standard");
-            }
-            parse_yaml(trimmed_content).map_err(|e| {
-                log::error!("YAML parsing failed: {}", e);
-                e
-            })?
-        }
-        Format::Toml => {
-            if !trimmed_content.contains('=') {
-                return Err(Error::ConversionError(
-                    "Format set to TOML but input does not contain '=' signs.".to_string(),
-                ));
-            }
-            parse_toml(trimmed_content).map_err(|e| {
-                log::error!("TOML parsing failed: {}", e);
-                e
-            })?
-        }
-        Format::Json => {
-            if !trimmed_content.starts_with('{') {
-                return Err(Error::ConversionError(
-                    "Format set to JSON but input does not start with '{'."
-                        .to_string(),
-                ));
-            }
-            parse_json(trimmed_content).map_err(|e| {
-                log::error!("JSON parsing failed: {}", e);
-                e
-            })?
-        }
-        Format::Unsupported => {
-            let err_msg = format!(
-                "Unsupported format: {:?}. Supported formats are YAML, TOML, and JSON.",
-                format
-            );
-            log::error!("{}", err_msg);
-            return Err(Error::ConversionError(err_msg));
-        }
+        Format::Yaml => parse_yaml_checked(trimmed)?,
+        Format::Toml => parse_toml_checked(trimmed)?,
+        Format::Json => parse_json_checked(trimmed)?,
+        Format::Unsupported => parse_unsupported(format)?,
     };
 
     // Perform validation if specified in options
     if options.validate {
-        log::debug!(
-            "Validating front matter: maximum allowed nesting depth is {}, maximum allowed number of keys is {}",
-            options.max_depth,
-            options.max_keys
-        );
+        let max_depth = options.max_depth;
+        let max_keys = options.max_keys;
+        log::debug!("Validating front matter: maximum allowed nesting depth is {max_depth}, maximum allowed number of keys is {max_keys}");
 
-        validate_frontmatter(
-            &front_matter,
-            options.max_depth,
-            options.max_keys,
-        )
-        .map_err(|e| {
-            log::error!("Front matter validation failed: {}", e);
-            e
-        })?;
+        validate_frontmatter(&front_matter, max_depth, max_keys)
+            .map_err(|e| {
+                log::error!("Front matter validation failed: {}", e);
+                e
+            })?;
     }
 
     Ok(front_matter)
+}
+
+/// Validates and parses YAML front matter content.
+fn parse_yaml_checked(trimmed: &str) -> Result<Frontmatter, Error> {
+    if !trimmed.starts_with("---") {
+        log::debug!("YAML front matter validation: Content structure appears non-standard");
+    }
+    parse_yaml(trimmed).map_err(|e| {
+        log::error!("YAML parsing failed: {}", e);
+        e
+    })
+}
+
+const ERR_TOML_MISSING_EQ: &str =
+    "Format set to TOML but input does not contain '=' signs.";
+const ERR_JSON_MISSING_BRACE: &str =
+    "Format set to JSON but input does not start with '{'.";
+
+/// Validates and parses TOML front matter content.
+fn parse_toml_checked(trimmed: &str) -> Result<Frontmatter, Error> {
+    if !trimmed.contains('=') {
+        let msg = ERR_TOML_MISSING_EQ.to_string();
+        return Err(Error::ConversionError(msg));
+    }
+    parse_toml(trimmed).map_err(|e| {
+        log::error!("TOML parsing failed: {}", e);
+        e
+    })
+}
+
+/// Validates and parses JSON front matter content.
+fn parse_json_checked(trimmed: &str) -> Result<Frontmatter, Error> {
+    if !trimmed.starts_with('{') {
+        let msg = ERR_JSON_MISSING_BRACE.to_string();
+        return Err(Error::ConversionError(msg));
+    }
+    parse_json(trimmed).map_err(|e| {
+        log::error!("JSON parsing failed: {}", e);
+        e
+    })
+}
+
+/// Constructs and logs an unsupported format error.
+fn parse_unsupported(format: Format) -> Result<Frontmatter, Error> {
+    let err_msg = format!("Unsupported format: {format:?}. Supported formats are YAML, TOML, and JSON.");
+    log::error!("{err_msg}");
+    Err(Error::ConversionError(err_msg))
 }
 
 /// Convenience wrapper around `parse_with_options` using default options.
@@ -359,9 +364,8 @@ fn yaml_to_value(yaml: &YamlValue) -> Value {
             let mut result =
                 Frontmatter(HashMap::with_capacity(map.len()));
             for (k, v) in map {
-                let _ = result
-                    .0
-                    .insert(optimise_string(k), yaml_to_value(v));
+                let key = optimise_string(k);
+                let _ = result.insert(key, yaml_to_value(v));
             }
             Value::Object(Box::new(result))
         }
@@ -506,9 +510,8 @@ fn json_to_value(json: &JsonValue) -> Value {
             let mut result =
                 Frontmatter(HashMap::with_capacity(obj.len()));
             for (k, v) in obj {
-                let _ = result
-                    .0
-                    .insert(optimise_string(k), json_to_value(v));
+                let key = optimise_string(k);
+                let _ = result.insert(key, json_to_value(v));
             }
             Value::Object(Box::new(result))
         }
@@ -529,9 +532,7 @@ fn to_json_optimised(
 ) -> Result<String, Error> {
     let estimated_size = estimate_json_size(front_matter);
     let buf = Vec::with_capacity(estimated_size);
-    let formatter = serde_json::ser::CompactFormatter;
-    let mut ser =
-        serde_json::Serializer::with_formatter(buf, formatter);
+    let mut ser = serde_json::Serializer::new(buf);
 
     let _ = front_matter.0.serialize(&mut ser);
 
@@ -552,7 +553,7 @@ fn to_json_optimised(
 ///
 /// * `fm` - Reference to the front matter to validate.
 /// * `max_depth` - Maximum allowed nesting depth.
-/// * `max_keys` - Maximum allowed number of keys.
+/// * `max` - Maximum allowed number of keys.
 ///
 /// # Returns
 ///
@@ -561,18 +562,16 @@ fn to_json_optimised(
 /// # Errors
 ///
 /// Returns `Error` if:
-/// - The number of keys exceeds `max_keys`.
+/// - The number of keys exceeds `max`.
 /// - The nesting depth exceeds `max_depth`.
 pub fn validate_frontmatter(
     fm: &Frontmatter,
     max_depth: usize,
-    max_keys: usize,
+    max: usize,
 ) -> Result<(), Error> {
-    if fm.0.len() > max_keys {
-        return Err(Error::ContentTooLarge {
-            size: fm.0.len(),
-            max: max_keys,
-        });
+    let size = fm.0.len();
+    if size > max {
+        return Err(Error::ContentTooLarge { size, max });
     }
 
     // Validate nesting depth
@@ -588,36 +587,29 @@ pub fn validate_frontmatter(
 /// # Arguments
 ///
 /// * `value` - The `Value` to check.
-/// * `current_depth` - The current depth of recursion.
-/// * `max_depth` - The maximum allowed depth.
+/// * `depth` - The current depth of recursion.
+/// * `max` - The maximum allowed depth.
 ///
 /// # Returns
 ///
 /// `Ok(())` if the depth is within limits, `Error` otherwise.
 fn check_depth(
     value: &Value,
-    current_depth: usize,
-    max_depth: usize,
+    depth: usize,
+    max: usize,
 ) -> Result<(), Error> {
-    if current_depth > max_depth {
-        return Err(Error::NestingTooDeep {
-            depth: current_depth,
-            max: max_depth,
-        });
+    if depth > max {
+        return Err(Error::NestingTooDeep { depth, max });
     }
 
-    match value {
-        Value::Array(arr) => {
-            for item in arr {
-                check_depth(item, current_depth + 1, max_depth)?;
-            }
+    if let Value::Array(arr) = value {
+        for item in arr {
+            check_depth(item, depth + 1, max)?;
         }
-        Value::Object(obj) => {
-            for v in obj.0.values() {
-                check_depth(v, current_depth + 1, max_depth)?;
-            }
+    } else if let Value::Object(obj) = value {
+        for v in obj.0.values() {
+            check_depth(v, depth + 1, max)?;
         }
-        _ => {}
     }
 
     Ok(())
