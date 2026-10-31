@@ -384,10 +384,7 @@ mod extractor_tests {
     fn test_result_type_pattern_matching() {
         let input = Some("world");
         let result = mock_operation(input);
-        match result {
-            Ok(value) => assert_eq!(value, "WORLD".to_string()),
-            Err(e) => panic!("Operation failed: {:?}", e),
-        }
+        assert_eq!(result.ok(), Some("WORLD".to_string()));
     }
 
     #[test]
@@ -808,6 +805,7 @@ mod size_limit_tests {
 
     #[test]
     fn content_larger_than_max_size_is_rejected() {
+        log::set_max_level(log::LevelFilter::Trace);
         let options = ParseOptions {
             max_size: NonZeroUsize::new(16).expect("non-zero"),
             ..ParseOptions::default()

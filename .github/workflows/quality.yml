@@ -28,7 +28,7 @@ env:
 
 jobs:
   coverage-gate:
-    name: coverage (98% lines)
+    name: coverage (100% lines)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -43,15 +43,10 @@ jobs:
       - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31, installs cargo-llvm-cov
         with:
           tool: cargo-llvm-cov
-      # The threshold and its rationale live in DEVELOPMENT.md. A number
-      # chosen once and defended beats chasing 100%.
-      # `src/main.rs` is excluded: it is the CLI binary's entry point —
-      # argument dispatch, logging setup and process exit — reachable
-      # only by running the binary. The library surface behind it is
-      # covered directly. The rationale is in DEVELOPMENT.md.
+      # The threshold and its rationale live in DEVELOPMENT.md.
       - run: |
           cargo llvm-cov --all-features --locked \
-            --ignore-filename-regex 'src/main\.rs' --fail-under-lines 98
+            --fail-under-lines 100
 
   miri:
     name: miri

@@ -55,16 +55,21 @@ pub struct Context {
 
 impl std::fmt::Display for Context {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "at {}:{}",
-            self.line.unwrap_or(0),
-            self.column.unwrap_or(0)
-        )?;
-        if let Some(snippet) = &self.snippet {
-            write!(f, " near '{}'", snippet)?;
+        match &self.snippet {
+            Some(snippet) => write!(
+                f,
+                "at {}:{} near '{}'",
+                self.line.unwrap_or(0),
+                self.column.unwrap_or(0),
+                snippet
+            ),
+            None => write!(
+                f,
+                "at {}:{}",
+                self.line.unwrap_or(0),
+                self.column.unwrap_or(0)
+            ),
         }
-        Ok(())
     }
 }
 
@@ -1080,11 +1085,25 @@ mod exhaustive_error_tests {
             context: "writing output".into(),
         };
         let cloned = error.clone();
-        let EngineError::FileSystemError { source, context } = &cloned
-        else {
-            panic!("clone changed the variant");
-        };
-        assert_eq!(source.kind(), std::io::ErrorKind::PermissionDenied);
-        assert_eq!(context, "writing output");
+        assert!(matches!(
+            &cloned,
+            EngineError::FileSystemError { source, context }
+                if source.kind() == std::io::ErrorKind::PermissionDenied
+                    && context == "writing output"
+        ));
+
+        let yaml_err = noyalib::from_str::<noyalib::Value>(":\n  - [")
+            .expect_err("invalid yaml");
+        let wrapped = Error::YamlParseError {
+            source: yaml_err.into(),
+        }
+        .with_context(&Context {
+            line: Some(1),
+            column: Some(2),
+            snippet: None,
+        });
+        assert!(matches!(wrapped, Error::YamlParseError { .. }));
+        let as_str: String = Error::InvalidFormat.into();
+        assert!(!as_str.is_empty());
     }
 }

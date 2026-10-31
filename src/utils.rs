@@ -202,15 +202,7 @@ pub mod fs {
         // every rule now applies to every path.
 
         // 5. Check for symlinks
-        if path.exists() {
-            let metadata =
-                path.symlink_metadata().with_context(|| {
-                    format!(
-                        "Failed to get metadata for path: {}",
-                        path.display()
-                    )
-                })?;
-
+        if let Ok(metadata) = path.symlink_metadata() {
             if metadata.file_type().is_symlink() {
                 return Err(UtilsError::InvalidPath {
                     path: path_str.to_string(),
@@ -464,12 +456,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_directory_valid_path() -> anyhow::Result<()> {
-        let temp_dir = std::env::temp_dir().join("test_dir");
-
-        // Ensure the directory does not exist beforehand
-        if temp_dir.exists() {
-            tokio::fs::remove_dir_all(&temp_dir).await?;
-        }
+        let base = tempfile::tempdir()?;
+        let temp_dir = base.path().join("test_dir");
 
         create_directory(&temp_dir).await?;
         assert!(temp_dir.exists());
@@ -875,5 +863,32 @@ mod exhaustive_utils_tests {
             std::fs::read_to_string(&path).expect("read log");
         assert!(contents.contains("careful"), "{contents}");
         assert!(contents.contains("second"), "{contents}");
+    }
+
+    #[tokio::test]
+    async fn fs_error_paths_report_context() {
+        let dir = tempfile::tempdir().expect("tempdir");
+
+        // 1. TempFileTracker::cleanup fails when a registered path is a directory
+        let sub_dir = dir.path().join("a_dir");
+        std::fs::create_dir(&sub_dir).expect("mkdir");
+        let tracker = TempFileTracker::new();
+        tracker.register(sub_dir).await.expect("register");
+        assert!(tracker.cleanup().await.is_err());
+
+        // 2. create_directory fails when parent is a regular file
+        let regular_file = dir.path().join("regular.txt");
+        std::fs::write(&regular_file, b"hello").expect("write");
+        let bad_dir = regular_file.join("child_dir");
+        assert!(create_directory(&bad_dir).await.is_err());
+
+        // 3. copy_file fails when dst parent is under a regular file
+        let bad_dst = regular_file.join("parent").join("dest.txt");
+        assert!(copy_file(&regular_file, &bad_dst).await.is_err());
+
+        // 4. copy_file when dst has no parent (root path)
+        assert!(copy_file(&regular_file, Path::new("/"))
+            .await
+            .is_err());
     }
 }

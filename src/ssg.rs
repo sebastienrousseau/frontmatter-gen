@@ -628,4 +628,51 @@ mod tests {
 
         assert!(result.is_err());
     }
+
+    #[tokio::test]
+    async fn test_build_and_clean_output_directory_errors() -> Result<()>
+    {
+        log::set_max_level(log::LevelFilter::Trace);
+        let temp = tempdir()?;
+        let content_dir = temp.path().join("content");
+        let template_dir = temp.path().join("templates");
+        tokio::fs::create_dir_all(&content_dir).await?;
+        tokio::fs::create_dir_all(&template_dir).await?;
+
+        // 1. output_dir is a regular file: clean_output_directory fails on remove_dir_all
+        let file_as_output = temp.path().join("output_file");
+        tokio::fs::write(&file_as_output, "not a dir").await?;
+        let cmd_clean_err = SsgCommand {
+            content_dir: content_dir.clone(),
+            output_dir: file_as_output.clone(),
+            template_dir: template_dir.clone(),
+            config: None,
+            command: SsgSubCommand::Build(BuildArgs { clean: true }),
+        };
+        assert!(cmd_clean_err.execute().await.is_err());
+
+        // 2. output_dir is under a regular file with clean=false: create_dir_all fails
+        let nested_under_file = file_as_output.join("child");
+        let cmd_create_err = SsgCommand {
+            content_dir,
+            output_dir: nested_under_file,
+            template_dir,
+            config: None,
+            command: SsgSubCommand::Build(BuildArgs { clean: false }),
+        };
+        assert!(cmd_create_err.execute().await.is_err());
+
+        // 3. clean_output_directory when output_dir does not exist is a no-op
+        let missing_cfg = Config::builder()
+            .site_name("Test")
+            .output_dir(temp.path().join("nonexistent_out"))
+            .build()
+            .unwrap();
+        cmd_create_err
+            .clean_output_directory(&missing_cfg)
+            .await
+            .unwrap();
+
+        Ok(())
+    }
 }

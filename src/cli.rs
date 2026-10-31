@@ -306,16 +306,15 @@ Content here"#;
             let result =
                 process_extract(&input_path, "invalid_format", &None)
                     .await;
-            assert!(result.is_err());
-            if let Err(e) = result {
-                assert!(e.to_string().contains("Unsupported format"));
-            }
+            let e = result.unwrap_err();
+            assert!(e.to_string().contains("Unsupported format"));
 
             Ok(())
         }
 
         #[tokio::test]
         async fn test_extract_command() -> Result<()> {
+            log::set_max_level(log::LevelFilter::Trace);
             let dir = tempdir()?;
             let input_path = dir.path().join("test.md");
             let output_path = dir.path().join("output.yaml");
@@ -335,7 +334,8 @@ Content here"#;
                 "yaml",
                 &Some(output_path.clone()),
             )
-            .await?;
+            .await
+            .unwrap();
 
             // Read and log the output for debugging
             let output_content =
@@ -371,12 +371,10 @@ Content here"#;
             let result =
                 process_extract(&input_path, "yaml", &output_path)
                     .await;
-            assert!(result.is_err());
-            if let Err(e) = result {
-                assert!(e
-                    .to_string()
-                    .contains("Failed to read input file"));
-            }
+            let e = result.unwrap_err();
+            assert!(e
+                .to_string()
+                .contains("Failed to read input file"));
             Ok(())
         }
 
@@ -397,10 +395,8 @@ Content here";
 
             let result =
                 process_extract(&input_path, "xml", &None).await;
-            assert!(result.is_err());
-            if let Err(e) = result {
-                assert!(e.to_string().contains("Unsupported format"));
-            }
+            let e = result.unwrap_err();
+            assert!(e.to_string().contains("Unsupported format"));
             Ok(())
         }
 
@@ -416,12 +412,10 @@ Content here";
 
             let result =
                 process_extract(&input_path, "yaml", &None).await;
-            assert!(result.is_err());
-            if let Err(e) = result {
-                assert!(e
-                    .to_string()
-                    .contains("Failed to extract frontmatter"));
-            }
+            let e = result.unwrap_err();
+            assert!(e
+                .to_string()
+                .contains("Failed to extract frontmatter"));
             Ok(())
         }
 
@@ -443,12 +437,10 @@ Content here"#; // Note the missing closing quote for title
 
             let result =
                 process_extract(&input_path, "yaml", &None).await;
-            assert!(result.is_err());
-            if let Err(e) = result {
-                assert!(e
-                    .to_string()
-                    .contains("Failed to extract frontmatter"));
-            }
+            let e = result.unwrap_err();
+            assert!(e
+                .to_string()
+                .contains("Failed to extract frontmatter"));
             Ok(())
         }
 
@@ -485,12 +477,10 @@ Content here"#;
                 &Some(output_path.clone()),
             )
             .await;
-            assert!(result.is_err());
-            if let Err(e) = result {
-                assert!(e
-                    .to_string()
-                    .contains("Failed to write to output file"));
-            }
+            let e = result.unwrap_err();
+            assert!(e
+                .to_string()
+                .contains("Failed to write to output file"));
 
             Ok(())
         }
@@ -573,6 +563,7 @@ Content here"#;
 
         #[tokio::test]
         async fn test_extract_command_no_output_file() -> Result<()> {
+            log::set_max_level(log::LevelFilter::Trace);
             let dir = tempdir()?;
             let input_path = dir.path().join("test.md");
 
@@ -621,12 +612,10 @@ Content here"#;
             let result =
                 process_validate(&input_path, &Some("   ".to_string()))
                     .await;
-            assert!(result.is_err());
-            if let Err(e) = result {
-                assert!(e
-                    .to_string()
-                    .contains("Missing required field:    "));
-            }
+            let e = result.unwrap_err();
+            assert!(e
+                .to_string()
+                .contains("Missing required field:    "));
 
             Ok(())
         }
@@ -660,12 +649,10 @@ Content here"#;
                 &Some("author".to_string()),
             )
             .await;
-            assert!(result.is_err());
-            if let Err(e) = result {
-                assert!(e
-                    .to_string()
-                    .contains("Missing required field: author"));
-            }
+            let e = result.unwrap_err();
+            assert!(e
+                .to_string()
+                .contains("Missing required field: author"));
 
             Ok(())
         }
@@ -693,12 +680,10 @@ Content here"#;
                 &Some(output_path.to_path_buf()),
             )
             .await;
-            assert!(result.is_err());
-            if let Err(e) = result {
-                assert!(e
-                    .to_string()
-                    .contains("Failed to write to output file"));
-            }
+            let e = result.unwrap_err();
+            assert!(e
+                .to_string()
+                .contains("Failed to write to output file"));
 
             Ok(())
         }
@@ -724,12 +709,10 @@ Content here";
                 &Some(output_path.clone()),
             )
             .await;
-            assert!(result.is_err());
-            if let Err(e) = result {
-                assert!(e
-                    .to_string()
-                    .contains("Failed to extract frontmatter"));
-            }
+            let e = result.unwrap_err();
+            assert!(e
+                .to_string()
+                .contains("Failed to extract frontmatter"));
 
             Ok(())
         }
@@ -753,7 +736,8 @@ Content here";
                 &input_path,
                 &Some("title,date".to_string()),
             )
-            .await?;
+            .await
+            .unwrap();
 
             // Test validate command with missing field
             let result = process_validate(
@@ -776,12 +760,10 @@ Content here";
                 &Some("title".to_string()),
             )
             .await;
-            assert!(result.is_err());
-            if let Err(e) = result {
-                assert!(e
-                    .to_string()
-                    .contains("Failed to read input file"));
-            }
+            let e = result.unwrap_err();
+            assert!(e
+                .to_string()
+                .contains("Failed to read input file"));
 
             Ok(())
         }
@@ -801,12 +783,10 @@ Content here";
                 &Some("title".to_string()),
             )
             .await;
-            assert!(result.is_err());
-            if let Err(e) = result {
-                assert!(e
-                    .to_string()
-                    .contains("Failed to extract frontmatter"));
-            }
+            let e = result.unwrap_err();
+            assert!(e
+                .to_string()
+                .contains("Failed to extract frontmatter"));
 
             Ok(())
         }
@@ -832,12 +812,10 @@ Content here";
                 &Some("title".to_string()),
             )
             .await;
-            assert!(result.is_err());
-            if let Err(e) = result {
-                assert!(e
-                    .to_string()
-                    .contains("Failed to extract frontmatter"));
-            }
+            let e = result.unwrap_err();
+            assert!(e
+                .to_string()
+                .contains("Failed to extract frontmatter"));
 
             Ok(())
         }
@@ -876,13 +854,11 @@ Content here";
             // Test extract command parsing without format argument
             let args =
                 Cli::parse_from(["program", "extract", "input.md"]);
-            match args.command {
-                Commands::Extract { input, format, .. } => {
-                    assert_eq!(input, PathBuf::from("input.md"));
-                    assert_eq!(format, "yaml"); // Default value
-                }
-                _ => panic!("Expected Extract command"),
-            }
+            assert!(matches!(
+                args.command,
+                Commands::Extract { ref input, ref format, .. }
+                    if input == &PathBuf::from("input.md") && format == "yaml"
+            ));
         }
 
         #[test]
@@ -899,13 +875,11 @@ Content here";
             let args = Cli::parse_from([
                 "program", "extract", "input.md", "--format", "yaml",
             ]);
-            match args.command {
-                Commands::Extract { input, format, .. } => {
-                    assert_eq!(input, PathBuf::from("input.md"));
-                    assert_eq!(format, "yaml");
-                }
-                _ => panic!("Expected Extract command"),
-            }
+            assert!(matches!(
+                args.command,
+                Commands::Extract { ref input, ref format, .. }
+                    if input == &PathBuf::from("input.md") && format == "yaml"
+            ));
 
             // Test validate command parsing
             let args = Cli::parse_from([
@@ -915,16 +889,12 @@ Content here";
                 "--required",
                 "title,date",
             ]);
-            match args.command {
-                Commands::Validate { input, required } => {
-                    assert_eq!(input, PathBuf::from("input.md"));
-                    assert_eq!(
-                        required,
-                        Some("title,date".to_string())
-                    );
-                }
-                _ => panic!("Expected Validate command"),
-            }
+            assert!(matches!(
+                args.command,
+                Commands::Validate { ref input, ref required }
+                    if input == &PathBuf::from("input.md")
+                        && required == &Some("title,date".to_string())
+            ));
         }
     }
 
@@ -1012,10 +982,8 @@ Content here";
 
         // Test extract command with an empty format string
         let result = process_extract(&input_path, "", &None).await;
-        assert!(result.is_err());
-        if let Err(e) = result {
-            assert!(e.to_string().contains("Unsupported format"));
-        }
+        let e = result.unwrap_err();
+        assert!(e.to_string().contains("Unsupported format"));
 
         Ok(())
     }
@@ -1042,12 +1010,10 @@ Content here";
             &Some(" title , date ".to_string()),
         )
         .await;
-        assert!(result.is_err());
-        if let Err(e) = result {
-            assert!(e
-                .to_string()
-                .contains("Missing required field:  title "));
-        }
+        let e = result.unwrap_err();
+        assert!(e
+            .to_string()
+            .contains("Missing required field:  title "));
 
         Ok(())
     }
@@ -1120,6 +1086,13 @@ Content here";
             json_output["nested"]["level1"]["level2"],
             "deep value"
         );
+
+        // Null values cannot be serialised at root in TOML, triggering format error
+        let null_input = dir.path().join("null.md");
+        std::fs::write(&null_input, "---\na: null\n---\nbody")?;
+        let null_res =
+            process_extract(&null_input, "toml", &None).await;
+        assert!(null_res.is_err());
 
         Ok(())
     }
