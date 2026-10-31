@@ -1,6 +1,18 @@
 
 # cargo-vet audits file
 
+[[audits.pulldown-cmark]]
+who = "Sebastien Rousseau <sebastienrousseau@users.noreply.github.com>"
+criteria = "safe-to-deploy"
+delta = "0.13.4 -> 0.13.5"
+notes = "Delta 0.13.4 -> 0.13.5 (25 files, +1510/-1273; 21 .rs files): parser backports from main (#1181) in src/firstpass.rs and src/parse.rs plus test-suite updates; no unsafe added or removed, no runtime dependency changes."
+
+[[audits.serde_json]]
+who = "Sebastien Rousseau <sebastienrousseau@users.noreply.github.com>"
+criteria = "safe-to-deploy"
+delta = "1.0.151 -> 1.0.154"
+notes = "Delta 1.0.151 -> 1.0.154 (15 files, +279/-94; 10 .rs files): preserve -0 sign in arbitrary_precision, finite filter in as_f32, report invalid UTF-8 at first bad byte in read.rs, and no_std preserve_order support; no unsafe added or removed, no build.rs changes."
+
 [[audits.serde_spanned]]
 who = "Sebastien Rousseau <sebastienrousseau@users.noreply.github.com>"
 criteria = "safe-to-deploy"
@@ -12,6 +24,12 @@ who = "Sebastien Rousseau <sebastienrousseau@users.noreply.github.com>"
 criteria = "safe-to-deploy"
 delta = "1.53.1 -> 1.53.2"
 notes = "Delta 1.53.1 -> 1.53.2 (64 files, +1496/-435; 57 .rs files): bug-fix release per its CHANGELOG (fs seek overflow, mpsc index wraparound and permit handling, semaphore MAX_PERMITS validation, waker drops moved outside locks, timer shutdown). 8 unsafe-mentioning lines added and 11 removed, in sync and time internals: read those hunks before certifying. No build.rs, no dependency changes."
+
+[[audits.tokio]]
+who = "Sebastien Rousseau <sebastienrousseau@users.noreply.github.com>"
+criteria = "safe-to-deploy"
+delta = "1.53.2 -> 1.54.1"
+notes = "Delta 1.53.2 -> 1.54.1 (286 files, +10318/-2639; 280 .rs files): includes the 1.53.3 AsyncFd I/O-safety fix (RUSTSEC-2026-0386), FileTimes/Semaphore/UnixStream additions, and 1.54.1 timer handle revert (#8692); no build.rs, runtime dependencies unchanged."
 
 [[audits.toml]]
 who = "Sebastien Rousseau <sebastienrousseau@users.noreply.github.com>"
@@ -42,6 +60,12 @@ who = "Sebastien Rousseau <sebastienrousseau@users.noreply.github.com>"
 criteria = "safe-to-deploy"
 delta = "1.26.1 -> 1.28.0"
 notes = "Delta 1.26.1 -> 1.28.0 (10 files, +558/-98; 5 .rs files): no unsafe added or removed, no build.rs; target dependency uuid-rng-internal-lib follows to 1.28.0; rust-version 1.85.0 -> 1.89.0, within this crate's 1.89 floor."
+
+[[audits.uuid]]
+who = "Sebastien Rousseau <sebastienrousseau@users.noreply.github.com>"
+criteria = "safe-to-deploy"
+delta = "1.28.0 -> 1.29.0"
+notes = "Delta 1.28.0 -> 1.29.0 (14 files, +161/-52; 9 .rs files): adds versioned NonNilUuid constructors wrapping existing non-nil VersionedUuid builders (new_unchecked on known-non-nil v1-v8 outputs); no build.rs, target dependency uuid-rng-internal-lib follows to 1.29.0."
 
 [[trusted.dtt]]
 criteria = "safe-to-deploy"
