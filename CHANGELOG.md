@@ -10,15 +10,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **The MSRV is now Rust 1.89.0** (was 1.88.0), the floor shared by the
-  maintainer's Rust crates; the dependency graph alone still needs
-  1.88.0. `rust-version`, the README badge and policy, CONTRIBUTING.md
-  and the PR and bug-report templates move together, and
+  maintainer's Rust crates and now required by `noyalib` 0.0.58 and
+  `uuid` 1.29.0. `rust-version`, the README badge and policy,
+  CONTRIBUTING.md and the PR and bug-report templates move together, and
   `scripts/verify-release-versions.sh` now fails when any of those
   statements disagrees with `rust-version`.
 
 ### Fixed
 
 - `CITATION.cff` names 0.0.13, which turned the Quality workflow green.
+
+### Dependencies
+
+- `noyalib` pinned at `=0.0.58` (#55, #60), bringing located `from_str`
+  unknown and missing field diagnostics, CST and loader boundary
+  hardening, and the shared 1.89.0 MSRV floor.
+- `pulldown-cmark` 0.13.5, `serde_json` 1.0.154, `tokio` 1.54.1, `toml`
+  1.1.8+spec-1.1.0 and `uuid` 1.29.0 (#54, #62);
+  `dtolnay/rust-toolchain`, `Swatinem/rust-cache`,
+  `taiki-e/install-action` 2.87.31 and `astral-sh/setup-uv` 10.3.2 in
+  CI (#56, #61).
+- cargo-vet: delta audits recorded for the updated crates and `noyalib`
+  0.0.58 covered by its trusted-publisher entry, lowering the exemption
+  baseline from 144 to 142.
+- The fuzz workspace's lockfile follows the crate to 0.0.13 and
+  `noyalib` 0.0.58.
 
 ## [0.0.13] - 2026-10-11
 
