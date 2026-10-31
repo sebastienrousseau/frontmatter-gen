@@ -129,11 +129,11 @@ fn arbitrary_frontmatter(
     format: FuzzFormat,
 ) -> ArbitraryResult<Frontmatter> {
     let len = u.int_in_range(0..=6)?;
-    let mut fm = Frontmatter::with_capacity(len);
+    let mut fm = Frontmatter::new();
     for _ in 0..len {
         let key = arbitrary_key(u)?;
         let val = arbitrary_value(u, depth + 1, format)?;
-        fm.insert(key, val);
+        let _ = fm.insert(key, val);
     }
     Ok(fm)
 }
