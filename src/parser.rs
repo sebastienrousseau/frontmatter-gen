@@ -434,9 +434,8 @@ fn toml_to_value(toml: &TomlValue) -> Value {
             let mut result =
                 Frontmatter(HashMap::with_capacity(table.len()));
             for (k, v) in table {
-                let _ = result
-                    .0
-                    .insert(optimise_string(k), toml_to_value(v));
+                let key = optimise_string(k);
+                let _ = result.insert(key, toml_to_value(v));
             }
             Value::Object(Box::new(result))
         }

@@ -62,8 +62,10 @@ pub enum Value {
 ///
 /// These methods provide ergonomic type-checked projections (`as_str`,
 /// `as_float`, `as_bool`, `as_array`, `as_object`, `as_tagged`), along with
-/// emptiness checks and recursive deep merges for nested [`Frontmatter`]
-/// objects.
+/// emptiness checks, recursive deep merges for nested [`Frontmatter`]
+/// objects, and formatting utilities across YAML, TOML, and JSON values.
+///
+/// See the individual method documentation for examples.
 impl Value {
     /// Returns the value as a string slice, if it is of type `String`.
     ///

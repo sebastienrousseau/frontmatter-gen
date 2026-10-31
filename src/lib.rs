@@ -94,6 +94,8 @@ pub const MAX_FRONTMATTER_SIZE: NonZeroUsize =
     };
 
 /// Maximum allowed nesting depth for structured data (32 levels).
+///
+/// Inputs exceeding this nesting ceiling are rejected during validation.
 pub const MAX_NESTING_DEPTH: NonZeroUsize = match NonZeroUsize::new(32)
 {
     Some(val) => val,
@@ -120,8 +122,6 @@ pub mod prelude {
 /// Configuration options for parsing operations.
 ///
 /// Provides fine-grained control over parsing behaviour and security limits.
-///
-/// Defaults can be overridden via environment variables with [`ParseOptions::from_env`].
 #[derive(Debug, Clone, Copy)]
 pub struct ParseOptions {
     /// Maximum allowed content size
