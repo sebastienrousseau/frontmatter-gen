@@ -5,7 +5,7 @@ All notable changes to `frontmatter-gen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.0.14] - Unreleased
+## [0.0.14] - 2026-10-31
 
 ### Changed
 
@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `CITATION.cff` names 0.0.13, which turned the Quality workflow green.
+- `CITATION.cff` names 0.0.13 and 0.0.14 in step with `Cargo.toml`,
+  which turned the Quality workflow green.
 
 ### Dependencies
 
@@ -33,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cargo-vet: delta audits recorded for the updated crates and `noyalib`
   0.0.58 covered by its trusted-publisher entry, lowering the exemption
   baseline from 144 to 142.
-- The fuzz workspace's lockfile follows the crate to 0.0.13 and
+- The fuzz workspace's lockfile follows the crate to 0.0.14 and
   `noyalib` 0.0.58.
 
 ## [0.0.13] - 2026-10-11
