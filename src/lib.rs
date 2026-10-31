@@ -2,7 +2,7 @@
 #![forbid(unsafe_code)]
 #![doc(
     html_favicon_url = "https://kura.pro/frontmatter-gen/images/favicon.ico",
-    html_logo_url = "https://kura.pro/frontmatter-gen/images/logos/frontmatter-gen.svg",
+    html_logo_url = "https://cloudcdn.pro/clients/frontmatter-gen/v1/logos/frontmatter-gen.svg",
     html_root_url = "https://docs.rs/frontmatter-gen"
 )]
 
@@ -86,21 +86,21 @@ pub mod ssg;
 pub mod types;
 pub mod utils;
 
-macro_rules! non_zero_usize {
-    ($value:expr) => {
-        match NonZeroUsize::new($value) {
-            Some(val) => val,
-            None => panic!("Value must be non-zero"),
-        }
-    };
-}
-
-/// Maximum size allowed for frontmatter content (1MB)
+/// Maximum size allowed for frontmatter content (1 MiB).
 pub const MAX_FRONTMATTER_SIZE: NonZeroUsize =
-    non_zero_usize!(1024 * 1024);
+    match NonZeroUsize::new(1024 * 1024) {
+        Some(val) => val,
+        None => unreachable!(),
+    };
 
-/// Maximum allowed nesting depth for structured data
-pub const MAX_NESTING_DEPTH: NonZeroUsize = non_zero_usize!(32);
+/// Maximum allowed nesting depth for structured data (32 levels).
+///
+/// Inputs exceeding this nesting ceiling are rejected during validation.
+pub const MAX_NESTING_DEPTH: NonZeroUsize = match NonZeroUsize::new(32)
+{
+    Some(val) => val,
+    None => unreachable!(),
+};
 
 /// A specialized Result type for frontmatter operations.
 ///
@@ -142,6 +142,10 @@ impl Default for ParseOptions {
     }
 }
 
+const ERR_PATH_TRAVERSAL: &str =
+    "Content contains path traversal patterns";
+const ERR_NULL_BYTES: &str = "Content contains null bytes";
+
 /// Validates input content against security constraints.
 ///
 /// # Security
@@ -160,7 +164,12 @@ impl Default for ParseOptions {
 /// let options = ParseOptions::default();
 /// assert!(validate_input(content, &options).is_ok());
 /// ```
-#[inline]
+///
+/// # Errors
+///
+/// Returns [`Error::ValidationError`] on path traversal or null bytes, and
+/// [`Error::ContentTooLarge`] if `content.len()` exceeds `options.max_size`.
+/// Returns `Ok(())` when all checks succeed.
 pub fn validate_input(
     content: &str,
     options: &ParseOptions,
@@ -168,45 +177,36 @@ pub fn validate_input(
     let mut inside_fenced_code = false;
 
     for line in content.lines() {
-        if line.trim_start().starts_with("```")
-            || line.trim_start().starts_with("~~~")
-        {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
             inside_fenced_code = !inside_fenced_code;
-            continue; // Skip validation for this line
-        }
+        } else if !inside_fenced_code {
+            // Path traversal detection
+            if line.contains("../") || line.contains("..\\") {
+                // Log the offending line before returning the validation error.
+                // Both Unix and Windows parent-directory separators are rejected.
+                // Fenced code blocks are excluded above.
+                log::warn!("Potential path traversal detected: {line}");
+                let msg = ERR_PATH_TRAVERSAL.to_string();
+                return Err(Error::ValidationError(msg));
+            }
 
-        if inside_fenced_code {
-            continue; // Skip validation inside fenced code blocks
-        }
-
-        // Path traversal detection
-        if line.contains("../") || line.contains("..\\") {
-            log::warn!("Potential path traversal detected: {}", line);
-            return Err(Error::ValidationError(
-                "Content contains path traversal patterns".to_string(),
-            ));
-        }
-
-        // Null byte validation
-        if line.contains('\0') {
-            log::warn!("Null byte detected in content");
-            return Err(Error::ValidationError(
-                "Content contains null bytes".to_string(),
-            ));
+            // Null byte validation
+            if line.contains('\0') {
+                log::warn!("Null byte detected in content");
+                // Reject embedded NUL bytes
+                let msg = ERR_NULL_BYTES.to_string();
+                return Err(Error::ValidationError(msg));
+            }
         }
     }
 
     // Check size limit
-    if content.len() > options.max_size.get() {
-        log::warn!(
-            "Content exceeds maximum size: {} > {}",
-            content.len(),
-            options.max_size.get()
-        );
-        return Err(Error::ContentTooLarge {
-            size: content.len(),
-            max: options.max_size.get(),
-        });
+    let size = content.len();
+    let max = options.max_size.get();
+    if size > max {
+        log::warn!("Content exceeds maximum size: {size} > {max}");
+        return Err(Error::ContentTooLarge { size, max });
     }
 
     Ok(())
@@ -332,13 +332,13 @@ impl ParseOptions {
     pub fn from_env() -> Self {
         let max_size = std::env::var("MAX_FRONTMATTER_SIZE")
             .ok()
-            .and_then(|val| val.parse::<usize>().ok())
-            .map_or(MAX_FRONTMATTER_SIZE, |size| non_zero_usize!(size));
+            .and_then(|val| val.parse::<NonZeroUsize>().ok())
+            .unwrap_or(MAX_FRONTMATTER_SIZE);
 
         let max_depth = std::env::var("MAX_NESTING_DEPTH")
             .ok()
-            .and_then(|val| val.parse::<usize>().ok())
-            .map_or(MAX_NESTING_DEPTH, |depth| non_zero_usize!(depth));
+            .and_then(|val| val.parse::<NonZeroUsize>().ok())
+            .unwrap_or(MAX_NESTING_DEPTH);
 
         Self {
             max_size,
@@ -384,10 +384,7 @@ mod extractor_tests {
     fn test_result_type_pattern_matching() {
         let input = Some("world");
         let result = mock_operation(input);
-        match result {
-            Ok(value) => assert_eq!(value, "WORLD".to_string()),
-            Err(e) => panic!("Operation failed: {:?}", e),
-        }
+        assert_eq!(result.ok(), Some("WORLD".to_string()));
     }
 
     #[test]
@@ -808,6 +805,7 @@ mod size_limit_tests {
 
     #[test]
     fn content_larger_than_max_size_is_rejected() {
+        log::set_max_level(log::LevelFilter::Trace);
         let options = ParseOptions {
             max_size: NonZeroUsize::new(16).expect("non-zero"),
             ..ParseOptions::default()
@@ -833,5 +831,144 @@ mod size_limit_tests {
         };
         validate_input(content, &options)
             .expect("content exactly at the limit is accepted");
+    }
+}
+
+#[cfg(test)]
+extern crate alloc;
+
+#[cfg(test)]
+mod miri_and_core_symbiosis_tests {
+    mod core_kernel {
+        use crate::{
+            extractor::{detect_format, extract_raw_frontmatter},
+            parser::{
+                parse, parse_with_options, to_string,
+                validate_frontmatter, ParseOptions as ParserOptions,
+            },
+            Frontmatter, Value,
+        };
+        use alloc::{boxed::Box, string::String, vec::Vec};
+        use core::{fmt::Write as _, str};
+
+        pub(super) fn verify_core_pipeline(
+            input: &[u8],
+            max_depth: usize,
+            max_keys: usize,
+        ) -> crate::Result<Frontmatter> {
+            let content = str::from_utf8(input)
+                .map_err(|_| crate::Error::InvalidFormat)?;
+            let (raw, body) = extract_raw_frontmatter(content)?;
+            let doc_range = content.as_bytes().as_ptr_range();
+            assert!(doc_range.contains(&raw.as_bytes().as_ptr()));
+            assert!(doc_range.contains(&body.as_bytes().as_ptr()));
+            assert!(content.ends_with(body));
+
+            let fmt = detect_format(raw)?;
+            let opts = ParserOptions {
+                max_depth,
+                max_keys,
+                validate: true,
+            };
+            let fm: Frontmatter =
+                parse_with_options(raw, fmt, Some(opts))?;
+            validate_frontmatter(&fm, max_depth, max_keys)?;
+
+            let roundtrip: String = to_string(&fm, fmt)?;
+            let mut sink = String::new();
+            let _ = write!(&mut sink, "{roundtrip}");
+            assert!(!sink.is_empty());
+
+            let reparsed: Frontmatter = parse(&roundtrip, fmt)?;
+            let boxed: Box<Frontmatter> = Box::new(reparsed);
+            let keys: Vec<&String> =
+                boxed.iter().map(|(k, _)| k).collect();
+            assert_eq!(keys.len(), fm.len());
+            for (k, v) in fm.iter() {
+                let got = boxed.get(k);
+                assert_eq!(v.as_str(), got.and_then(Value::as_str));
+                assert_eq!(v.as_bool(), got.and_then(Value::as_bool));
+            }
+            Ok(*boxed)
+        }
+    }
+
+    use super::*;
+    use crate::error::{Context, EngineError};
+    use std::sync::Arc;
+    use std::thread;
+
+    #[test]
+    fn miri_zero_copy_provenance_and_core_alloc_symbiosis() {
+        let cases: [&[u8]; 3] = [
+            "---\ntitle: \"🦀 Rust Ω\"\nflag: true\n---\nBody 東京."
+                .as_bytes(),
+            "+++\ntitle = \"🦀 Rust Ω\"\nflag = true\n+++\nBody 東京."
+                .as_bytes(),
+            "{\n  \"title\": \"🦀 Rust Ω\",\n  \"flag\": true\n}\nBody 東京."
+                .as_bytes(),
+        ];
+
+        for doc in cases {
+            let fm =
+                core_kernel::verify_core_pipeline(doc, 4, 8).unwrap();
+            assert_eq!(
+                fm.get("title").and_then(Value::as_str),
+                Some("🦀 Rust Ω")
+            );
+            assert!(
+                core_kernel::verify_core_pipeline(doc, 4, 1).is_err()
+            );
+        }
+
+        assert!(core_kernel::verify_core_pipeline(&[0xFF, 0xFE], 4, 8)
+            .is_err());
+    }
+
+    #[test]
+    fn miri_concurrent_arc_error_clones_and_depth_boundaries() {
+        let deep_yaml = "---\na:\n  b:\n    c: val\n---\nbody";
+        assert!(core_kernel::verify_core_pipeline(
+            deep_yaml.as_bytes(),
+            3,
+            8
+        )
+        .is_ok());
+        assert!(core_kernel::verify_core_pipeline(
+            deep_yaml.as_bytes(),
+            2,
+            8
+        )
+        .is_err());
+
+        let yaml_err =
+            parse("invalid: [unclosed", Format::Yaml).unwrap_err();
+        let json_err =
+            parse("{\"unclosed\": ", Format::Json).unwrap_err();
+        let shared = Arc::new((yaml_err, json_err));
+
+        let mut handles = Vec::with_capacity(2);
+        for idx in 0..2 {
+            let pair = Arc::clone(&shared);
+            handles.push(thread::spawn(move || {
+                let ctx = Context {
+                    line: Some(idx + 1),
+                    column: Some(4),
+                    snippet: Some("unclosed".to_owned()),
+                };
+                let y = pair.0.clone().with_context(&ctx);
+                let j = pair.1.clone().with_context(&ctx);
+                let engine_err = EngineError::FileSystemError {
+                    source: std::io::Error::other("miri"),
+                    context: y.to_string(),
+                };
+                let converted: Error = engine_err.clone().into();
+                assert!(!j.to_string().is_empty());
+                assert!(!converted.to_string().is_empty());
+            }));
+        }
+        for handle in handles {
+            handle.join().unwrap();
+        }
     }
 }

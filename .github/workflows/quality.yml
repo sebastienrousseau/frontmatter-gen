@@ -28,7 +28,7 @@ env:
 
 jobs:
   coverage-gate:
-    name: coverage (98% lines)
+    name: coverage (100% lines)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -43,15 +43,10 @@ jobs:
       - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31, installs cargo-llvm-cov
         with:
           tool: cargo-llvm-cov
-      # The threshold and its rationale live in DEVELOPMENT.md. A number
-      # chosen once and defended beats chasing 100%.
-      # `src/main.rs` is excluded: it is the CLI binary's entry point —
-      # argument dispatch, logging setup and process exit — reachable
-      # only by running the binary. The library surface behind it is
-      # covered directly. The rationale is in DEVELOPMENT.md.
+      # The threshold and its rationale live in DEVELOPMENT.md.
       - run: |
-          cargo llvm-cov --all-features --locked \
-            --ignore-filename-regex 'src/main\.rs' --fail-under-lines 98
+          cargo +nightly llvm-cov --all-features --locked \
+            --fail-under-lines 100 --show-missing-lines
 
   miri:
     name: miri
@@ -67,9 +62,11 @@ jobs:
           components: miri
       - uses: Swatinem/rust-cache@c8037a86dde8214a8310e9f54a8fc61ab362aa31 # v2
       # The crate forbids unsafe, so this checks the interaction with
-      # dependencies that use it internally. Filesystem tests carry
-      # #[cfg_attr(miri, ignore)] — isolation forbids open() and mkdir().
-      - run: cargo +nightly miri test --lib
+      # dependencies that use it internally under Tree Borrows and
+      # strict provenance. Filesystem tests are gated behind `ssg`.
+      - env:
+          MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-tree-borrows
+        run: cargo +nightly miri test --lib --locked
 
   fuzz-replay:
     name: fuzz build + corpus replay

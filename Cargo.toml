@@ -4,12 +4,12 @@
 
 [package]
 name = "frontmatter-gen"
-version = "0.0.14"
+version = "0.0.15"
 edition = "2021"
 rust-version = "1.89.0"
 license = "MIT OR Apache-2.0"
 description = """
-A Rust library for generating and parsing frontmatter in various formats.
+Extract, parse, validate, and convert Markdown front matter across YAML 1.2, TOML, and JSON with zero unsafe code, HTML meta-tag generation, and the fmg CLI.
 """
 homepage = "https://frontmatter-gen.com/"
 documentation = "https://frontmatter-gen.com/documentation/index.html"
@@ -28,7 +28,7 @@ categories = [
 ]
 
 # Keywords for easier discoverability on Crates.io.
-keywords = ["frontmatter", "yaml", "toml", "json", "frontmatter-gen"]
+keywords = ["frontmatter", "markdown", "yaml", "toml", "json"]
 
 # Excluding unnecessary files from the package
 exclude = [

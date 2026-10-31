@@ -18,9 +18,10 @@
 #   make bench-smoke — compile and run each bench once, no measurement
 #   make versions  — every version-bearing file agrees with Cargo.toml
 #   make sbom      — generate a software bill of materials
+#   make demo      — regenerate .github/demo.gif via VHS
 #   make clean     — remove build artifacts
 
-.PHONY: all check clippy test fmt lint deny vet audit doc coverage miri fuzz examples bench-smoke versions sbom clean
+.PHONY: all check clippy test fmt lint deny vet audit doc coverage miri fuzz examples bench-smoke versions sbom demo clean
 
 all: check clippy test
 
@@ -56,17 +57,15 @@ audit:
 doc:
 	RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --all-features
 
-# Coverage as CI measures it. The gate is 98 % lines; the rationale is
-# in DEVELOPMENT.md.
-# `src/main.rs` is excluded: it is the CLI binary's entry point,
-# reachable only by running the binary, and the library surface behind
-# it is covered directly. See DEVELOPMENT.md for the argument.
+# Coverage as CI measures it. The gate is 100% lines across the
+# entire crate (library and CLI entry point).
 coverage:
-	cargo +nightly llvm-cov --all-features \
-	  --ignore-filename-regex 'src/main\.rs' --fail-under-lines 98
+	cargo +nightly llvm-cov --all-features --locked \
+	  --fail-under-lines 100
 
 miri:
-	cargo +nightly miri test --lib
+	MIRIFLAGS="-Zmiri-strict-provenance -Zmiri-tree-borrows" \
+	  cargo +nightly miri test --lib --locked
 
 # Build every target, then replay the seed corpus and the regression
 # inputs without generating new ones. Mirrors the per-push CI gate.
@@ -96,6 +95,9 @@ versions:
 sbom:
 	cargo tree --edges normal --prefix depth --format '{p} {l}' > SBOM.txt
 	@echo "SBOM written to SBOM.txt"
+
+demo:
+	vhs .github/demo.tape
 
 clean:
 	cargo clean

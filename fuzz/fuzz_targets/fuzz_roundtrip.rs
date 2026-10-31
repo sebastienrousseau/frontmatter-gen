@@ -30,10 +30,19 @@ fuzz_target!(|data: &[u8]| {
                 reparsed.len(),
                 "{format} lost or invented a key across a round trip"
             );
-            for (key, _) in parsed.iter() {
-                assert!(
-                    reparsed.contains_key(key),
-                    "{format} dropped the key {key:?} across a round trip"
+            for (key, val) in parsed.iter() {
+                let got = reparsed.get(key).unwrap_or_else(|| {
+                    panic!("{format} dropped the key {key:?} across a round trip")
+                });
+                assert_eq!(
+                    val.as_str(),
+                    got.as_str(),
+                    "{format} mutated string payload for key {key:?}"
+                );
+                assert_eq!(
+                    val.as_bool(),
+                    got.as_bool(),
+                    "{format} mutated boolean payload for key {key:?}"
                 );
             }
         }

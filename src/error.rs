@@ -55,16 +55,21 @@ pub struct Context {
 
 impl std::fmt::Display for Context {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "at {}:{}",
-            self.line.unwrap_or(0),
-            self.column.unwrap_or(0)
-        )?;
-        if let Some(snippet) = &self.snippet {
-            write!(f, " near '{}'", snippet)?;
+        match &self.snippet {
+            Some(snippet) => write!(
+                f,
+                "at {}:{} near '{}'",
+                self.line.unwrap_or(0),
+                self.column.unwrap_or(0),
+                snippet
+            ),
+            None => write!(
+                f,
+                "at {}:{}",
+                self.line.unwrap_or(0),
+                self.column.unwrap_or(0)
+            ),
         }
-        Ok(())
     }
 }
 
@@ -445,9 +450,11 @@ impl Error {
             .unwrap_or_default();
 
         match self {
-            Self::ParseError(msg) => Self::ParseError(format!(
-                "{msg}{context_info}{snippet_info}"
-            )),
+            Self::ParseError(mut msg) => {
+                msg.push_str(&context_info);
+                msg.push_str(&snippet_info);
+                Self::ParseError(msg)
+            }
             Self::YamlParseError { source } => {
                 Self::YamlParseError { source }
             }
@@ -489,6 +496,7 @@ pub enum EngineError {
     MetadataError(String),
 }
 
+/// Manual `Clone` implementation for `EngineError`.
 impl Clone for EngineError {
     fn clone(&self) -> Self {
         match self {
@@ -517,6 +525,9 @@ impl Clone for EngineError {
 ///
 /// This allows engine errors to be converted into front matter errors when needed,
 /// preserving the error context and message.
+///
+/// Every variant of `EngineError` maps to `Error::ParseError` with a descriptive
+/// prefix indicating the subsystems that reported the failure.
 ///
 /// # Examples
 ///
@@ -561,6 +572,8 @@ impl From<std::io::Error> for Error {
 }
 
 /// Converts a front matter `Error` into a string.
+///
+/// Uses the `Display` formatting of `Error` to produce an owned `String`.
 impl From<Error> for String {
     fn from(err: Error) -> Self {
         err.to_string()
@@ -934,11 +947,8 @@ mod exhaustive_error_tests {
     fn display_is_non_empty_and_names_its_payload() {
         for error in one_of_every_error() {
             let text = error.to_string();
-            assert!(
-                !text.is_empty(),
-                "{} has no message",
-                variant_of(&error)
-            );
+            let variant = variant_of(&error);
+            assert!(!text.is_empty(), "{variant} has no message");
         }
         assert!(Error::ContentTooLarge { size: 10, max: 5 }
             .to_string()
@@ -1080,11 +1090,25 @@ mod exhaustive_error_tests {
             context: "writing output".into(),
         };
         let cloned = error.clone();
-        let EngineError::FileSystemError { source, context } = &cloned
-        else {
-            panic!("clone changed the variant");
-        };
-        assert_eq!(source.kind(), std::io::ErrorKind::PermissionDenied);
-        assert_eq!(context, "writing output");
+        assert!(matches!(
+            &cloned,
+            EngineError::FileSystemError { source, context }
+                if source.kind() == std::io::ErrorKind::PermissionDenied
+                    && context == "writing output"
+        ));
+
+        let yaml_err = noyalib::from_str::<noyalib::Value>(":\n  - [")
+            .expect_err("invalid yaml");
+        let wrapped = Error::YamlParseError {
+            source: yaml_err.into(),
+        }
+        .with_context(&Context {
+            line: Some(1),
+            column: Some(2),
+            snippet: None,
+        });
+        assert!(matches!(wrapped, Error::YamlParseError { .. }));
+        let as_str: String = Error::InvalidFormat.into();
+        assert!(!as_str.is_empty());
     }
 }

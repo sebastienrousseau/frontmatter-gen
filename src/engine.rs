@@ -197,17 +197,13 @@ impl Engine {
                     ),
                 )?;
 
-                if let Some(name) = path.file_stem() {
-                    let _ = templates.insert(
-                        name.to_string_lossy().into_owned(),
-                        content,
-                    );
-
-                    log::debug!(
-                        "Loaded template: {}",
-                        name.to_string_lossy()
-                    );
-                }
+                let name = path
+                    .file_stem()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .into_owned();
+                log::debug!("Loaded template: {}", name);
+                let _ = templates.insert(name, content);
             }
         }
 
@@ -456,7 +452,8 @@ mod tests {
             .content_dir(content_dir)
             .template_dir(template_dir)
             .output_dir(output_dir)
-            .build()?;
+            .build()
+            .unwrap();
 
         Ok((temp_dir, config))
     }
@@ -719,6 +716,9 @@ mod exhaustive_engine_tests {
 
         cache.clear();
         assert!(cache.items.is_empty());
+
+        let mut zero_cache: SizeCache<String, u32> = SizeCache::new(0);
+        let _ = zero_cache.insert("z".into(), 0);
     }
 
     #[test]
@@ -835,5 +835,79 @@ mod exhaustive_engine_tests {
         let config = config_in(dir.path()).await;
         let engine = Engine::new().expect("engine");
         engine.generate_pages(&config).await.expect("no-op");
+    }
+
+    #[tokio::test]
+    async fn engine_covers_cache_zero_and_filesystem_edge_cases() {
+        log::set_max_level(log::LevelFilter::Trace);
+
+        // 1. SizeCache with max_size = 0
+        let mut zero_cache: SizeCache<&str, &str> = SizeCache::new(0);
+        assert_eq!(zero_cache.insert("k", "v"), None);
+
+        let dir = tempfile::tempdir().expect("tempdir");
+        let config = config_in(dir.path()).await;
+        let engine = Engine::new().expect("engine");
+
+        // 2. process_content_file on a missing path
+        assert!(engine
+            .process_content_file(
+                &config.content_dir.join("missing.md"),
+                &config
+            )
+            .await
+            .is_err());
+
+        // 3. process_content_files skips non-.md files and processes .md files
+        std::fs::write(config.content_dir.join("notes.txt"), b"skip")
+            .expect("write txt");
+        std::fs::write(
+            config.content_dir.join("post.md"),
+            b"---\ntitle: Hello\n---\nBody",
+        )
+        .expect("write md");
+        engine
+            .process_content_files(&config)
+            .await
+            .expect("process content files");
+
+        // 4. render_template error when template references undefined variable
+        let cf = ContentFile {
+            dest_path: config.output_dir.join("post.html"),
+            metadata: HashMap::new(),
+            content: "<p>Body</p>".into(),
+        };
+        assert!(engine
+            .render_template("{{ undefined_var }}", &cf)
+            .is_err());
+
+        // 5. copy_assets with nested subdirectories and existing destination assets dir
+        let nested_asset_dir =
+            config.content_dir.join("assets").join("css");
+        std::fs::create_dir_all(&nested_asset_dir)
+            .expect("mkdir assets/css");
+        std::fs::write(
+            nested_asset_dir.join("site.css"),
+            b"body { margin: 0; }",
+        )
+        .expect("write css");
+        engine.copy_assets(&config).await.expect("first copy");
+        engine
+            .copy_assets(&config)
+            .await
+            .expect("second copy removes existing dest_assets_dir");
+        assert!(config
+            .output_dir
+            .join("assets")
+            .join("css")
+            .join("site.css")
+            .exists());
+
+        // 6. load_templates fails when an entry with .html extension is a directory
+        std::fs::create_dir_all(
+            config.template_dir.join("not_a_file.html"),
+        )
+        .expect("mkdir html");
+        assert!(engine.load_templates(&config).await.is_err());
     }
 }

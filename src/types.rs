@@ -58,6 +58,14 @@ pub enum Value {
     Tagged(String, Box<Value>),
 }
 
+/// Accessor and conversion methods for [`Value`].
+///
+/// These methods provide ergonomic type-checked projections (`as_str`,
+/// `as_float`, `as_bool`, `as_array`, `as_object`, `as_tagged`), along with
+/// emptiness checks, recursive deep merges for nested [`Frontmatter`]
+/// objects, and formatting utilities across YAML, TOML, and JSON values.
+///
+/// See the individual method documentation for examples.
 impl Value {
     /// Returns the value as a string slice, if it is of type `String`.
     ///
@@ -1317,12 +1325,10 @@ mod tests {
                 Box::new(Value::Number(42.0)),
             );
 
-            if let Value::Tagged(tag, value) = tagged_value {
-                assert_eq!(tag, "tag");
-                assert_eq!(*value, Value::Number(42.0));
-            } else {
-                panic!("Expected Value::Tagged");
-            }
+            assert_eq!(
+                tagged_value.as_tagged(),
+                Some(("tag", &Value::Number(42.0)))
+            );
         }
 
         #[test]
@@ -1332,9 +1338,10 @@ mod tests {
                 Value::Number(2.0),
             ]);
 
-            if let Some(array) = value.get_mut_array() {
-                array.push(Value::Number(3.0));
-            }
+            value
+                .get_mut_array()
+                .expect("array")
+                .push(Value::Number(3.0));
 
             assert_eq!(value.array_len(), Some(3));
             assert!(value
@@ -1649,9 +1656,7 @@ mod exhaustive_type_tests {
 
         assert_eq!(fm.get("a"), Some(&Value::Number(1.0)));
         assert_eq!(fm.get("missing"), None);
-        if let Some(v) = fm.get_mut("a") {
-            *v = Value::Number(9.0);
-        }
+        *fm.get_mut("a").expect("key a") = Value::Number(9.0);
         assert_eq!(fm.get("a"), Some(&Value::Number(9.0)));
         assert!(fm.get_mut("missing").is_none());
 
@@ -1749,5 +1754,8 @@ mod exhaustive_type_tests {
         .collect();
         assert_eq!(fm.len(), 2);
         assert_eq!(fm.get("b"), Some(&Value::String("x".into())));
+        assert_eq!("42.5".parse::<Value>(), Ok(Value::Number(42.5)));
+        let obj_val = Value::Object(Box::new(fm));
+        assert!(obj_val.to_string().contains("\"a\": 1"));
     }
 }

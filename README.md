@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 OR MIT -->
 
 <p align="center">
-  <img src="https://kura.pro/frontmatter-gen/images/logos/frontmatter-gen.svg" alt="frontmatter-gen logo" width="128" />
+  <img src="https://cloudcdn.pro/clients/frontmatter-gen/v1/logos/frontmatter-gen.svg" alt="frontmatter-gen logo" width="128" />
 </p>
 
 <h1 align="center">frontmatter-gen</h1>
@@ -20,6 +20,10 @@
   <a href="https://www.bestpractices.dev/projects/14538"><img src="https://img.shields.io/cii/level/14538?style=for-the-badge&label=OpenSSF%20Best%20Practices&logo=openssf" alt="OpenSSF Best Practices" /></a>
   <a href="LICENSE-APACHE"><img src="https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg?style=for-the-badge" alt="License" /></a>
   <a href="#minimum-toolchain-policy"><img src="https://img.shields.io/badge/MSRV-1.89.0-orange.svg?style=for-the-badge" alt="MSRV 1.89.0" /></a>
+</p>
+
+<p align="center">
+  <img src=".github/demo.gif" alt="frontmatter-gen terminal demo: inspecting, validating, and converting Markdown front matter across YAML, JSON, and TOML" width="100%" />
 </p>
 
 ---
@@ -58,7 +62,7 @@
 
 ```toml
 [dependencies]
-frontmatter-gen = "0.0.14"
+frontmatter-gen = "0.0.15"
 ```
 
 Or from the command line:
@@ -344,12 +348,13 @@ make clippy       # lints, warnings denied
 make fmt          # formatting check
 make lint         # markdownlint + codespell + REUSE
 make doc          # rustdoc with warnings denied
-make coverage     # line coverage gate (98%, excluding src/main.rs)
+make coverage     # line coverage gate (100% across all modules)
 make miri         # lib tests under Miri
 make fuzz         # build every target, replay corpus and regressions
 make examples     # run every example
 make bench-smoke  # compile and run each bench once
 make versions     # every version-bearing file agrees
+make demo         # regenerate .github/demo.gif via VHS
 make deny / vet / audit   # supply chain
 ```
 

@@ -150,9 +150,7 @@ pub fn extract_json_frontmatter(content: &str) -> Result<&str, Error> {
             '}' if !in_string => {
                 brace_count -= 1;
                 // Decrease depth when closing braces
-                if depth > 0 {
-                    depth = depth.saturating_sub(1);
-                }
+                depth = depth.saturating_sub(1);
                 // Once braces are balanced (brace_count == 0), we've reached the end of the JSON object.
                 if brace_count == 0 {
                     return Ok(&trimmed[..=idx]);
@@ -302,11 +300,33 @@ Content here"#;
         fn test_invalid_format() {
             let content = "Invalid frontmatter";
             let result = detect_format(content);
-            if let Err(Error::InvalidFormat) = result {
-                // Test passed
-            } else {
-                panic!("Expected Err(InvalidFormat), got {:?}", result);
-            }
+            assert!(matches!(result, Err(Error::InvalidFormat)));
+        }
+
+        #[test]
+        fn test_extract_crlf_yaml_and_toml() {
+            let yaml_crlf =
+                "---\r\ntitle: Example\r\n---\r\nContent here";
+            let (raw_yaml, body_yaml) =
+                extract_raw_frontmatter(yaml_crlf).unwrap();
+            assert_eq!(raw_yaml, "title: Example");
+            assert_eq!(body_yaml, "Content here");
+
+            let toml_crlf =
+                "+++\r\ntitle = \"Example\"\r\n+++\r\nContent here";
+            let (raw_toml, body_toml) =
+                extract_raw_frontmatter(toml_crlf).unwrap();
+            assert_eq!(raw_toml, "title = \"Example\"");
+            assert_eq!(body_toml, "Content here");
+
+            assert_eq!(
+                detect_format("---\ntitle: Example\n---").unwrap(),
+                Format::Yaml
+            );
+            assert!(matches!(
+                extract_json_frontmatter("{ \"unclosed\": 1"),
+                Err(Error::InvalidJson)
+            ));
         }
     }
 

@@ -5,6 +5,20 @@ All notable changes to `frontmatter-gen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.15] - 2026-10-31
+
+### Added
+
+- **100% unit test line and function coverage**: Expanded unit test suites across all 11 modules (`cli`, `config`, `engine`, `error`, `extractor`, `lib`, `main`, `parser`, `ssg`, `types`, `utils`) to achieve `100.00%` line and function coverage under both `cargo-llvm-cov` (`5,595 / 5,595` lines on stable, `5,521 / 5,521` lines on nightly, `650 / 650` functions) and `cargo-tarpaulin` / Codecov (`1,085 / 1,085` lines, `0` misses), enforced by `--fail-under-lines 100` in CI.
+- **Miri Tree Borrows and strict provenance gate**: Added `miri_and_core_symbiosis_tests` in `src/lib.rs` and hardened `.github/workflows/quality.yml` with `MIRIFLAGS="-Zmiri-strict-provenance -Zmiri-tree-borrows"`.
+- **Structure-aware `Arbitrary` fuzzing**: Added `fuzz_structured` (`fuzz/fuzz_targets/fuzz_structured.rs`) with `Arbitrary`-driven semantic state-space exploration across YAML, TOML, and JSON round-trips, budget boundaries, and HTML meta-tag generation, alongside an expanded `fuzz_roundtrip` harness.
+- **Interactive terminal demo GIF**: Added `.github/demo.tape`, `.github/demo.gif`, and `make demo` in `Makefile`, embedded in `README.md`.
+
+### Changed
+
+- Updated brand logo URL to `https://cloudcdn.pro/clients/frontmatter-gen/v1/logos/frontmatter-gen.svg` across `README.md`, `TEMPLATE.md`, and `src/lib.rs`.
+- Synchronized crate description, keywords, `CITATION.cff` metadata, and GitHub repository search topics.
+
 ## [0.0.14] - 2026-10-31
 
 ### Changed

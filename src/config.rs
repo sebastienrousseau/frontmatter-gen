@@ -220,14 +220,15 @@ impl fmt::Display for Config {
         write!(f, "Site: {} ({})", self.site_name, self.site_title)?;
 
         #[cfg(feature = "ssg")]
-        write!(
+        return write!(
             f,
             "\nContent: {}\nOutput: {}\nTemplates: {}",
             self.content_dir.display(),
             self.output_dir.display(),
             self.template_dir.display()
-        )?;
+        );
 
+        #[cfg(not(feature = "ssg"))]
         Ok(())
     }
 }
