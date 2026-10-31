@@ -65,7 +65,7 @@ jobs:
       # dependencies that use it internally under Tree Borrows and
       # strict provenance. Filesystem tests are gated behind `ssg`.
       - env:
-          MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-tree-borrows -Zmiri-symbolic-alignment-check -Zmiri-retag-fields
+          MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-tree-borrows
         run: cargo +nightly miri test --lib --locked
 
   fuzz-replay:

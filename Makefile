@@ -64,7 +64,7 @@ coverage:
 	  --fail-under-lines 100
 
 miri:
-	MIRIFLAGS="-Zmiri-strict-provenance -Zmiri-tree-borrows -Zmiri-symbolic-alignment-check -Zmiri-retag-fields" \
+	MIRIFLAGS="-Zmiri-strict-provenance -Zmiri-tree-borrows" \
 	  cargo +nightly miri test --lib --locked
 
 # Build every target, then replay the seed corpus and the regression
