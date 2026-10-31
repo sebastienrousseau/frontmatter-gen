@@ -22,6 +22,10 @@
   <a href="#minimum-toolchain-policy"><img src="https://img.shields.io/badge/MSRV-1.89.0-orange.svg?style=for-the-badge" alt="MSRV 1.89.0" /></a>
 </p>
 
+<p align="center">
+  <img src=".github/demo.gif" alt="frontmatter-gen terminal demo: inspecting, validating, and converting Markdown front matter across YAML, JSON, and TOML" width="100%" />
+</p>
+
 ---
 
 ## Contents
@@ -344,12 +348,13 @@ make clippy       # lints, warnings denied
 make fmt          # formatting check
 make lint         # markdownlint + codespell + REUSE
 make doc          # rustdoc with warnings denied
-make coverage     # line coverage gate (98%, excluding src/main.rs)
+make coverage     # line coverage gate (100% across all modules)
 make miri         # lib tests under Miri
 make fuzz         # build every target, replay corpus and regressions
 make examples     # run every example
 make bench-smoke  # compile and run each bench once
 make versions     # every version-bearing file agrees
+make demo         # regenerate .github/demo.gif via VHS
 make deny / vet / audit   # supply chain
 ```
 

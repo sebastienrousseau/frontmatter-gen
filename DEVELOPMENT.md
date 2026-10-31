@@ -52,6 +52,7 @@ default set is not finished.
 | Benches compile and run once | `make bench-smoke` |
 | Version-bearing files agree | `make versions` |
 | Supply chain | `make deny` / `make vet` / `make audit` |
+| Regenerate `.github/demo.gif` | `make demo` |
 
 ## Reproducing the CI gates
 
@@ -64,7 +65,7 @@ repository standard requires that the shared pipeline does not cover.
 | CI job | Local reproduction | Gotcha |
 | :--- | :--- | :--- |
 | `ci` (fmt, clippy, test, cross-platform) | `make` | |
-| `coverage-gate` | `make coverage` | nightly; 98 % lines, excluding `src/main.rs` |
+| `coverage-gate` | `make coverage` | nightly; 100 % lines and functions across all modules |
 | `miri` | `make miri` | lib tests; filesystem tests carry `#[cfg_attr(miri, ignore)]` |
 | `fuzz-replay` | `make fuzz` | needs a source-installed cargo-fuzz (see above) |
 | `docs-lint` | `make lint` | British spellings are house style; see `.codespellrc` |
@@ -74,19 +75,14 @@ repository standard requires that the shared pipeline does not cover.
 
 ## Coverage: the threshold and why
 
-The gate is **98 % lines**, measured with `cargo llvm-cov
---all-features` and **excluding `src/main.rs`**.
+The gate is **100 % lines**, measured with `cargo llvm-cov
+--all-features --locked` across every library module and the `fmg`
+binary entry point (`src/main.rs`).
 
-That exclusion is the only one. `main.rs` is the `fmg` binary's entry
-point: argument dispatch, logging setup, feature reporting and process
-exit. Reaching it means running the binary and inspecting its exit
-status, which tests the harness rather than the crate — and every
-library function it calls is covered directly, through `cli.rs` and the
-modules below it. Counting it would push effort toward asserting on
-`main`'s glue instead of on behaviour.
-
-What remains uncovered inside the gate is mostly defensive: error arms
-for conditions the surrounding code has already excluded.
+Every function and line across `cli`, `config`, `engine`, `error`,
+`extractor`, `lib`, `main`, `parser`, `ssg`, `types`, and `utils` is
+exercised by unit tests, including error conversions, filesystem failure
+paths, and CLI argument dispatch.
 
 ## Test layout
 
