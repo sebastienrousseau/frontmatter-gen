@@ -9,7 +9,7 @@ authors:
 repository-code: "https://github.com/sebastienrousseau/frontmatter-gen"
 url: "https://github.com/sebastienrousseau/frontmatter-gen"
 license: "Apache-2.0 OR MIT"
-version: 0.0.14
+version: 0.0.15
 date-released: "2026-10-31"
 abstract: >-
   Extract, parse, validate, and convert Markdown front matter in Rust across YAML 1.2, TOML, and JSON with zero unsafe code, configurable depth and size budgets, HTML meta-tag generation, a static-site engine, and the fmg CLI.
