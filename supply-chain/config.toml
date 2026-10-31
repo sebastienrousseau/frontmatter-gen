@@ -161,7 +161,7 @@ version = "0.1.12"
 criteria = "safe-to-run"
 
 [[exemptions.frontmatter-gen]]
-version = "0.0.13"
+version = "0.0.14"
 criteria = "safe-to-deploy"
 
 [[exemptions.futures-core]]
@@ -286,10 +286,6 @@ criteria = "safe-to-deploy"
 
 [[exemptions.num-conv]]
 version = "0.2.2"
-criteria = "safe-to-deploy"
-
-[[exemptions.num_threads]]
-version = "0.1.7"
 criteria = "safe-to-deploy"
 
 [[exemptions.once_cell]]
@@ -477,7 +473,7 @@ version = "0.8.3"
 criteria = "safe-to-deploy"
 
 [[exemptions.tokio]]
-version = "1.53.3"
+version = "1.53.1"
 criteria = "safe-to-deploy"
 
 [[exemptions.tokio-macros]]

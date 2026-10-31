@@ -16,8 +16,8 @@ user-login = "sebastienrousseau"
 user-name = "Sebastien Rousseau"
 
 [[publisher.noyalib]]
-version = "0.0.56"
-when = "2026-10-08"
+version = "0.0.58"
+when = "2026-10-15"
 trusted-publisher = "github:sebastienrousseau/noyalib"
 
 [[publisher.unicode-width]]
