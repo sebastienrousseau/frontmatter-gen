@@ -142,7 +142,8 @@ jobs:
         run: |
           set -euo pipefail
           baseline="$(tr -d '[:space:]' < supply-chain/exemptions-baseline.txt)"
-          current="$(cargo vet --locked 2>&1 | grep -oE '[0-9]+ exempted' | grep -oE '[0-9]+')"
+          current="$(cargo vet --locked 2>&1 | grep -oE '[0-9]+ exempted' | grep -oE '[0-9]+' || true)"
+          current="${current:-0}"
           echo "exempted: $current (baseline $baseline)"
           if [ "$current" -gt "$baseline" ]; then
             echo "::error::exemptions grew from $baseline to $current"
