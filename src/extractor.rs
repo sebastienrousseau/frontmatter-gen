@@ -2,8 +2,12 @@
 //!
 //! It includes functions to extract frontmatter in various formats (YAML, TOML, JSON) from a given string content, as well as utilities to detect the format of the frontmatter.
 
+mod scan;
+
 use crate::error::Error;
 use crate::types::Format;
+use scan::skip_lead;
+pub(crate) use scan::{fenced_block, Fenced};
 
 /// Extracts raw frontmatter from the content, detecting YAML, TOML, or JSON formats.
 ///
@@ -37,52 +41,22 @@ use crate::types::Format;
 pub fn extract_raw_frontmatter(
     content: &str,
 ) -> Result<(&str, &str), Error> {
-    // Extract YAML frontmatter
-    if let Some(yaml) =
-        extract_delimited_frontmatter(content, "---\n", "\n---")
-            .or_else(|| {
-                extract_delimited_frontmatter(
-                    content, "---\r\n", "\r\n---",
-                )
-            })
-    {
-        let remaining = &content[content
-            .find("\n---\n")
-            .or_else(|| content.find("\r\n---\r\n"))
-            .map_or(content.len(), |i| i + 5)..];
-        return Ok((yaml, remaining.trim_start()));
+    for (fence, format) in [("---", "YAML"), ("+++", "TOML")] {
+        match fenced_block(content, fence) {
+            Fenced::Found { raw, body_offset } => {
+                return Ok((raw, content[body_offset..].trim_start()));
+            }
+            Fenced::Unterminated => {
+                return Err(Error::ExtractionError(format!(
+                    "unterminated {format} front matter: no closing `{fence}` line"
+                )));
+            }
+            Fenced::None => {}
+        }
     }
 
-    // Extract TOML frontmatter
-    if let Some(toml) =
-        extract_delimited_frontmatter(content, "+++\n", "\n+++")
-            .or_else(|| {
-                extract_delimited_frontmatter(
-                    content, "+++\r\n", "\r\n+++",
-                )
-            })
-    {
-        let remaining = &content[content
-            .find("\n+++\n")
-            .or_else(|| content.find("\r\n+++\r\n"))
-            .map_or(content.len(), |i| i + 5)..];
-        return Ok((toml, remaining.trim_start()));
-    }
-
-    // Extract JSON frontmatter
-    if let Ok(json) = extract_json_frontmatter(content) {
-        let remaining = &content[json.len()..];
-        return Ok((json, remaining.trim_start()));
-    }
-
-    // Handle cases where frontmatter delimiters exist but are empty
-    if content.starts_with("---\n---")
-        || content.starts_with("+++\n+++")
-    {
-        return Err(Error::InvalidFormat);
-    }
-
-    Err(Error::InvalidFormat)
+    let (start, end) = json_span(content)?;
+    Ok((&content[start..end], content[end..].trim_start()))
 }
 
 /// Extracts JSON frontmatter from the content by detecting balanced curly braces (`{}`).
@@ -115,45 +89,42 @@ pub fn extract_raw_frontmatter(
 /// assert_eq!(frontmatter, "{ \"title\": \"Example\" }");
 /// ```
 pub fn extract_json_frontmatter(content: &str) -> Result<&str, Error> {
+    let (start, end) = json_span(content)?;
+    Ok(&content[start..end])
+}
+
+/// The byte range of the JSON object at the top of `content`, after an
+/// optional byte order mark and whitespace. Both offsets index
+/// `content` itself, so slicing with them never lands inside a
+/// multi-byte character.
+fn json_span(content: &str) -> Result<(usize, usize), Error> {
     const MAX_DEPTH: usize = 100; // Limit maximum nesting depth
-    let trimmed = content.trim_start();
+    let (lead, trimmed) = skip_lead(content);
 
     // If the content doesn't start with '{', it's not JSON frontmatter.
     if !trimmed.starts_with('{') {
         return Err(Error::InvalidJson);
     }
 
-    let mut brace_count = 0;
-    let mut depth = 0;
-    let mut in_string = false;
-    let mut escape_next = false;
+    let mut depth = 0_usize;
+    let mut chars = trimmed.char_indices();
 
-    // Iterate over the characters in the trimmed content, looking for balanced braces.
-    for (idx, ch) in trimmed.char_indices() {
-        if escape_next {
-            escape_next = false;
-            continue;
-        }
-
+    // Walk the object, skipping strings, until the braces balance.
+    while let Some((idx, ch)) = chars.next() {
         match ch {
-            '"' if !in_string => in_string = true,
-            '"' if in_string => in_string = false,
-            '\\' if in_string => escape_next = true,
-            '{' if !in_string => {
-                brace_count += 1;
+            '"' => skip_json_string(&mut chars),
+            '{' => {
                 depth += 1;
                 // Check if the maximum depth is exceeded
                 if depth > MAX_DEPTH {
                     return Err(Error::JsonDepthLimitExceeded);
                 }
             }
-            '}' if !in_string => {
-                brace_count -= 1;
-                // Decrease depth when closing braces
-                depth = depth.saturating_sub(1);
-                // Once braces are balanced (brace_count == 0), we've reached the end of the JSON object.
-                if brace_count == 0 {
-                    return Ok(&trimmed[..=idx]);
+            '}' => {
+                depth -= 1;
+                // Once braces are balanced, we've reached the end of the JSON object.
+                if depth == 0 {
+                    return Ok((lead, lead + idx + 1));
                 }
             }
             _ => {}
@@ -162,6 +133,20 @@ pub fn extract_json_frontmatter(content: &str) -> Result<&str, Error> {
 
     // If no balanced braces are found, return an error.
     Err(Error::InvalidJson)
+}
+
+/// Advances `chars` past the closing quote of a JSON string whose
+/// opening quote was just consumed, honouring backslash escapes.
+fn skip_json_string(chars: &mut std::str::CharIndices<'_>) {
+    while let Some((_, ch)) = chars.next() {
+        match ch {
+            '\\' => {
+                let _ = chars.next();
+            }
+            '"' => return,
+            _ => {}
+        }
+    }
 }
 
 /// Detects the format of the extracted frontmatter.
@@ -231,7 +216,8 @@ pub fn detect_format(raw_frontmatter: &str) -> Result<Format, Error> {
 /// # Returns
 ///
 /// An `Option` containing the extracted frontmatter as a string slice. Returns `None`
-/// if the delimiters are not found.
+/// if the content does not open with `start_delim` (after an optional byte
+/// order mark and whitespace) or if `end_delim` does not follow it.
 ///
 /// # Example
 ///
@@ -247,14 +233,10 @@ pub fn extract_delimited_frontmatter<'a>(
     start_delim: &str,
     end_delim: &str,
 ) -> Option<&'a str> {
-    let start_index = content.find(start_delim)? + start_delim.len();
-    let end_index = content.find(end_delim)?;
-
-    if start_index <= end_index {
-        Some(content[start_index..end_index].trim())
-    } else {
-        None
-    }
+    let (_, rest) = skip_lead(content);
+    let block = rest.strip_prefix(start_delim)?;
+    let end_index = block.find(end_delim)?;
+    Some(block[..end_index].trim())
 }
 
 #[cfg(test)]
