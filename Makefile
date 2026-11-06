@@ -68,11 +68,13 @@ miri:
 	  cargo +nightly miri test --lib --locked
 
 # Build every target, then replay the seed corpus and the regression
-# inputs without generating new ones. Mirrors the per-push CI gate.
+# inputs (where a target has any) without generating new ones. Mirrors
+# the per-push CI gate.
 fuzz:
 	cd fuzz && cargo +nightly fuzz build
 	cd fuzz && for t in $$(cargo +nightly fuzz list); do \
-	  cargo +nightly fuzz run "$$t" -- -runs=0 "corpus/$$t" "regressions/$$t" || exit 1; \
+	  r=""; [ -d "regressions/$$t" ] && r="regressions/$$t"; \
+	  cargo +nightly fuzz run "$$t" -- -runs=0 "corpus/$$t" $$r || exit 1; \
 	done
 
 # Every declared [[example]] target. The names in Cargo.toml differ from
