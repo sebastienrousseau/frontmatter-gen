@@ -5,6 +5,23 @@ All notable changes to `frontmatter-gen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **JSON body offset**: `extract_raw_frontmatter` sliced the body at the
+  JSON block's length instead of its end, so leading whitespace left part
+  of the JSON in the body, and multi-byte leading whitespace (U+3000, a
+  BOM) could panic on a char boundary.
+- **Line-anchored fences**: a YAML or TOML block now opens only at the top
+  of the document (after an optional BOM and whitespace) and closes only
+  on a line that is exactly the fence. `---` inside a value, a `----` rule,
+  or a `---` later in the body is no longer taken as a delimiter.
+  `Engine::extract_front_matter` uses the same scanner instead of
+  `splitn(3, "---")`, so Markdown horizontal rules stay in the body.
+- **Unterminated blocks**: an opening fence without a closing line is
+  reported as `Error::ExtractionError` instead of `Error::InvalidFormat`.
+
 ## [0.0.15] - 2026-10-31
 
 ### Added

@@ -40,6 +40,8 @@
 #[cfg(feature = "ssg")]
 use crate::config::Config;
 #[cfg(feature = "ssg")]
+use crate::extractor::{fenced_block, Fenced};
+#[cfg(feature = "ssg")]
 use anyhow::{Context, Result};
 #[cfg(feature = "ssg")]
 use pulldown_cmark::{html, Parser};
@@ -303,13 +305,17 @@ impl Engine {
         &self,
         content: &str,
     ) -> Result<(HashMap<String, serde_json::Value>, String)> {
-        let parts: Vec<&str> = content.splitn(3, "---").collect();
-        match parts.len() {
-            3 => {
-                let metadata = noyalib::from_str(parts[1])?;
-                Ok((metadata, parts[2].trim().to_string()))
+        match fenced_block(content, "---") {
+            Fenced::Found { raw, body_offset } => {
+                let metadata = noyalib::from_str(raw)?;
+                Ok((
+                    metadata,
+                    content[body_offset..].trim().to_string(),
+                ))
             }
-            _ => Ok((HashMap::new(), content.to_string())),
+            Fenced::Unterminated | Fenced::None => {
+                Ok((HashMap::new(), content.to_string()))
+            }
         }
     }
 
