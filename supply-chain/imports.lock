@@ -30,6 +30,11 @@ user-id = 186843
 user-login = "sebastienrousseau"
 user-name = "Sebastien Rousseau"
 
+[[publisher.euxis-commons]]
+version = "0.0.9"
+when = "2026-11-07"
+trusted-publisher = "github:sebastienrousseau/commons"
+
 [[publisher.frontmatter-gen]]
 version = "0.0.12"
 when = "2026-10-09"
