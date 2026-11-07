@@ -391,6 +391,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "euxis-commons"
+version = "0.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fc280f4abcbbb3b453818482c3689639cab5e2a29e827ad8d2d712cf133f3ee"
+
+[[package]]
 name = "fastrand"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -420,6 +426,7 @@ dependencies = [
  "criterion",
  "dtt",
  "env_logger",
+ "euxis-commons",
  "log",
  "noyalib",
  "pretty_assertions",

@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.17] - Unreleased
+
+### Breaking
+
+`utils::fs::validate_path_safety` (public, and behind `Config`
+directory validation, `create_directory` and `copy_file`) accepts and
+rejects different paths. No signature moves.
+
+- **Traversal is a `..` component, not a substring.** The check now
+  uses `commons::path::safe_join` from `euxis-commons` 0.0.9: a path is
+  refused only when a `..` component climbs above where it starts (the
+  working directory for a relative path, the root for an absolute one).
+  `a..b.md` and `..hidden` are accepted; `a/../b` and `/srv/a/../b` are
+  accepted because they never leave their start; `../x`, `a/../../x`
+  and `/../etc` are still refused.
+- **Backslashes follow the platform.** They were refused everywhere,
+  which rejected every ordinary Windows path. On Windows `\` is now a
+  separator, so `..\x` is refused as traversal; elsewhere it is an
+  ordinary file-name character, so `dir\file.md` and `..\x` are single
+  names in the current directory and are accepted.
+- **Windows reserved names are complete.** `COM2`-`COM9` and
+  `LPT2`-`LPT9` are now refused, and a reserved name with an extension
+  or trailing spaces (`nul.md`, `CON.txt`, `prn `) is refused as well,
+  as Windows treats them as the device.
+
+### Changed
+
+- New dependency `euxis-commons` `=0.0.9` with only its dependency-free
+  `path` feature, pinned exactly under ADR-0005 and checked by
+  `scripts/verify-release-versions.sh`.
+
 ## [0.0.16] - 2026-11-06
 
 ### Breaking

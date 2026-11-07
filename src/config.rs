@@ -1083,9 +1083,16 @@ mod exhaustive_config_tests {
             .build()
             .is_err());
         assert!(valid_builder()
-            .output_dir("out\\win")
+            .output_dir("out/../../up")
             .build()
             .is_err());
+        // `\\` follows the platform: a separator on Windows, an
+        // ordinary character elsewhere (see `utils` tests).
+        assert!(valid_builder().output_dir("out\\win").build().is_ok());
+        assert_eq!(
+            valid_builder().output_dir("..\\up").build().is_err(),
+            cfg!(windows)
+        );
         assert!(valid_builder()
             .template_dir("../../up")
             .build()
