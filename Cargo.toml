@@ -4,7 +4,7 @@
 
 [package]
 name = "frontmatter-gen"
-version = "0.0.15"
+version = "0.0.16"
 edition = "2021"
 rust-version = "1.89.0"
 license = "MIT OR Apache-2.0"
@@ -104,7 +104,8 @@ log = "0.4.22"
 
 # Optional CLI and SSG dependencies - all must have optional = true
 clap = { version = "4.5.21", features = ["derive"], optional = true }
-dtt = { version = "0.0.11", optional = true }
+# Exact pin, same-author 0.0.x line (ADR-0005).
+dtt = { version = "=0.0.11", optional = true }
 pulldown-cmark = { version = "0.13.4", optional = true }
 tera = { version = "2", optional = true }
 url = { version = "2.5.4", optional = true }

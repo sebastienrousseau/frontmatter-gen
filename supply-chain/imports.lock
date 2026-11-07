@@ -5,6 +5,10 @@
 version = "0.0.15"
 audited_as = "0.0.12"
 
+[[unpublished.frontmatter-gen]]
+version = "0.0.16"
+audited_as = "0.0.12"
+
 [[publisher.bumpalo]]
 version = "3.20.3"
 when = "2026-05-22"

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.16] - 2026-11-06
+
+### Breaking
+
+What the crate extracts changes for some inputs. The README's Stability
+guarantees treat output changes as breaking even though no Rust
+signature moves.
+
+- **Unterminated blocks**: an opening fence without a closing line is
+  reported as `Error::ExtractionError` instead of `Error::InvalidFormat`.
+  Code that matches on `InvalidFormat` for this case must match
+  `ExtractionError`.
+- **Empty blocks**: `---\n---\nBody` extracts as empty front matter
+  with `Body` as the body.
+- **`---` later in a document**: a fence that does not open the
+  document (after an optional BOM and whitespace) is no longer front
+  matter. `Intro ---\ntitle: x\n---\nBody` and a document whose only
+  `---` lines are Markdown horizontal rules now have no front matter.
+
 ### Fixed
 
 - **JSON body offset**: `extract_raw_frontmatter` sliced the body at the
@@ -19,8 +38,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or a `---` later in the body is no longer taken as a delimiter.
   `Engine::extract_front_matter` uses the same scanner instead of
   `splitn(3, "---")`, so Markdown horizontal rules stay in the body.
-- **Unterminated blocks**: an opening fence without a closing line is
-  reported as `Error::ExtractionError` instead of `Error::InvalidFormat`.
+- **`make fuzz`** no longer fails on targets without a
+  `fuzz/regressions/<target>` directory, matching the CI loop.
+
+### Dependencies
+
+- `dtt` is written as the exact pin `=0.0.11` that ADR-0005 requires,
+  so `scripts/verify-release-versions.sh` checks it against
+  `Cargo.lock`. The resolved version is unchanged.
+- `pulldown-cmark` 0.13.6 (#67), and the `taiki-e/install-action` and
+  `astral-sh/setup-uv` pins in the Quality workflow.
 
 ## [0.0.15] - 2026-10-31
 
