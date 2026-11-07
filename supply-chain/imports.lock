@@ -9,6 +9,10 @@ audited_as = "0.0.12"
 version = "0.0.16"
 audited_as = "0.0.12"
 
+[[unpublished.frontmatter-gen]]
+version = "0.0.17"
+audited_as = "0.0.12"
+
 [[publisher.bumpalo]]
 version = "3.20.3"
 when = "2026-05-22"
@@ -29,6 +33,11 @@ when = "2026-07-24"
 user-id = 186843
 user-login = "sebastienrousseau"
 user-name = "Sebastien Rousseau"
+
+[[publisher.euxis-commons]]
+version = "0.0.9"
+when = "2026-11-07"
+trusted-publisher = "github:sebastienrousseau/commons"
 
 [[publisher.frontmatter-gen]]
 version = "0.0.12"

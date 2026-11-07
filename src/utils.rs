@@ -76,12 +76,10 @@ pub enum UtilsError {
 /// File system utilities module
 pub mod fs {
     use super::*;
-    // Only the `ssg` surface below uses owned paths; without the gate
-    // this import is dead in a default build, which `[lints.rust]`
-    // makes an error. The fuzz and Miri jobs are the first to compile
-    // that configuration.
-    #[cfg(feature = "ssg")]
-    use std::path::PathBuf;
+    // `validate_path_safety` is built in every configuration and needs
+    // `PathBuf`, so this import is not gated behind `ssg`.
+    use commons::path::safe_join;
+    use std::path::{Component, PathBuf};
 
     /// Tracks temporary files for cleanup
     #[cfg(feature = "ssg")]
@@ -151,86 +149,94 @@ pub mod fs {
     /// # Security
     ///
     /// Checks for:
-    /// - Path length limits
-    /// - Invalid characters
-    /// - Path traversal attempts
+    /// - Invalid characters (null bytes, control characters)
+    /// - Path traversal: a `..` component that climbs above the path's
+    ///   start (its root when absolute, the working directory when
+    ///   relative), using the shared rule in `commons::path::safe_join`
     /// - Symlinks
-    /// - Reserved names
+    /// - Windows reserved device names
+    ///
+    /// `\` is a separator on Windows and an ordinary character
+    /// elsewhere, as the platform's own path parser treats it.
     pub fn validate_path_safety(path: &Path) -> Result<()> {
         let path_str = path.to_string_lossy();
-
-        // 1. Disallow backslashes for POSIX compatibility
-        if path_str.contains('\\') {
-            return Err(UtilsError::InvalidPath {
+        let invalid = |details: &str| -> anyhow::Error {
+            UtilsError::InvalidPath {
                 path: path_str.to_string(),
-                details: "Backslashes are not allowed in paths"
-                    .to_string(),
+                details: details.to_string(),
             }
-            .into());
+            .into()
+        };
+
+        // 1. Check for null bytes and control characters
+        if path_str.chars().any(char::is_control) {
+            return Err(invalid("Path contains invalid characters"));
         }
 
-        // 2. Check for null bytes and control characters
-        if path_str.contains('\0')
-            || path_str.chars().any(|c| c.is_control())
-        {
-            return Err(UtilsError::InvalidPath {
-                path: path_str.to_string(),
-                details: "Path contains invalid characters".to_string(),
-            }
-            .into());
+        // 2. Disallow path traversal. Names that merely contain dots
+        //    (`a..b.md`) are ordinary; only a `..` component counts.
+        if climbs_above_start(path) {
+            return Err(invalid("Path traversal not allowed"));
         }
 
-        // 3. Disallow path traversal using `..`
-        if path_str.contains("..") {
-            return Err(UtilsError::InvalidPath {
-                path: path_str.to_string(),
-                details: "Path traversal not allowed".to_string(),
-            }
-            .into());
-        }
-
-        // 4. Absolute paths are accepted.
+        // 3. Absolute paths are accepted.
         //
         // This function checks the *shape* of a path, not where it
         // points: deciding which directory a caller may write to is the
         // caller's job, and it has the root to compare against.
-        //
-        // It used to `return Ok(())` here, which silently skipped rules
-        // 5 and 6 below — so a symlink or a reserved name passed
-        // validation whenever it arrived as an absolute path, and only
-        // relative paths were fully checked. The early return is gone;
-        // every rule now applies to every path.
 
-        // 5. Check for symlinks
-        if let Ok(metadata) = path.symlink_metadata() {
-            if metadata.file_type().is_symlink() {
-                return Err(UtilsError::InvalidPath {
-                    path: path_str.to_string(),
-                    details: "Symlinks are not allowed".to_string(),
-                }
-                .into());
-            }
+        // 4. Check for symlinks
+        if path
+            .symlink_metadata()
+            .is_ok_and(|m| m.file_type().is_symlink())
+        {
+            return Err(invalid("Symlinks are not allowed"));
         }
 
-        // 6. Prevent the use of reserved names (Windows compatibility)
-        let reserved_names =
-            ["con", "prn", "aux", "nul", "com1", "lpt1"];
-        if let Some(file_name) =
-            path.file_name().and_then(|n| n.to_str())
+        // 5. Prevent the use of reserved names (Windows compatibility).
+        //    `commons::path` does not cover these: they are valid
+        //    components that only Windows refuses to create.
+        if path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .is_some_and(is_windows_reserved_name)
         {
-            if reserved_names
-                .contains(&file_name.to_lowercase().as_str())
-            {
-                return Err(UtilsError::InvalidPath {
-                    path: path_str.to_string(),
-                    details: "Reserved file name not allowed"
-                        .to_string(),
-                }
-                .into());
-            }
+            return Err(invalid("Reserved file name not allowed"));
         }
 
         Ok(())
+    }
+
+    /// Whether a `..` component climbs above where `path` starts.
+    ///
+    /// The root or drive prefix of an absolute path is set aside and
+    /// the rest is joined under it, so `/srv/a/../b` is accepted and
+    /// `/../etc` is not, the same rule as for a relative path.
+    fn climbs_above_start(path: &Path) -> bool {
+        let rest: PathBuf = path
+            .components()
+            .skip_while(|c| {
+                matches!(c, Component::Prefix(_) | Component::RootDir)
+            })
+            .collect();
+        safe_join(Path::new(""), rest).is_err()
+    }
+
+    /// Whether `name` is a Windows reserved device name.
+    ///
+    /// Windows reserves `CON`, `PRN`, `AUX`, `NUL`, `COM1`-`COM9` and
+    /// `LPT1`-`LPT9` in any case, with or without an extension, and
+    /// ignores trailing spaces: `nul.md` and `con ` are the device too.
+    fn is_windows_reserved_name(name: &str) -> bool {
+        let stem = name.split('.').next().unwrap_or(name).trim_end();
+        let stem = stem.to_ascii_uppercase();
+        match stem.as_bytes() {
+            b"CON" | b"PRN" | b"AUX" | b"NUL" => true,
+            [b'C', b'O', b'M', d] | [b'L', b'P', b'T', d] => {
+                (b'1'..=b'9').contains(d)
+            }
+            _ => false,
+        }
     }
 
     /// Creates a directory and all parent directories
@@ -601,12 +607,50 @@ mod exhaustive_utils_tests {
     use std::path::{Path, PathBuf};
 
     #[test]
-    fn rejects_backslashes() {
-        let err = validate_path_safety(Path::new("dir\\file.md"))
-            .expect_err(
-                "backslashes are rejected for POSIX compatibility",
+    fn backslash_paths_follow_the_platform() {
+        // On Windows `\` is a separator, so these are ordinary nested
+        // paths and the traversal rule sees their `..` components.
+        #[cfg(windows)]
+        {
+            assert!(
+                validate_path_safety(Path::new("dir\\file.md")).is_ok()
             );
-        assert!(err.to_string().contains("Backslash"), "{err}");
+            for candidate in ["..\\x", "a\\..\\..\\x"] {
+                assert!(
+                    validate_path_safety(Path::new(candidate)).is_err(),
+                    "{candidate} climbs out on Windows"
+                );
+            }
+        }
+        // Elsewhere `\` is an ordinary character: `..\x` is one file
+        // name in the current directory and cannot climb out of it.
+        #[cfg(not(windows))]
+        for candidate in ["dir\\file.md", "..\\x", "a\\..\\..\\x"] {
+            assert!(
+                validate_path_safety(Path::new(candidate)).is_ok(),
+                "{candidate} is a single file name on this platform"
+            );
+        }
+    }
+
+    #[test]
+    fn dots_inside_a_name_are_not_traversal() {
+        for candidate in ["a..b.md", "..hidden", "dir/v1..v2/c.md"] {
+            assert!(
+                validate_path_safety(Path::new(candidate)).is_ok(),
+                "{candidate} has no `..` component"
+            );
+        }
+    }
+
+    #[test]
+    fn parent_components_that_stay_inside_are_accepted() {
+        for candidate in ["a/../b", "a/b/../../c", "a/.."] {
+            assert!(
+                validate_path_safety(Path::new(candidate)).is_ok(),
+                "{candidate} never climbs above its start"
+            );
+        }
     }
 
     #[test]
@@ -617,7 +661,9 @@ mod exhaustive_utils_tests {
 
     #[test]
     fn rejects_parent_directory_traversal() {
-        for candidate in ["../secret", "a/../../b", "..", "a/.."] {
+        for candidate in
+            ["../secret", "../x", "a/../../x", "..", "../a/b"]
+        {
             assert!(
                 validate_path_safety(Path::new(candidate)).is_err(),
                 "{candidate} should be rejected"
@@ -652,6 +698,20 @@ mod exhaustive_utils_tests {
         );
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn absolute_paths_are_checked_for_climbing_above_root() {
+        // `..` is resolved against the path's own root, as it is for a
+        // relative path against its starting directory.
+        assert!(validate_path_safety(Path::new("/srv/a/../b")).is_ok());
+        for candidate in ["/..", "/../etc/passwd", "/srv/../../etc"] {
+            assert!(
+                validate_path_safety(Path::new(candidate)).is_err(),
+                "{candidate} climbs above /"
+            );
+        }
+    }
+
     #[test]
     fn rejects_symlinks() {
         let dir = tempfile::tempdir().expect("tempdir");
@@ -671,7 +731,21 @@ mod exhaustive_utils_tests {
 
     #[test]
     fn rejects_windows_reserved_names() {
-        for name in ["con", "PRN", "Aux", "nul", "com1", "LPT1"] {
+        for name in [
+            "con",
+            "PRN",
+            "Aux",
+            "nul",
+            "com1",
+            "LPT1",
+            "COM9",
+            "lpt9",
+            "nul.md",
+            "CON.txt",
+            "aux.tar.gz",
+            "dir/com3.html",
+            "prn ",
+        ] {
             assert!(
                 validate_path_safety(Path::new(name)).is_err(),
                 "{name} is reserved on Windows and must be rejected"
@@ -679,6 +753,12 @@ mod exhaustive_utils_tests {
         }
         // A reserved stem with an extension is a different file name.
         assert!(validate_path_safety(Path::new("console.md")).is_ok());
+        for name in ["com0", "lpt10", "conx.md", "my-nul.md"] {
+            assert!(
+                validate_path_safety(Path::new(name)).is_ok(),
+                "{name} is not a reserved device name"
+            );
+        }
     }
 
     #[tokio::test]
