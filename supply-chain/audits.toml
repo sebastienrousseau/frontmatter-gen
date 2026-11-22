@@ -627,6 +627,12 @@ criteria = "safe-to-deploy"
 delta = "1.28.0 -> 1.29.0"
 notes = "Delta 1.28.0 -> 1.29.0 (14 files, +161/-52; 9 .rs files): adds versioned NonNilUuid constructors wrapping existing non-nil VersionedUuid builders (new_unchecked on known-non-nil v1-v8 outputs); no build.rs, target dependency uuid-rng-internal-lib follows to 1.29.0."
 
+[[audits.uuid]]
+who = "Sebastien Rousseau <sebastienrousseau@users.noreply.github.com>"
+criteria = "safe-to-deploy"
+delta = "1.29.0 -> 1.29.2"
+notes = "Delta 1.29.0 -> 1.29.2 (14 files, +483/-236; 11 .rs files): no unsafe added or removed, no build.rs; timestamp internals move to a single u128 nanosecond value with saturating conversions; wasm cfgs widen from target_arch = wasm32 to target_family = wasm; zerocopy moves behind cfg(uuid_unstable); target dependency uuid-rng-internal-lib follows to 1.29.2."
+
 [[audits.version_check]]
 who = "Sebastien Rousseau <sebastienrousseau@users.noreply.github.com>"
 criteria = "safe-to-deploy"
@@ -744,6 +750,12 @@ start = "2026-08-26"
 end = "2027-11-07"
 notes = "Same-author crate, published by its release workflow."
 
+[[trusted.form_urlencoded]]
+criteria = "safe-to-deploy"
+user-id = 1139 # Manish Goregaokar (Manishearth)
+start = "2021-02-19"
+end = "2027-11-22"
+
 [[trusted.frontmatter-gen]]
 criteria = "safe-to-deploy"
 user-id = 186843 # Sebastien Rousseau (sebastienrousseau)
@@ -798,6 +810,12 @@ user-id = 1139 # Manish Goregaokar (Manishearth)
 start = "2021-02-23"
 end = "2027-11-05"
 
+[[trusted.log]]
+criteria = "safe-to-deploy"
+trusted-publisher = "github:rust-lang/log"
+start = "2026-10-30"
+end = "2027-11-22"
+
 [[trusted.noyalib]]
 criteria = "safe-to-deploy"
 user-id = 186843 # Sebastien Rousseau (sebastienrousseau)
@@ -818,11 +836,41 @@ user-id = 1139 # Manish Goregaokar (Manishearth)
 start = "2024-11-23"
 end = "2027-11-05"
 
+[[trusted.rustix]]
+criteria = "safe-to-deploy"
+user-id = 6825 # Dan Gohman (sunfishcode)
+start = "2021-10-29"
+end = "2027-11-22"
+
+[[trusted.serde_spanned]]
+criteria = "safe-to-deploy"
+user-id = 6743 # Ed Page (epage)
+start = "2023-01-20"
+end = "2027-11-22"
+
 [[trusted.tinystr]]
 criteria = "safe-to-deploy"
 user-id = 1139 # Manish Goregaokar (Manishearth)
 start = "2021-01-14"
 end = "2027-11-05"
+
+[[trusted.toml]]
+criteria = "safe-to-deploy"
+user-id = 6743 # Ed Page (epage)
+start = "2022-12-14"
+end = "2027-11-22"
+
+[[trusted.toml_datetime]]
+criteria = "safe-to-deploy"
+user-id = 6743 # Ed Page (epage)
+start = "2022-10-21"
+end = "2027-11-22"
+
+[[trusted.toml_writer]]
+criteria = "safe-to-deploy"
+user-id = 6743 # Ed Page (epage)
+start = "2025-07-08"
+end = "2027-11-22"
 
 [[trusted.url]]
 criteria = "safe-to-deploy"
