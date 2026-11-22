@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **url 2.5.9 or newer** for RUSTSEC-2026-0592 (stack overflow in
+  `Url::origin()` on nested `blob:` URLs). `url` is an optional
+  dependency of frontmatter-gen, so the requirement floor moves from
+  `2.5.4` to `2.5.9`.
+- **rustix 1.1.6** in `Cargo.lock` for RUSTSEC-2026-0486 (unsound xattr
+  functions); it is reached only through `tempfile`.
+
+### Changed
+
+- `toml` 1.2.1, `uuid` 1.29.2 and `log` 0.4.35, and the
+  `Swatinem/rust-cache` and `taiki-e/install-action` 2.90.3 GitHub
+  Actions updates, from Dependabot.
+- cargo-vet: the new versions are covered by trust entries for the
+  publishers Mozilla and the Bytecode Alliance already trust (Ed Page,
+  Dan Gohman, Manish Goregaokar, `github:rust-lang/log`) and a delta
+  audit for `uuid` 1.29.0 to 1.29.2, so no exemption is added.
+
 ## [0.0.17] - 2026-11-07
 
 ### Breaking
