@@ -21,10 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `toml` 1.2.1, `uuid` 1.29.2 and `log` 0.4.35, and the
   `Swatinem/rust-cache` and `taiki-e/install-action` 2.90.3 GitHub
   Actions updates, from Dependabot.
-- cargo-vet: the new versions are covered by trust entries for the
-  publishers Mozilla and the Bytecode Alliance already trust (Ed Page,
-  Dan Gohman, Manish Goregaokar, `github:rust-lang/log`) and a delta
-  audit for `uuid` 1.29.0 to 1.29.2, so no exemption is added.
+- cargo-vet: the trust entries for Ed Page (`toml`, `toml_datetime`,
+  `toml_writer`, `serde_spanned`), Dan Gohman (`rustix`), Manish
+  Goregaokar (`form_urlencoded`) and `github:rust-lang/log`, and the
+  `uuid` 1.29.0 to 1.29.2 delta audit, are removed. They were recorded
+  by an assistant, the audit under the maintainer's name, without the
+  maintainer's review. The repository now also imports the actix,
+  ariel-os, embark-studios, fermyon, isrg and zcash audit sets. Until
+  the maintainer certifies the eight bumped crate versions, `cargo vet`
+  fails on them; no exemption or trust entry is added in their place.
 
 ## [0.0.17] - 2026-11-07
 
