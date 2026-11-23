@@ -18,9 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- `toml` 1.2.1, `uuid` 1.29.2 and `log` 0.4.35, and the
-  `Swatinem/rust-cache` and `taiki-e/install-action` 2.90.3 GitHub
-  Actions updates, from Dependabot.
+- `toml` 1.2.1, `uuid` 1.29.3, `log` 0.4.35, `clap` 4.6.9 and
+  `noyalib` 0.0.63 (exact pin, which drops `libm` from the tree), and
+  the `Swatinem/rust-cache`, `taiki-e/install-action` 2.90.6 and
+  `astral-sh/setup-uv` 10.4.0 GitHub Actions updates, from Dependabot.
 - cargo-vet: the trust entries for Ed Page (`toml`, `toml_datetime`,
   `toml_writer`, `serde_spanned`), Dan Gohman (`rustix`), Manish
   Goregaokar (`form_urlencoded`) and `github:rust-lang/log`, and the
