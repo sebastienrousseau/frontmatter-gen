@@ -95,8 +95,8 @@ user-login = "Manishearth"
 user-name = "Manish Goregaokar"
 
 [[publisher.noyalib]]
-version = "0.0.58"
-when = "2026-10-15"
+version = "0.0.63"
+when = "2026-11-19"
 trusted-publisher = "github:sebastienrousseau/noyalib"
 
 [[publisher.potential_utf]]
@@ -1627,12 +1627,6 @@ who = "Ben Dean-Kawamura <bdk@mozilla.com>"
 criteria = "safe-to-deploy"
 delta = "2.11.4 -> 2.14.0"
 notes = "Mostly internal refactorings.  No new unsafe code."
-
-[[audits.mozilla.audits.libm]]
-who = "Makoto Kato <m_kato@ga2.so-net.ne.jp>"
-criteria = "safe-to-deploy"
-version = "0.2.6"
-notes = "This crate uses unsafe block, but this doesn't have network and file access. I audited code."
 
 [[audits.mozilla.audits.num-conv]]
 who = "Alex Franchuk <afranchuk@mozilla.com>"
