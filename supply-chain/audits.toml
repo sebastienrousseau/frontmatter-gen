@@ -717,6 +717,20 @@ who = "Sebastien Rousseau <sebastienrousseau@users.noreply.github.com>"
 criteria = "safe-to-deploy"
 delta = "0.1.6 -> 0.1.8"
 
+[[trusted.clap]]
+criteria = "safe-to-deploy"
+user-id = 6743 # Ed Page (epage)
+start = "2021-12-08"
+end = "2027-11-25"
+notes = "Maintainer's trust decision (2026-11-25): publisher epage."
+
+[[trusted.clap_derive]]
+criteria = "safe-to-deploy"
+user-id = 6743 # Ed Page (epage)
+start = "2021-12-08"
+end = "2027-11-25"
+notes = "Maintainer's trust decision (2026-11-25): publisher epage."
+
 [[trusted.displaydoc]]
 criteria = "safe-to-deploy"
 user-id = 1139 # Manish Goregaokar (Manishearth)
@@ -743,6 +757,13 @@ trusted-publisher = "github:sebastienrousseau/commons"
 start = "2026-08-26"
 end = "2027-11-07"
 notes = "Same-author crate, published by its release workflow."
+
+[[trusted.form_urlencoded]]
+criteria = "safe-to-deploy"
+user-id = 1139 # Manish Goregaokar (Manishearth)
+start = "2021-02-19"
+end = "2027-11-25"
+notes = "Maintainer's trust decision (2026-11-25): publisher Manishearth."
 
 [[trusted.frontmatter-gen]]
 criteria = "safe-to-deploy"
@@ -798,6 +819,13 @@ user-id = 1139 # Manish Goregaokar (Manishearth)
 start = "2021-02-23"
 end = "2027-11-05"
 
+[[trusted.log]]
+criteria = "safe-to-deploy"
+trusted-publisher = "github:rust-lang/log"
+start = "2026-10-30"
+end = "2027-11-25"
+notes = "Maintainer's trust decision (2026-11-25): publisher github:rust-lang/log."
+
 [[trusted.noyalib]]
 criteria = "safe-to-deploy"
 user-id = 186843 # Sebastien Rousseau (sebastienrousseau)
@@ -818,17 +846,80 @@ user-id = 1139 # Manish Goregaokar (Manishearth)
 start = "2024-11-23"
 end = "2027-11-05"
 
+[[trusted.proc-macro2]]
+criteria = "safe-to-deploy"
+user-id = 3618 # David Tolnay (dtolnay)
+start = "2019-04-23"
+end = "2027-11-25"
+notes = "Maintainer's trust decision (2026-11-25): publisher dtolnay."
+
+[[trusted.quote]]
+criteria = "safe-to-deploy"
+user-id = 3618 # David Tolnay (dtolnay)
+start = "2019-04-09"
+end = "2027-11-25"
+notes = "Maintainer's trust decision (2026-11-25): publisher dtolnay."
+
+[[trusted.rustix]]
+criteria = "safe-to-run"
+user-id = 6825 # Dan Gohman (sunfishcode)
+start = "2021-10-29"
+end = "2027-11-25"
+notes = "Maintainer's trust decision (2026-11-25): publisher sunfishcode."
+
+[[trusted.serde_spanned]]
+criteria = "safe-to-deploy"
+user-id = 6743 # Ed Page (epage)
+start = "2023-01-20"
+end = "2027-11-25"
+notes = "Maintainer's trust decision (2026-11-25): publisher epage."
+
+[[trusted.syn]]
+criteria = "safe-to-deploy"
+user-id = 3618 # David Tolnay (dtolnay)
+start = "2019-03-01"
+end = "2027-11-25"
+notes = "Maintainer's trust decision (2026-11-25): publisher dtolnay."
+
 [[trusted.tinystr]]
 criteria = "safe-to-deploy"
 user-id = 1139 # Manish Goregaokar (Manishearth)
 start = "2021-01-14"
 end = "2027-11-05"
 
+[[trusted.toml]]
+criteria = "safe-to-deploy"
+user-id = 6743 # Ed Page (epage)
+start = "2022-12-14"
+end = "2027-11-25"
+notes = "Maintainer's trust decision (2026-11-25): publisher epage."
+
+[[trusted.toml_datetime]]
+criteria = "safe-to-deploy"
+user-id = 6743 # Ed Page (epage)
+start = "2022-10-21"
+end = "2027-11-25"
+notes = "Maintainer's trust decision (2026-11-25): publisher epage."
+
+[[trusted.toml_writer]]
+criteria = "safe-to-deploy"
+user-id = 6743 # Ed Page (epage)
+start = "2025-07-08"
+end = "2027-11-25"
+notes = "Maintainer's trust decision (2026-11-25): publisher epage."
+
 [[trusted.url]]
 criteria = "safe-to-deploy"
 user-id = 1139 # Manish Goregaokar (Manishearth)
 start = "2021-02-18"
 end = "2027-11-05"
+
+[[trusted.uuid]]
+criteria = "safe-to-deploy"
+user-id = 3204 # Ashley Mannix (KodrAus)
+start = "2019-10-18"
+end = "2027-11-25"
+notes = "Maintainer's trust decision (2026-11-25): publisher KodrAus."
 
 [[trusted.writeable]]
 criteria = "safe-to-deploy"
